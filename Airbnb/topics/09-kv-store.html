@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Key/Value Store | PE System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #f8fafc; }
+  ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: rgba(22, 33, 62, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--card-border);
+    padding: 0.8rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  nav a.back {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s;
+  }
+  nav a.back:hover { color: var(--primary); }
+  nav .nav-title {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  nav .nav-links { display: flex; gap: 1.2rem; }
+  nav .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  nav .nav-links a:hover {
+    color: var(--primary);
+    background: rgba(255, 90, 95, 0.1);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-top: 60px;
+    padding: 5rem 2rem 3rem;
+    text-align: center;
+    background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #1a1a3e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 600px 300px at 20% 80%, rgba(255,90,95,0.15), transparent),
+      radial-gradient(ellipse 500px 400px at 80% 20%, rgba(123,47,247,0.08), transparent),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(0,166,153,0.06), transparent);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, var(--text) 50%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+  }
+  .hero p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 700px;
+    margin: 0 auto 2rem;
+  }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .val {
+    font-size: 2rem;
+    font-weight: 800;
+    display: block;
+  }
+  .hero-stat .lbl {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .hero-stat:nth-child(1) .val { color: var(--primary); }
+  .hero-stat:nth-child(2) .val { color: #ffffff; }
+  .hero-stat:nth-child(3) .val { color: var(--accent); }
+  .hero-stat:nth-child(4) .val { color: var(--purple); }
+  .hero-stat:nth-child(5) .val { color: var(--blue); }
+
+  /* ── Main Content ── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 3.5rem;
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 1.8rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #e5e7eb;
+    position: relative;
+  }
+  .section-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 30px rgba(255, 90, 95, 0.06);
+  }
+  .card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.8rem;
+    color: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card p, .card li {
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .card ul, .card ol {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+  }
+  .card li { margin-bottom: 0.3rem; }
+
+  /* ── Grids ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
+    .hero-stats { gap: 1.5rem; }
+    .table-responsive { overflow-x: auto; }
+  }
+
+  /* ── Tags / Badges ── */
+  .tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .tag-red { background: rgba(255,90,95,0.15); color: var(--primary); }
+  .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .tag-blue { background: rgba(66,139,249,0.08); color: var(--blue); }
+  .tag-purple { background: rgba(123,47,247,0.15); color: var(--purple); }
+  .tag-orange { background: rgba(252,100,45,0.15); color: var(--accent); }
+  .tag-yellow { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .tag-teal { background: rgba(0,166,153,0.1); color: var(--secondary); }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 1rem 0;
+    position: relative;
+  }
+  .code-block .code-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--card-bg);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .code-block .kw { color: var(--purple); }
+  .code-block .fn { color: var(--blue); }
+  .code-block .str { color: var(--success); }
+  .code-block .cm { color: var(--text-muted); font-style: italic; }
+  .code-block .num { color: var(--accent); }
+  .code-block .type { color: #8250df; }
+  .code-block .op { color: var(--primary); }
+
+  /* ── Tables ── */
+  .table-responsive { overflow-x: auto; margin: 1rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  thead th {
+    background: #f8fafc;
+    color: #fff;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-muted);
+  }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  /* ── Diagram boxes ── */
+  .diagram {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram pre {
+    display: inline-block;
+    text-align: left;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .diagram-box {
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+
+  /* ── Callout ── */
+  .callout {
+    border-left: 4px solid;
+    border-radius: 0 12px 12px 0;
+    padding: 1.2rem 1.5rem;
+    margin: 1.2rem 0;
+    background: var(--card-bg);
+  }
+  .callout-red { border-color: var(--primary); background: rgba(255,90,95,0.06); }
+  .callout-green { border-color: var(--success); background: rgba(16,185,129,0.06); }
+  .callout-blue { border-color: var(--blue); background: rgba(66,139,249,0.06); }
+  .callout-purple { border-color: var(--purple); background: rgba(123,47,247,0.06); }
+  .callout-orange { border-color: var(--accent); background: rgba(252,100,45,0.06); }
+  .callout-yellow { border-color: var(--warning); background: rgba(245,158,11,0.06); }
+  .callout .callout-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+  .callout-red .callout-title { color: var(--primary); }
+  .callout-green .callout-title { color: var(--success); }
+  .callout-blue .callout-title { color: var(--blue); }
+  .callout-purple .callout-title { color: var(--purple); }
+  .callout-orange .callout-title { color: var(--accent); }
+  .callout-yellow .callout-title { color: var(--warning); }
+
+  /* ── Flow Steps ── */
+  .flow-steps {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    margin: 1rem 0;
+  }
+  .flow-step {
+    flex: 1; min-width: 180px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    position: relative;
+  }
+  .flow-step::after {
+    content: '\2192';
+    position: absolute;
+    right: -18px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary);
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+  .flow-step:last-child::after { content: ''; }
+  .flow-step .step-num {
+    display: inline-block;
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    text-align: center; line-height: 26px;
+    font-size: 0.8rem; font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+  .flow-step .step-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #fff;
+    margin-bottom: 0.3rem;
+  }
+  .flow-step .step-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Latency bar ── */
+  .latency-bar-container {
+    margin: 0.5rem 0;
+  }
+  .latency-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .latency-label span:first-child { font-size: 0.88rem; color: var(--text); }
+  .latency-label span:last-child { font-size: 0.82rem; color: var(--text-muted); font-family: 'Cascadia Code', monospace; }
+  .latency-bar {
+    height: 10px;
+    background: #f8fafc;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .latency-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s ease;
+  }
+
+  /* ── Tips list ── */
+  .tip-item {
+    display: flex; gap: 14px;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .tip-item:last-child { border-bottom: none; }
+  .tip-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+  .tip-content strong {
+    display: block;
+    color: #fff;
+    margin-bottom: 2px;
+    font-size: 0.95rem;
+  }
+  .tip-content p {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+
+  /* ── Comparison highlight ── */
+  .vs-container {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem;
+    align-items: start;
+    margin: 1rem 0;
+  }
+  .vs-divider {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; font-weight: 800;
+    color: var(--text-muted);
+    padding-top: 3rem;
+  }
+  @media (max-width: 768px) {
+    .vs-container { grid-template-columns: 1fr; }
+    .vs-divider { padding: 0; }
+  }
+
+  /* ── Ring diagram ── */
+  .ring-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+  }
+
+  /* ── Metric blocks ── */
+  .metric-block {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .metric-block .metric-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .metric-block .metric-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 3rem;
+  }
+  footer a { color: var(--primary); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Animations ── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .section { animation: fadeInUp 0.5s ease both; }
+
+  /* ── Inline highlight ── */
+  .hl { color: var(--primary); font-weight: 600; }
+  .hl-green { color: var(--success); font-weight: 600; }
+  .hl-blue { color: var(--blue); font-weight: 600; }
+  .hl-purple { color: var(--purple); font-weight: 600; }
+  .hl-orange { color: var(--accent); font-weight: 600; }
+
+  code {
+    background: #f8fafc;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    color: #ffffff;
+  }
+
+  strong { color: #fff; }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════ NAVIGATION ════════════════════════════ -->
+<nav>
+  <a href="index.html" class="back">&larr; Back to Topics</a>
+  <span class="nav-title">PE System Design</span>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Reqs</a>
+    <a href="#capacity">Capacity</a>
+    <a href="#partitioning">Partition</a>
+    <a href="#replication">Replication</a>
+    <a href="#consensus">Consensus</a>
+    <a href="#storage">Storage</a>
+    <a href="#errors">Errors</a>
+    <a href="#scaling">Scaling</a>
+    <a href="#latency">Latency</a>
+    <a href="#multi-dc">Multi-DC</a>
+    <a href="#ops">Ops</a>
+    <a href="#tips">Tips</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════ HERO ════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">PE-Level System Design</div>
+  <h1>Distributed Key/Value Store</h1>
+  <p>Build from scratch &mdash; no Redis, no MySQL. A simple <code>get(key)</code> / <code>put(key, value)</code> API backing a web application at massive scale. Every design decision, from the hash ring to the storage engine.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="val">&lt;5ms</span>
+      <span class="lbl">Read Latency</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">&lt;10ms</span>
+      <span class="lbl">Write Latency</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">10TB+</span>
+      <span class="lbl">Data Volume</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">100K</span>
+      <span class="lbl">Read QPS</span>
+    </div>
+    <div class="hero-stat">
+      <span class="val">99.99%</span>
+      <span class="lbl">Availability</span>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+<!-- ════════════════════════════ 1. OVERVIEW ════════════════════════════ -->
+<section id="overview" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--primary), var(--accent));">1</span>
+    <h2>System Overview</h2>
+  </div>
+
+  <div class="card">
+    <h3>What We Are Building</h3>
+    <p>A distributed, horizontally scalable key/value store built <strong>entirely from scratch</strong>. No off-the-shelf databases. The system provides a simple two-operation API &mdash; <code>get(key) &rarr; value</code> and <code>put(key, value) &rarr; ack</code> &mdash; that backs a web application with 10TB+ of data and strict latency requirements.</p>
+    <div style="margin-top: 1rem;" class="callout callout-blue">
+      <div class="callout-title">Why "From Scratch" Matters in an Interview</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">The interviewer wants to see that you understand the <em>mechanics</em> underneath systems like DynamoDB, Cassandra, Riak, or etcd. Saying "I'd use Redis Cluster" earns zero points. Every layer &mdash; hashing, replication, storage, failure detection &mdash; must be reasoned about and justified.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>API Contract</h3>
+    <div class="code-block">
+      <span class="code-label">API</span>
+<span class="cm">// Core operations</span>
+<span class="type">Response</span> <span class="fn">get</span>(<span class="type">String</span> key)
+    <span class="cm">// Returns: { value, version, timestamp } or NOT_FOUND</span>
+
+<span class="type">Response</span> <span class="fn">put</span>(<span class="type">String</span> key, <span class="type">byte[]</span> value)
+    <span class="cm">// Returns: { ack, version } or ERROR</span>
+
+<span class="cm">// Optional (discuss if time permits)</span>
+<span class="type">Response</span> <span class="fn">delete</span>(<span class="type">String</span> key)
+    <span class="cm">// Tombstone-based soft delete</span>
+
+<span class="cm">// Keys:   UTF-8 strings, max 256 bytes</span>
+<span class="cm">// Values: opaque byte arrays, max 1MB (typically ~1KB)</span>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" style="width:100%;max-width:1100px;">
+      <defs>
+        <!-- Gradients for service boxes -->
+        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+        <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008C82"/></linearGradient>
+        <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D4"/></linearGradient>
+        <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6420D0"/></linearGradient>
+        <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#E05520"/></linearGradient>
+        <!-- Shadow filter -->
+        <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+        </filter>
+        <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Arrow markers -->
+        <marker id="arrowSync" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#94a3b8">
+          <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="arrowRepl" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#7B2FF7">
+          <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="arrowBidi" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto" fill="#7B2FF7">
+          <polygon points="0 0, 8 3, 0 6"/>
+        </marker>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1100" height="650" rx="16" fill="#16213e"/>
+      <text x="550" y="30" text-anchor="middle" fill="#1e293b" font-size="18" font-weight="700" letter-spacing="1">DISTRIBUTED KEY/VALUE STORE ARCHITECTURE</text>
+
+      <!-- ===== CLIENTS ===== -->
+      <!-- Monitor icons for App Clients -->
+      <g transform="translate(160, 50)" filter="url(#shadow)">
+        <rect x="0" y="0" width="44" height="32" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="4" y="3" width="36" height="22" rx="2" fill="#1a1a2e"/>
+        <rect x="16" y="32" width="12" height="4" fill="#94a3b8"/>
+        <rect x="12" y="36" width="20" height="2" rx="1" fill="#94a3b8"/>
+        <text x="22" y="19" text-anchor="middle" fill="#00A699" font-size="7">App</text>
+      </g>
+      <g transform="translate(370, 50)" filter="url(#shadow)">
+        <rect x="0" y="0" width="44" height="32" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="4" y="3" width="36" height="22" rx="2" fill="#1a1a2e"/>
+        <rect x="16" y="32" width="12" height="4" fill="#94a3b8"/>
+        <rect x="12" y="36" width="20" height="2" rx="1" fill="#94a3b8"/>
+        <text x="22" y="19" text-anchor="middle" fill="#00A699" font-size="7">App</text>
+      </g>
+      <g transform="translate(580, 50)" filter="url(#shadow)">
+        <rect x="0" y="0" width="44" height="32" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="4" y="3" width="36" height="22" rx="2" fill="#1a1a2e"/>
+        <rect x="16" y="32" width="12" height="4" fill="#94a3b8"/>
+        <rect x="12" y="36" width="20" height="2" rx="1" fill="#94a3b8"/>
+        <text x="22" y="19" text-anchor="middle" fill="#00A699" font-size="7">App</text>
+      </g>
+      <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="600">APPLICATION CLIENTS</text>
+
+      <!-- Arrows from clients down to Client SDK -->
+      <line x1="182" y1="90" x2="340" y2="118" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+      <line x1="392" y1="90" x2="392" y2="118" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+      <line x1="602" y1="90" x2="445" y2="118" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+
+      <!-- ===== CLIENT SDK ===== -->
+      <g filter="url(#shadow)">
+        <rect x="300" y="120" width="185" height="42" rx="10" fill="url(#g2)" opacity="0.9"/>
+        <text x="392" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Client SDK</text>
+        <text x="392" y="152" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">get(k) / put(k,v) / hash(k)</text>
+      </g>
+
+      <!-- Arrow from SDK to Coordinator -->
+      <line x1="392" y1="162" x2="392" y2="188" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+
+      <!-- ===== COORDINATOR / ROUTER NODE ===== -->
+      <g filter="url(#shadow)">
+        <rect x="280" y="190" width="225" height="50" rx="10" fill="url(#g1)" opacity="0.95"/>
+        <!-- Split-arrow / LB icon -->
+        <g transform="translate(295, 200)">
+          <line x1="8" y1="5" x2="8" y2="18" stroke="#fff" stroke-width="2"/>
+          <line x1="8" y1="18" x2="0" y2="28" stroke="#fff" stroke-width="2"/>
+          <line x1="8" y1="18" x2="16" y2="28" stroke="#fff" stroke-width="2"/>
+          <circle cx="0" cy="29" r="2.5" fill="#fff"/>
+          <circle cx="16" cy="29" r="2.5" fill="#fff"/>
+          <circle cx="8" cy="4" r="2.5" fill="#fff"/>
+        </g>
+        <text x="405" y="212" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Coordinator / Router Node</text>
+        <text x="405" y="228" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">Knows shard mapping &bull; Routes to correct nodes</text>
+      </g>
+
+      <!-- Arrow from Coordinator to metadata -->
+      <line x1="505" y1="215" x2="590" y2="215" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowSync)"/>
+
+      <!-- ===== METADATA SERVICE ===== -->
+      <g filter="url(#shadow)" transform="translate(600, 195)">
+        <rect x="0" y="0" width="150" height="40" rx="8" fill="#334155" stroke="#f59e0b" stroke-width="1.5"/>
+        <!-- Small box icon -->
+        <rect x="10" y="10" width="18" height="18" rx="3" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+        <line x1="10" y1="18" x2="28" y2="18" stroke="#f59e0b" stroke-width="1"/>
+        <text x="90" y="214" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700" transform="translate(0,-200)">ZooKeeper / etcd</text>
+        <text x="90" y="228" text-anchor="middle" fill="#94a3b8" font-size="8" transform="translate(0,-200)">Shard Mapping</text>
+      </g>
+
+      <!-- ===== CONSISTENT HASH RING ===== -->
+      <!-- Ring background -->
+      <ellipse cx="400" cy="430" rx="310" ry="155" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="8,4"/>
+      <text x="400" y="310" text-anchor="middle" fill="#7B2FF7" font-size="13" font-weight="700" letter-spacing="1.5" opacity="0.8">CONSISTENT HASH RING</text>
+      <text x="400" y="325" text-anchor="middle" fill="#94a3b8" font-size="9">2^16 = 65,536 virtual shards &bull; RF=3 replication</text>
+
+      <!-- Fan-out arrows from Coordinator to Ring Nodes -->
+      <line x1="340" y1="240" x2="145" y2="355" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+      <line x1="370" y1="240" x2="280" y2="355" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+      <line x1="392" y1="240" x2="400" y2="355" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+      <line x1="415" y1="240" x2="520" y2="355" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <line x1="440" y1="240" x2="640" y2="355" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <line x1="460" y1="240" x2="755" y2="355" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3"/>
+
+      <!-- ===== STORAGE NODES (6 arranged in semi-circle) ===== -->
+      <!-- Node 1 (far left) -->
+      <g filter="url(#shadow)">
+        <rect x="80" y="360" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="80" y="360" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="145" y="379" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 1</text>
+        <!-- WAL icon (small log) -->
+        <g transform="translate(92, 398)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="120" y="407" fill="#f59e0b" font-size="9">WAL</text>
+        <!-- Memtable icon (RAM chip) -->
+        <g transform="translate(92, 418)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="120" y="429" fill="#00A699" font-size="9">Memtable</text>
+        <!-- SSTable icon (disk) -->
+        <g transform="translate(92, 440)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="120" y="452" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="145" y="475" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 0-10922</text>
+      </g>
+
+      <!-- Node 2 -->
+      <g filter="url(#shadow)">
+        <rect x="220" y="360" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="220" y="360" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="285" y="379" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 2</text>
+        <g transform="translate(232, 398)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="260" y="407" fill="#f59e0b" font-size="9">WAL</text>
+        <g transform="translate(232, 418)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="260" y="429" fill="#00A699" font-size="9">Memtable</text>
+        <g transform="translate(232, 440)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="260" y="452" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="285" y="475" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 10923-21845</text>
+      </g>
+
+      <!-- Node 3 -->
+      <g filter="url(#shadow)">
+        <rect x="360" y="370" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="360" y="370" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="425" y="389" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 3</text>
+        <g transform="translate(372, 408)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="400" y="417" fill="#f59e0b" font-size="9">WAL</text>
+        <g transform="translate(372, 428)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="400" y="439" fill="#00A699" font-size="9">Memtable</text>
+        <g transform="translate(372, 450)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="400" y="462" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="425" y="485" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 21846-32768</text>
+      </g>
+
+      <!-- Node 4 -->
+      <g filter="url(#shadow)">
+        <rect x="500" y="370" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="500" y="370" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="565" y="389" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 4</text>
+        <g transform="translate(512, 408)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="540" y="417" fill="#f59e0b" font-size="9">WAL</text>
+        <g transform="translate(512, 428)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="540" y="439" fill="#00A699" font-size="9">Memtable</text>
+        <g transform="translate(512, 450)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="540" y="462" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="565" y="485" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 32769-43690</text>
+      </g>
+
+      <!-- Node 5 -->
+      <g filter="url(#shadow)">
+        <rect x="640" y="360" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="640" y="360" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="705" y="379" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 5</text>
+        <g transform="translate(652, 398)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="680" y="407" fill="#f59e0b" font-size="9">WAL</text>
+        <g transform="translate(652, 418)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="680" y="429" fill="#00A699" font-size="9">Memtable</text>
+        <g transform="translate(652, 440)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="680" y="452" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="705" y="475" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 43691-54613</text>
+      </g>
+
+      <!-- Node 6 -->
+      <g filter="url(#shadow)">
+        <rect x="780" y="360" width="130" height="120" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <rect x="780" y="360" width="130" height="28" rx="10" fill="url(#g3)" opacity="0.9"/>
+        <text x="845" y="379" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Node 6</text>
+        <g transform="translate(792, 398)">
+          <rect x="0" y="0" width="14" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
+          <line x1="3" y1="3" x2="11" y2="3" stroke="#1a1a2e" stroke-width="1"/>
+          <line x1="3" y1="6" x2="9" y2="6" stroke="#1a1a2e" stroke-width="1"/>
+        </g>
+        <text x="820" y="407" fill="#f59e0b" font-size="9">WAL</text>
+        <g transform="translate(792, 418)">
+          <rect x="2" y="0" width="10" height="12" rx="1" fill="#00A699" opacity="0.8"/>
+          <line x1="0" y1="3" x2="2" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="6" x2="2" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="2" y2="9" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="3" x2="14" y2="3" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="6" x2="14" y2="6" stroke="#00A699" stroke-width="1.5"/>
+          <line x1="12" y1="9" x2="14" y2="9" stroke="#00A699" stroke-width="1.5"/>
+        </g>
+        <text x="820" y="429" fill="#00A699" font-size="9">Memtable</text>
+        <g transform="translate(792, 440)">
+          <ellipse cx="7" cy="2" rx="7" ry="2" fill="#428BF9" opacity="0.7"/>
+          <rect x="0" y="2" width="14" height="10" fill="#428BF9" opacity="0.6"/>
+          <ellipse cx="7" cy="12" rx="7" ry="2" fill="#428BF9" opacity="0.8"/>
+        </g>
+        <text x="820" y="452" fill="#428BF9" font-size="9">SSTables</text>
+        <text x="845" y="475" text-anchor="middle" fill="#94a3b8" font-size="7">vshards 54614-65535</text>
+      </g>
+
+      <!-- ===== REPLICATION ARROWS (RF=3 between adjacent nodes) ===== -->
+      <!-- Node 1 <-> Node 2 -->
+      <line x1="210" y1="415" x2="220" y2="415" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <line x1="220" y1="425" x2="210" y2="425" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <!-- Node 2 <-> Node 3 -->
+      <line x1="350" y1="425" x2="360" y2="425" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <line x1="360" y1="435" x2="350" y2="435" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <!-- Node 3 <-> Node 4 -->
+      <line x1="490" y1="425" x2="500" y2="425" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <line x1="500" y1="435" x2="490" y2="435" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <!-- Node 4 <-> Node 5 -->
+      <line x1="630" y1="425" x2="640" y2="425" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <line x1="640" y1="435" x2="630" y2="435" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <!-- Node 5 <-> Node 6 -->
+      <line x1="770" y1="415" x2="780" y2="415" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <line x1="780" y1="425" x2="770" y2="425" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+      <!-- Node 6 wraps to Node 1 (curved) -->
+      <path d="M845,480 Q845,560 460,560 Q80,560 80,480" fill="none" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+
+      <!-- Replication label -->
+      <rect x="380" y="540" width="140" height="22" rx="6" fill="rgba(123,47,247,0.15)" stroke="#7B2FF7" stroke-width="1"/>
+      <text x="450" y="555" text-anchor="middle" fill="#7B2FF7" font-size="9" font-weight="600">RF=3 Async Replication</text>
+
+      <!-- ===== WRITE FLOW ANNOTATION ===== -->
+      <g transform="translate(840, 50)">
+        <rect x="0" y="0" width="230" height="120" rx="10" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
+        <text x="115" y="20" text-anchor="middle" fill="#FF5A5F" font-size="10" font-weight="700">WRITE FLOW</text>
+        <text x="10" y="38" fill="#94a3b8" font-size="8">1. Client SDK hashes key</text>
+        <text x="10" y="52" fill="#94a3b8" font-size="8">2. Coordinator routes to primary</text>
+        <text x="10" y="66" fill="#94a3b8" font-size="8">3. Write to W nodes (quorum W=2)</text>
+        <text x="10" y="80" fill="#94a3b8" font-size="8">4. Each node: WAL append</text>
+        <text x="10" y="94" fill="#94a3b8" font-size="8">5. Insert into Memtable</text>
+        <text x="10" y="108" fill="#94a3b8" font-size="8">6. Flush to SSTable when full</text>
+      </g>
+
+      <!-- ===== READ FLOW ANNOTATION ===== -->
+      <g transform="translate(840, 185)">
+        <rect x="0" y="0" width="230" height="90" rx="10" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
+        <text x="115" y="20" text-anchor="middle" fill="#00A699" font-size="10" font-weight="700">READ FLOW</text>
+        <text x="10" y="38" fill="#94a3b8" font-size="8">1. Client SDK hashes key</text>
+        <text x="10" y="52" fill="#94a3b8" font-size="8">2. Coordinator routes to R nodes</text>
+        <text x="10" y="66" fill="#94a3b8" font-size="8">3. Read from Memtable first</text>
+        <text x="10" y="80" fill="#94a3b8" font-size="8">4. Fallback: Bloom filter + SSTable</text>
+      </g>
+
+      <!-- ===== NUMBERED STEP CIRCLES ===== -->
+      <!-- Step 1: Client Application -> Client SDK (hash key to determine shard) -->
+      <circle cx="392" cy="108" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="392" y="112" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Step 2: Client SDK -> Coordinator/Router Node (route to correct node) -->
+      <circle cx="392" cy="178" r="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="392" y="182" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+      <!-- Step 3: Coordinator -> ZooKeeper/etcd (lookup shard mapping if cache miss) -->
+      <circle cx="555" cy="208" r="10" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+      <text x="555" y="212" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+      <!-- Step 4: Coordinator -> Target Storage Node (forward read/write request) -->
+      <circle cx="310" cy="295" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="310" y="299" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+      <!-- Step 5: Storage Node: Write to WAL (durability guarantee) -->
+      <circle cx="170" cy="400" r="10" fill="#00A699" stroke="#fff" stroke-width="1.5"/>
+      <text x="170" y="404" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+      <!-- Step 6: Storage Node: Write to Memtable (in-memory for fast reads) -->
+      <circle cx="170" cy="425" r="10" fill="#428BF9" stroke="#fff" stroke-width="1.5"/>
+      <text x="170" y="429" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+      <!-- Step 7: Storage Node -> Replica Nodes (async replication, RF=3) -->
+      <circle cx="450" cy="554" r="10" fill="#7B2FF7" stroke="#fff" stroke-width="1.5"/>
+      <text x="450" y="558" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+      <!-- Step 8: Memtable flush -> SSTable on disk (when memtable full) -->
+      <circle cx="170" cy="452" r="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="170" y="456" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+      <!-- Step 9: Compaction: merge SSTables (background process) -->
+      <circle cx="565" cy="492" r="10" fill="#FC642D" stroke="#fff" stroke-width="1.5"/>
+      <text x="565" y="496" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+      <!-- Step 10: Read path: Memtable -> Block Cache -> Bloom Filter -> SSTable -->
+      <circle cx="1060" cy="230" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="1060" y="234" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">10</text>
+
+      <!-- ===== LEGEND ===== -->
+      <g transform="translate(15, 580)">
+        <text x="0" y="12" fill="#1e293b" font-size="10" font-weight="600">LEGEND:</text>
+        <line x1="70" y1="8" x2="100" y2="8" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+        <text x="105" y="12" fill="#94a3b8" font-size="9">Sync request</text>
+        <line x1="185" y1="8" x2="215" y2="8" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="220" y="12" fill="#94a3b8" font-size="9">Async / optional</text>
+        <line x1="320" y1="8" x2="350" y2="8" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowBidi)"/>
+        <text x="355" y="12" fill="#7B2FF7" font-size="9">Replication</text>
+        <rect x="430" y="1" width="12" height="12" rx="2" fill="#f59e0b" opacity="0.8"/>
+        <text x="447" y="12" fill="#f59e0b" font-size="9">WAL</text>
+        <rect x="480" y="1" width="12" height="12" rx="2" fill="#00A699" opacity="0.8"/>
+        <text x="497" y="12" fill="#00A699" font-size="9">Memtable</text>
+        <rect x="555" y="1" width="12" height="12" rx="2" fill="#428BF9" opacity="0.8"/>
+        <text x="572" y="12" fill="#428BF9" font-size="9">SSTable</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>From &rarr; To</th>
+          <th>Protocol</th>
+          <th>What Happens</th>
+          <th>Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">1</span></td>
+          <td>Client Application &rarr; Client SDK</td>
+          <td><code>In-process</code></td>
+          <td>SDK hashes the key (consistent hash / jump hash) to determine which virtual shard owns the key</td>
+          <td>&lt;0.01 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">2</span></td>
+          <td>Client SDK &rarr; Coordinator / Router Node</td>
+          <td><code>gRPC</code></td>
+          <td>SDK routes the request to the coordinator node responsible for that shard range; connection pooled</td>
+          <td>~1-3 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#10b981;color:#fff;font-weight:800;font-size:11px;">3</span></td>
+          <td>Coordinator &rarr; ZooKeeper / etcd</td>
+          <td><code>TCP</code></td>
+          <td>If local shard-map cache is stale or missing, lookup current shard &rarr; node mapping from metadata service</td>
+          <td>~2-10 ms (cache miss)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">4</span></td>
+          <td>Coordinator &rarr; Target Storage Node</td>
+          <td><code>gRPC</code></td>
+          <td>Forward the read/write request to the primary storage node for that shard; fan out to W/R nodes for quorum</td>
+          <td>~1-2 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">5</span></td>
+          <td>Storage Node: Write to WAL</td>
+          <td><code>Disk I/O</code></td>
+          <td>Append-only sequential write to Write-Ahead Log on disk for durability; fsync for crash safety</td>
+          <td>~0.1-0.5 ms (SSD)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">6</span></td>
+          <td>Storage Node: Write to Memtable</td>
+          <td><code>In-memory</code></td>
+          <td>Insert key-value into in-memory skip list (sorted); serves subsequent reads immediately</td>
+          <td>~0.01 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:11px;">7</span></td>
+          <td>Storage Node &rarr; Replica Nodes</td>
+          <td><code>gRPC (async)</code></td>
+          <td>Asynchronously replicate write to RF&minus;1 peer nodes (RF=3 &rarr; 2 replicas); quorum W=2 for ACK</td>
+          <td>~1-5 ms (async)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">8</span></td>
+          <td>Memtable flush &rarr; SSTable on disk</td>
+          <td><code>Disk I/O</code></td>
+          <td>When memtable reaches threshold (~64MB), freeze it, write sorted SSTable + Bloom filter + index to disk, delete WAL</td>
+          <td>~50-200 ms (background)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FC642D;color:#fff;font-weight:800;font-size:11px;">9</span></td>
+          <td>Compaction: merge SSTables</td>
+          <td><code>Disk I/O</code></td>
+          <td>Background process merges overlapping SSTables (leveled or size-tiered), removes tombstones, reclaims space</td>
+          <td>Seconds (background)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">10</span></td>
+          <td>Read path: Memtable &rarr; Cache &rarr; Bloom &rarr; SSTable</td>
+          <td><code>Mixed</code></td>
+          <td>Check memtable first, then block cache, then Bloom filter to skip irrelevant SSTables, finally read from SSTable on disk</td>
+          <td>~0.01-2 ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3>Happy Path: Write Success Flow (PUT)</h3>
+  <div class="card" style="border-left: 3px solid var(--success);">
+    <p style="margin-bottom:16px;">The complete success flow when a client writes a key-value pair:</p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">1</span>
+        <span>Client calls <code>put(key, value)</code> &rarr; <strong>Client SDK</strong> computes consistent hash of the key to identify the target shard</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">2</span>
+        <span>SDK looks up shard &rarr; node mapping and routes request to the <strong>Coordinator / Router Node</strong></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#10b981;color:#fff;font-weight:800;font-size:12px;">3</span>
+        <span>Coordinator verifies shard ownership (cache hit from <strong>ZooKeeper/etcd</strong>) and identifies the primary + replica nodes</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">4</span>
+        <span>Coordinator forwards the write to the <strong>target storage node</strong> (primary for that shard)</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:12px;">5</span>
+        <span>Storage node appends the write to the <strong>WAL</strong> (sequential disk I/O, fsync) for crash durability</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:12px;">6</span>
+        <span>Storage node inserts key-value into the in-memory <strong>Memtable</strong> (skip list) for fast subsequent reads</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:12px;">7</span>
+        <span>Node sends ACK once quorum <strong>W=2</strong> is reached (local + 1 replica) &rarr; async replication to remaining RF&minus;1 nodes</span>
+      </div>
+    </div>
+    <p style="margin-top:16px; color:var(--success); font-weight:600;">Result: Client receives ACK with version. Data is durable (WAL), fast-readable (Memtable), and replicated (RF=3). Total latency: ~2-5 ms.</p>
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3>Failure Paths</h3>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Fails At</th>
+          <th>Failure Scenario</th>
+          <th>Impact</th>
+          <th>Recovery Strategy</th>
+          <th>Client Sees</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">4</span> Node Failure</td>
+          <td>Primary storage node crashes mid-write or becomes unreachable</td>
+          <td>Writes to that shard fail until failover; reads may stale</td>
+          <td>Replica nodes serve reads immediately (RF=3); coordinator re-routes writes to next replica; hinted handoff queues missed writes; once node recovers, anti-entropy (Merkle tree) repairs diverged data</td>
+          <td>Retry succeeds in ~1-3s after failover; no data loss if W=2 was met before crash</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:11px;">7</span> Network Partition</td>
+          <td>Network split isolates a subset of nodes from the rest of the cluster</td>
+          <td>CAP trade-off: nodes on minority side cannot reach quorum; split-brain risk</td>
+          <td>AP mode: serve stale reads, accept writes with conflict resolution (vector clocks / LWW). CP mode: reject writes on minority side until partition heals. Fencing tokens prevent stale leaders from accepting writes.</td>
+          <td>AP: reads may return stale data; CP: writes rejected with <code>503 Unavailable</code> until partition heals</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">7</span> Split Brain</td>
+          <td>Two nodes both believe they are the primary for the same shard after a partition</td>
+          <td>Conflicting writes accepted on both sides; data divergence</td>
+          <td>Fencing tokens from ZooKeeper/etcd: old leader's token is rejected by storage layer; read-repair and anti-entropy reconcile after partition heals</td>
+          <td>Brief period of dual writes; resolved transparently via conflict resolution (LWW or vector clocks)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">2</span> Coordinator Crash</td>
+          <td>Coordinator/router node crashes or becomes unresponsive</td>
+          <td>In-flight requests to that coordinator fail; new requests need re-routing</td>
+          <td>Client SDK detects failure (timeout/connection reset), retries to a different coordinator node from its known node list; ZooKeeper updates shard map to reflect new coordinator</td>
+          <td>Single retry with ~100ms delay; transparent failover</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FC642D;color:#fff;font-weight:800;font-size:11px;">9</span> Disk Full</td>
+          <td>Storage node disk reaches capacity; cannot flush memtable or complete compaction</td>
+          <td>Writes stall (backpressure); memtable cannot flush; compaction blocked</td>
+          <td>Compaction backpressure: throttle incoming writes, alert ops; emergency compaction to reclaim tombstone space; add new node and rebalance shards; disk usage monitoring with alerts at 80%</td>
+          <td>Write latency spikes; eventual <code>503</code> if backpressure threshold exceeded</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════ 2. REQUIREMENTS ════════════════════════════ -->
+<section id="requirements" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--secondary), #00d4aa);">2</span>
+    <h2>Requirements</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="tag tag-green">Functional</span> Core Requirements</h3>
+      <ul>
+        <li><strong>get(key)</strong> &mdash; Retrieve value by exact key match</li>
+        <li><strong>put(key, value)</strong> &mdash; Store or update a key-value pair</li>
+        <li><strong>delete(key)</strong> &mdash; Soft-delete via tombstone (optional)</li>
+        <li>Keys are opaque strings (max 256B); values are byte arrays (max 1MB)</li>
+        <li>No range queries, no secondary indexes, no transactions</li>
+        <li>Versioned values for conflict detection</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag tag-red">Non-Functional</span> Performance &amp; Scale</h3>
+      <ul>
+        <li><strong>&lt;5ms p99 reads</strong> &mdash; Must serve from memory or SSD</li>
+        <li><strong>&lt;10ms p99 writes</strong> &mdash; Must be durable before ACK</li>
+        <li><strong>10TB+ total data</strong> &mdash; Far exceeds single-node capacity</li>
+        <li><strong>100:1 to 10:1 read:write ratio</strong> (read-heavy workload)</li>
+        <li><strong>Horizontal scaling</strong> &mdash; Add nodes without downtime</li>
+        <li><strong>99.99% availability</strong> &mdash; ~52 min downtime per year</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-orange">
+    <div class="callout-title">Clarifying Questions to Ask the Interviewer</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      1) <strong>Consistency model?</strong> Strong vs eventual? (Assume eventual, tunable) &nbsp;&bull;&nbsp;
+      2) <strong>Value size distribution?</strong> (Assume avg ~1KB, max 1MB) &nbsp;&bull;&nbsp;
+      3) <strong>Read:write ratio?</strong> (Assume ~10:1 to 100:1) &nbsp;&bull;&nbsp;
+      4) <strong>Multi-datacenter?</strong> (Yes, active-active) &nbsp;&bull;&nbsp;
+      5) <strong>Failure tolerance?</strong> (Survive any single node/rack failure) &nbsp;&bull;&nbsp;
+      6) <strong>Data model?</strong> (Flat K/V, no nesting, no relations)
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 3. CAPACITY ESTIMATION ════════════════════════════ -->
+<section id="capacity" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--accent), #ff8534);">3</span>
+    <h2>Capacity Estimation</h2>
+  </div>
+
+  <div class="grid-4">
+    <div class="metric-block">
+      <span class="metric-val" style="color: var(--primary);">10B</span>
+      <span class="metric-label">Total Keys</span>
+    </div>
+    <div class="metric-block">
+      <span class="metric-val" style="color: #1e293b;">~1KB</span>
+      <span class="metric-label">Avg Value Size</span>
+    </div>
+    <div class="metric-block">
+      <span class="metric-val" style="color: var(--accent);">10TB</span>
+      <span class="metric-label">Raw Data</span>
+    </div>
+    <div class="metric-block">
+      <span class="metric-val" style="color: var(--purple);">30TB</span>
+      <span class="metric-label">With RF=3</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 1.5rem;">
+    <h3>Back-of-the-Envelope Math</h3>
+    <div class="code-block">
+      <span class="code-label">Capacity</span>
+<span class="cm">── Data Volume ──</span>
+Total keys            = <span class="num">10 billion</span> (10^10)
+Avg value size        = <span class="num">1 KB</span>
+Raw data              = 10B &times; 1KB = <span class="num">10 TB</span>
+Replication factor    = <span class="num">3</span>
+Total storage         = 10 TB &times; 3 = <span class="num">30 TB</span>
+Per-node storage      = ~1 TB (SSD) &rarr; need <span class="num">~30 nodes</span>
+
+<span class="cm">── Throughput ──</span>
+Read QPS              = <span class="num">100,000</span> reads/sec
+Write QPS             = <span class="num">10,000</span> writes/sec  (10:1 ratio)
+Per-node read QPS     = 100K / 30 = <span class="num">~3,333</span> reads/sec/node
+Per-node write QPS    = 10K / 30  = <span class="num">~333</span> writes/sec/node
+
+<span class="cm">── Bandwidth ──</span>
+Read bandwidth        = 100K &times; 1KB = <span class="num">100 MB/s</span>
+Write bandwidth       = 10K  &times; 1KB = <span class="num">10 MB/s</span>
+Replication bandwidth = 10 MB/s &times; 2 (async copies) = <span class="num">+20 MB/s</span>
+
+<span class="cm">── Memory ──</span>
+Hot key cache (20%)   = 10TB &times; 0.2 = <span class="num">2 TB total</span>
+Per-node cache        = 2TB / 30  = <span class="num">~67 GB RAM per node</span>
+Bloom filters         = ~10 bits/key &times; 333M keys/node = <span class="num">~0.4 GB/node</span>
+    </div>
+  </div>
+
+  <div class="callout callout-green">
+    <div class="callout-title">Node Spec (per node)</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      <strong>CPU:</strong> 16-32 cores &nbsp;&bull;&nbsp;
+      <strong>RAM:</strong> 128 GB (67GB cache + memtable + OS) &nbsp;&bull;&nbsp;
+      <strong>Storage:</strong> 2&times;1TB NVMe SSD (RAID 1) &nbsp;&bull;&nbsp;
+      <strong>Network:</strong> 10 Gbps &nbsp;&bull;&nbsp;
+      <strong>Count:</strong> ~30-40 nodes (with headroom) across 3 racks minimum
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 4. PARTITIONING ════════════════════════════ -->
+<section id="partitioning" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--purple), #9b5eff);">4</span>
+    <h2>Partitioning &amp; Consistent Hashing</h2>
+  </div>
+
+  <div class="card">
+    <h3>The Problem: Why Not <code>hash(key) % N</code>?</h3>
+    <p>Naive modular hashing maps <code>key &rarr; hash(key) % N</code> where N is the number of nodes. This works <em>until you add or remove a node</em>:</p>
+    <div class="code-block">
+      <span class="code-label">Problem</span>
+<span class="cm">── With 3 nodes: hash(key) % 3 ──</span>
+key "user:42"  &rarr; hash = 17 &rarr; 17 % <span class="num">3</span> = <span class="num">2</span> &rarr; Node C
+key "user:99"  &rarr; hash = 11 &rarr; 11 % <span class="num">3</span> = <span class="num">2</span> &rarr; Node C
+
+<span class="cm">── Add 1 node (N=3 &rarr; N=4): hash(key) % 4 ──</span>
+key "user:42"  &rarr; hash = 17 &rarr; 17 % <span class="num">4</span> = <span class="num">1</span> &rarr; Node B  <span class="op">&larr; MOVED!</span>
+key "user:99"  &rarr; hash = 11 &rarr; 11 % <span class="num">4</span> = <span class="num">3</span> &rarr; Node D  <span class="op">&larr; MOVED!</span>
+
+<span class="cm">Result: ~75% of keys need to move when adding 1 node!</span>
+<span class="cm">In general: (N-1)/N keys must be remapped. Catastrophic.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Solution: Consistent Hashing Ring</h3>
+    <p>Map both <em>nodes</em> and <em>keys</em> onto the same circular hash space [0, 2<sup>128</sup>). Each key is assigned to the <strong>first node encountered clockwise</strong> from its hash position.</p>
+    <div class="diagram">
+      <pre>
+                        <span style="color:var(--text-muted);">0</span>
+                     <span style="color:var(--text-muted);">. . .</span>
+                <span style="color:var(--text-muted);">.</span>           <span style="color:var(--text-muted);">.</span>
+            <span style="color:var(--text-muted);">.</span>    <span style="color:var(--primary);">[Node A]</span>    <span style="color:var(--text-muted);">.</span>
+          <span style="color:var(--text-muted);">.</span>                       <span style="color:var(--text-muted);">.</span>
+         <span style="color:var(--text-muted);">.</span>   <span style="color:var(--warning);">x key:42</span>              <span style="color:var(--text-muted);">.</span>
+        <span style="color:var(--text-muted);">.</span>      <span style="color:var(--text-muted);">|</span>                    <span style="color:var(--text-muted);">.</span>         <span style="color:var(--text-muted);">key:42 hashes between A and B</span>
+        <span style="color:var(--text-muted);">.</span>      <span style="color:var(--text-muted);">| walks clockwise</span>     <span style="color:var(--text-muted);">.</span>         <span style="color:var(--text-muted);">walks CW &rarr; lands on Node B</span>
+        <span style="color:var(--text-muted);">.</span>      <span style="color:var(--text-muted);">v</span>                    <span style="color:var(--text-muted);">.</span>
+         <span style="color:var(--text-muted);">.</span>   <span style="color:var(--secondary);">[Node B]</span>             <span style="color:var(--text-muted);">.</span>         <span style="color:var(--text-muted);">Adding Node E between B and C:</span>
+          <span style="color:var(--text-muted);">.</span>                       <span style="color:var(--text-muted);">.</span>         <span style="color:var(--text-muted);">only keys in arc(B,E) move</span>
+            <span style="color:var(--text-muted);">.</span>                   <span style="color:var(--text-muted);">.</span>           <span style="color:var(--text-muted);">= ~1/N of total keys</span>
+              <span style="color:var(--text-muted);">.</span>    <span style="color:var(--blue);">[Node C]</span>  <span style="color:var(--text-muted);">.</span>
+                <span style="color:var(--text-muted);">.</span>           <span style="color:var(--text-muted);">.</span>
+                     <span style="color:var(--text-muted);">. . .</span>
+                      <span style="color:var(--text-muted);">2^128</span>
+      </pre>
+    </div>
+    <div class="callout callout-green">
+      <div class="callout-title">Key Benefit</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">When adding a node, only <strong>~1/N of keys</strong> need to move (from the successor node), not (N-1)/N. For 30 nodes, that is ~3% of data moved vs ~97%.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Virtual Nodes (Vnodes) / Virtual Shards</h3>
+    <p>With only N physical nodes on the ring, data distribution is <strong>uneven</strong> &mdash; some arcs are huge, others tiny. Virtual nodes solve this:</p>
+    <ul>
+      <li>Each physical node claims <strong>many positions</strong> on the ring (e.g., 100-1000 vnodes per node)</li>
+      <li>Total vnodes: <strong>2<sup>16</sup> = 65,536 virtual shards</strong> distributed across all physical nodes</li>
+      <li>Each physical node owns <code>65536 / 30 &approx; 2,185 vnodes</code></li>
+      <li>Data distribution becomes <strong>statistically even</strong> (law of large numbers)</li>
+      <li>When a node fails, its vnodes are spread across <em>many</em> other nodes &mdash; recovery load is distributed</li>
+    </ul>
+
+    <div class="code-block">
+      <span class="code-label">Virtual Node Mapping</span>
+<span class="cm">── Hash ring with 2^16 = 65,536 virtual shards ──</span>
+
+<span class="type">Ring position</span>  &rarr;  <span class="type">Vnode ID</span>   &rarr;  <span class="type">Physical Node</span>
+hash(key) = <span class="num">0x3A7F...</span>  &rarr;  vnode <span class="num">#14,975</span>  &rarr;  <span class="str">Node-12</span>
+hash(key) = <span class="num">0x8B12...</span>  &rarr;  vnode <span class="num">#35,602</span>  &rarr;  <span class="str">Node-7</span>
+hash(key) = <span class="num">0xF100...</span>  &rarr;  vnode <span class="num">#61,696</span>  &rarr;  <span class="str">Node-22</span>
+
+<span class="cm">── Vnode-to-node mapping (stored in metadata service) ──</span>
+vnode #0      &rarr; Node-1    |  vnode #2185  &rarr; Node-2
+vnode #1      &rarr; Node-1    |  vnode #2186  &rarr; Node-2
+  ...                      |    ...
+vnode #2184   &rarr; Node-1    |  vnode #4369  &rarr; Node-2
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Shard Location: How Does a Client Find the Right Node?</h3>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Approach</th>
+            <th>How It Works</th>
+            <th>Pros</th>
+            <th>Cons</th>
+            <th>Used By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Master Coordinators</strong></td>
+            <td>Central metadata service (e.g., ZooKeeper) stores vnode&rarr;node map. Clients query coordinator first, then talk to data node.</td>
+            <td>Simple, consistent view</td>
+            <td>SPOF risk, extra hop</td>
+            <td>HBase, MongoDB</td>
+          </tr>
+          <tr>
+            <td><strong>Gossip Protocol</strong></td>
+            <td>Every node knows the full ring. Client can contact <em>any</em> node; that node forwards if needed.</td>
+            <td>No SPOF, decentralized</td>
+            <td>Eventual consistency of ring metadata, more complex</td>
+            <td>Cassandra, Riak</td>
+          </tr>
+          <tr>
+            <td><strong>Client-Side Routing</strong></td>
+            <td>Smart client library holds a cached copy of the ring map. Routes directly to the correct node &mdash; zero extra hops.</td>
+            <td>Lowest latency</td>
+            <td>Client complexity, stale routing during rebalance</td>
+            <td>DynamoDB client, Redis Cluster</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-purple">
+      <div class="callout-title">Recommended: Gossip + Client-Side Cache</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Use <strong>gossip</strong> between nodes to propagate ring changes, and give the <strong>client library a cached ring map</strong> (refreshed via gossip or polling). Client routes directly to the right node (&lt;1ms overhead). If stale, the contacted node returns a <code>MOVED</code> redirect with the correct node.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 5. REPLICATION & CONSISTENCY ════════════════════════════ -->
+<section id="replication" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--blue), #5fa3ff);">5</span>
+    <h2>Replication &amp; Consistency</h2>
+  </div>
+
+  <div class="card">
+    <h3>Replication Factor (RF=3)</h3>
+    <p>Every key is stored on <strong>3 nodes</strong>: the primary owner (clockwise successor on the ring) plus the next 2 distinct physical nodes. This ensures any single node failure leaves 2 copies available.</p>
+    <div class="diagram">
+      <pre>
+  Write "user:42" &rarr; hash lands in vnode owned by <span style="color:var(--primary);">Node A</span>
+
+  <span style="color:var(--primary);">Node A</span>  (primary)  &larr; Client writes here
+     |
+     +----replicate----&rarr;  <span style="color:var(--secondary);">Node B</span>  (replica 1, next CW)
+     |
+     +----replicate----&rarr;  <span style="color:var(--blue);">Node C</span>  (replica 2, next-next CW)
+
+  Preference list: [A, B, C]  (skips virtual nodes on same physical host)
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>When to ACK: Write Strategies</h3>
+    <p>With N=3 replicas, the coordinator chooses how many replicas must acknowledge before returning success to the client:</p>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>W (Write ACKs)</th>
+            <th>R (Read ACKs)</th>
+            <th>Consistency</th>
+            <th>Latency</th>
+            <th>Availability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag tag-red">Write-All</span></td>
+            <td>W=3</td>
+            <td>R=1</td>
+            <td>Strong (reads always fresh)</td>
+            <td>Slow (wait for slowest)</td>
+            <td>Low (any 1 down = write fail)</td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-green">Write-One + Async</span></td>
+            <td>W=1</td>
+            <td>R=3</td>
+            <td>Weak (reads may be stale)</td>
+            <td>Fast writes</td>
+            <td>High (writes tolerate 2 down)</td>
+          </tr>
+          <tr>
+            <td style="background: rgba(123,47,247,0.08);"><span class="tag tag-purple">Quorum (Recommended)</span></td>
+            <td><strong>W=2</strong></td>
+            <td><strong>R=2</strong></td>
+            <td><strong>Strong (W+R &gt; N)</strong></td>
+            <td>Balanced</td>
+            <td>Good (tolerate 1 down)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-blue">
+      <div class="callout-title">The Quorum Formula: W + R &gt; N</div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        If <strong>W + R &gt; N</strong>, then any read quorum and any write quorum <em>must overlap by at least 1 node</em>, guaranteeing the reader sees the latest write. With N=3, W=2, R=2: every read touches at least one node that has the freshest data. This gives <strong>linearizable-like consistency</strong> without requiring all nodes to be up.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Vector Clocks for Conflict Resolution</h3>
+    <p>When replicas diverge (e.g., during a partition), we need to detect and resolve conflicts. <strong>Vector clocks</strong> track causality:</p>
+    <div class="code-block">
+      <span class="code-label">Vector Clock Example</span>
+<span class="cm">── Initial write by Node A ──</span>
+Client writes key "cart:77" to <span class="str">Node A</span>
+  version = { <span class="str">A:1</span> }  value = "item:shoes"
+
+<span class="cm">── Client reads from A, then writes via Node B ──</span>
+Client updates "cart:77" via <span class="str">Node B</span>
+  version = { <span class="str">A:1, B:1</span> }  value = "item:shoes,hat"
+
+<span class="cm">── CONCURRENT write during partition (client did NOT read latest) ──</span>
+Another client writes "cart:77" via <span class="str">Node A</span> (didn't see B:1)
+  version = { <span class="str">A:2</span> }  value = "item:shoes,jacket"
+
+<span class="cm">── Conflict detected! ──</span>
+{A:1, B:1} and {A:2} are <span class="op">CONCURRENT</span> (neither dominates)
+  {A:1, B:1} has B:1 which {A:2} lacks
+  {A:2}      has A:2 which {A:1,B:1} lacks
+
+<span class="cm">── Resolution ──</span>
+Option 1: <span class="kw">Last-Write-Wins (LWW)</span> &mdash; use wall-clock timestamp, discard one
+Option 2: <span class="kw">Application-level merge</span> &mdash; return both to client, let app merge
+           (e.g., union of cart items: "shoes,hat,jacket")
+    </div>
+
+    <div class="grid-2" style="margin-top: 1rem;">
+      <div class="callout callout-red">
+        <div class="callout-title">Last-Write-Wins (LWW)</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Simple: highest timestamp wins. Data loss risk (silently drops one write). Used when losing a concurrent write is acceptable (e.g., session data, caches). Cassandra defaults to this.</p>
+      </div>
+      <div class="callout callout-green">
+        <div class="callout-title">Application-Level Merge</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Return all conflicting versions (siblings) to the client. Application merges using domain logic (e.g., set union for a shopping cart). More correct, more complex. Amazon's original Dynamo used this.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 6. PRIMARY/SECONDARY vs CONSENSUS ════════════════════════════ -->
+<section id="consensus" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--warning), #ffb84d);">6</span>
+    <h2>Primary/Secondary vs Consensus vs Gossip</h2>
+  </div>
+
+  <div class="card">
+    <h3>Replication Topology Comparison</h3>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th style="color:var(--primary);">Master-Slave</th>
+            <th style="color:var(--purple);">Raft / Paxos</th>
+            <th style="color:var(--secondary);">Gossip / Dynamo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Model</strong></td>
+            <td>Single leader per shard; followers replicate</td>
+            <td>Elected leader via consensus; log replication</td>
+            <td>Leaderless; any replica accepts reads/writes</td>
+          </tr>
+          <tr>
+            <td><strong>Consistency</strong></td>
+            <td>Strong (sync) or eventual (async)</td>
+            <td>Strong (linearizable)</td>
+            <td>Eventual (tunable via quorum)</td>
+          </tr>
+          <tr>
+            <td><strong>Write Path</strong></td>
+            <td>All writes go to master</td>
+            <td>All writes go to leader</td>
+            <td>Client writes to any node (coordinator)</td>
+          </tr>
+          <tr>
+            <td><strong>Availability</strong></td>
+            <td>Master down = no writes until failover</td>
+            <td>Leader down = re-election (~1-5s gap)</td>
+            <td>Any node down = no disruption (W&lt;N)</td>
+          </tr>
+          <tr>
+            <td><strong>Failover</strong></td>
+            <td>Manual or sentinel-based promotion</td>
+            <td>Automatic leader election</td>
+            <td>No failover needed (no leader)</td>
+          </tr>
+          <tr>
+            <td><strong>Split Brain</strong></td>
+            <td>Risk: two masters after partition</td>
+            <td>Prevented: majority quorum required</td>
+            <td>Accepted: conflicts resolved later</td>
+          </tr>
+          <tr>
+            <td><strong>Complexity</strong></td>
+            <td>Simple</td>
+            <td>Complex (consensus protocol)</td>
+            <td>Moderate (conflict resolution is hard)</td>
+          </tr>
+          <tr>
+            <td><strong>Latency</strong></td>
+            <td>Low (async), higher (sync replication)</td>
+            <td>Higher (must wait for majority)</td>
+            <td>Lowest (tunable W/R)</td>
+          </tr>
+          <tr>
+            <td><strong>Best For</strong></td>
+            <td>Simple read replicas, caching layer</td>
+            <td>Metadata, config, strong consistency needs</td>
+            <td>High availability KV stores</td>
+          </tr>
+          <tr>
+            <td><strong>Examples</strong></td>
+            <td>MySQL replication, Redis Sentinel</td>
+            <td>etcd, CockroachDB, TiKV</td>
+            <td>DynamoDB, Cassandra, Riak</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-purple">
+    <div class="callout-title">Our Choice: Dynamo-Style (Leaderless) for the Data Path + Raft for Metadata</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      <strong>Data operations (get/put):</strong> Use leaderless quorum replication (Dynamo model). This maximizes availability and minimizes latency &mdash; no single-point leader bottleneck.<br><br>
+      <strong>Metadata operations (ring membership, vnode mapping):</strong> Use a small Raft cluster (3-5 nodes) for strong consistency. Membership changes are rare and <em>must</em> be consistent to prevent data loss.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 7. STORAGE ENGINE ════════════════════════════ -->
+<section id="storage" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--success), #34d399);">7</span>
+    <h2>Storage Engine</h2>
+  </div>
+
+  <div class="vs-container">
+    <div class="card" style="border-color: #e5e7eb;">
+      <h3 style="color: #1e293b;">LSM Tree (Log-Structured Merge)</h3>
+      <p><strong>Write-optimized.</strong> All writes go to an in-memory sorted buffer (memtable), then flush to immutable sorted files (SSTables) on disk. Background compaction merges files.</p>
+      <ul>
+        <li>Write: <span class="hl-green">O(1)</span> amortized (append to memtable)</li>
+        <li>Read: <span class="hl">O(log N) &times; levels</span> (check memtable, then L0, L1...)</li>
+        <li>Space amplification: moderate (old versions until compacted)</li>
+        <li>Write amplification: high (data rewritten during compaction)</li>
+      </ul>
+      <p style="margin-top: 0.8rem;"><span class="tag tag-green">Used by:</span> Cassandra, RocksDB, LevelDB, HBase</p>
+    </div>
+    <div class="vs-divider">VS</div>
+    <div class="card" style="border-color: var(--blue);">
+      <h3 style="color: var(--blue);">B-Tree</h3>
+      <p><strong>Read-optimized.</strong> Fixed-size pages organized in a balanced tree. In-place updates. Mature, well-understood.</p>
+      <ul>
+        <li>Write: <span class="hl">O(log N)</span> (find page + update in place)</li>
+        <li>Read: <span class="hl-green">O(log N)</span> (tree traversal, fewer levels)</li>
+        <li>Space amplification: low (in-place updates)</li>
+        <li>Write amplification: moderate (page splits, WAL)</li>
+      </ul>
+      <p style="margin-top: 0.8rem;"><span class="tag tag-blue">Used by:</span> MySQL InnoDB, PostgreSQL, SQLite, BoltDB</p>
+    </div>
+  </div>
+
+  <div class="callout callout-green">
+    <div class="callout-title">Our Choice: LSM Tree</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      For a KV store with high write throughput and simple point lookups, <strong>LSM trees</strong> are the better fit. Writes are fast (sequential I/O, memtable-first). Read penalty is mitigated with <strong>Bloom filters</strong> (eliminate ~99% of unnecessary SSTable reads) and <strong>block cache</strong> (hot data in memory).
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Write Path: Memtable &rarr; SSTable &rarr; Compaction</h3>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--primary);">1</div>
+        <div class="step-title">Write-Ahead Log</div>
+        <div class="step-desc">Append write to WAL on disk (sequential, durable). If node crashes before flush, replay WAL to recover memtable.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--accent);">2</div>
+        <div class="step-title">Memtable Insert</div>
+        <div class="step-desc">Insert K/V into in-memory sorted structure (red-black tree or skip list). Typically 64-256MB before flush. Serves reads too.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--secondary);">3</div>
+        <div class="step-title">Flush to SSTable</div>
+        <div class="step-desc">When memtable is full, write it as an immutable, sorted SSTable file to disk. Create Bloom filter + index for the SSTable. Delete old WAL.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--purple);">4</div>
+        <div class="step-title">Compaction</div>
+        <div class="step-desc">Background process merges overlapping SSTables, removes tombstones and old versions. Leveled or size-tiered strategy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Read Path: Memory &rarr; Bloom &rarr; SSTable</h3>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--blue);">1</div>
+        <div class="step-title">Check Memtable</div>
+        <div class="step-desc">Look in active memtable + immutable memtable (being flushed). O(log N) in skip list. If found, return immediately.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--purple);">2</div>
+        <div class="step-title">Check Block Cache</div>
+        <div class="step-desc">Hot SSTable blocks cached in RAM. LRU eviction. Serves ~80-95% of reads without touching disk.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--secondary);">3</div>
+        <div class="step-title">Bloom Filter Check</div>
+        <div class="step-desc">For each SSTable level, check Bloom filter (in memory). "Definitely not here" = skip that SSTable. ~1% false positive rate.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--accent);">4</div>
+        <div class="step-title">SSTable Lookup</div>
+        <div class="step-desc">Binary search the sparse index, then read the data block from SSD. Return the most recent version. Typically 1-2 SSTables checked.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Storage Engine Data Structures</h3>
+    <div class="code-block">
+      <span class="code-label">On-Disk Layout</span>
+<span class="cm">── SSTable File Format ──</span>
++-------------------+
+|   Data Blocks     |  <span class="cm">&larr; Sorted K/V pairs, compressed (LZ4/Snappy)</span>
+|   [block 0]       |     Each block ~4KB-64KB
+|   [block 1]       |
+|   ...             |
++-------------------+
+|   Meta Block      |  <span class="cm">&larr; Bloom filter (10 bits/key)</span>
++-------------------+
+|   Index Block     |  <span class="cm">&larr; Sparse index: (last_key_in_block &rarr; block_offset)</span>
++-------------------+
+|   Footer          |  <span class="cm">&larr; Pointers to meta + index blocks, magic number</span>
++-------------------+
+
+<span class="cm">── Directory Structure (per node) ──</span>
+/data/kv-store/
+  wal/
+    wal-000001.log       <span class="cm">&larr; Active write-ahead log</span>
+    wal-000002.log       <span class="cm">&larr; Previous (being flushed)</span>
+  sstables/
+    L0/
+      sst-000010.sst     <span class="cm">&larr; Recently flushed (may overlap)</span>
+      sst-000011.sst
+    L1/
+      sst-000005.sst     <span class="cm">&larr; Compacted, non-overlapping</span>
+      sst-000006.sst
+    L2/
+      sst-000001.sst     <span class="cm">&larr; Oldest, largest level</span>
+      sst-000002.sst
+  manifest/
+    MANIFEST-000001      <span class="cm">&larr; Tracks which SSTables exist at each level</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 8. ERROR CASES ════════════════════════════ -->
+<section id="errors" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--danger), #ff6b6b);">8</span>
+    <h2>Error Cases &amp; Failure Handling</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="border-left: 4px solid var(--primary);">
+      <h3>Node Failure</h3>
+      <p><strong>Detection:</strong> Gossip protocol with heartbeats. Each node pings a random peer every 1-2 seconds. If a node misses 3+ heartbeats, it is marked <em>suspected</em>. After T seconds with no response confirmed by multiple nodes, it is declared <em>dead</em>.</p>
+      <ul>
+        <li><strong>Impact:</strong> Its vnodes are temporarily served by remaining replicas</li>
+        <li><strong>Recovery:</strong> When the node comes back, it uses <strong>anti-entropy</strong> (Merkle trees) to sync missed writes</li>
+        <li><strong>Permanent failure:</strong> If node does not return within threshold, reassign its vnodes to a replacement node and stream data from replicas</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--warning);">
+      <h3>Network Partition</h3>
+      <p><strong>CAP Theorem:</strong> During a partition, we cannot have both Consistency and Availability. Our choice:</p>
+      <ul>
+        <li><strong>AP mode (default):</strong> Accept writes on both sides of the partition. Resolve conflicts after partition heals using vector clocks + LWW/merge.</li>
+        <li><strong>CP mode (optional):</strong> Reject writes that cannot reach quorum. Return error to client. Use for critical data (e.g., financial).</li>
+        <li>Sloppy quorum: if the "right" nodes are unreachable, accept writes on <em>any</em> available node (hinted handoff)</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <h3>Split Brain</h3>
+      <p>In a leader-based model, a network partition can cause two nodes to both believe they are the master for the same shard.</p>
+      <ul>
+        <li><strong>Fencing tokens:</strong> Each leader election generates a monotonically increasing epoch number. Storage nodes reject writes from leaders with a stale epoch.</li>
+        <li><strong>In our Dynamo model:</strong> Split brain is less of a concern because there is <em>no leader</em>. Concurrent writes are detected via vector clocks and resolved.</li>
+        <li><strong>For metadata (Raft cluster):</strong> Split brain is prevented by the majority quorum requirement &mdash; a leader cannot exist without majority support.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--secondary);">
+      <h3>Anti-Entropy with Merkle Trees</h3>
+      <p>After a node recovers from failure, how does it know which keys are stale?</p>
+      <ul>
+        <li>Each node maintains a <strong>Merkle tree</strong> (hash tree) over its data per vnode range</li>
+        <li>Leaf nodes = hashes of individual key ranges; internal nodes = hash of children</li>
+        <li>Two replicas compare their <strong>root hashes</strong>. If they match: no divergence. If they differ, descend the tree to find the specific key ranges that diverged.</li>
+        <li>Complexity: <strong>O(log N)</strong> comparisons to find divergent keys, not O(N)</li>
+        <li>Only the differing key ranges are synced &mdash; minimal data transfer</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--accent);">
+      <h3>Hinted Handoff</h3>
+      <p>When a replica node is temporarily down:</p>
+      <ul>
+        <li>The coordinator writes the data to <strong>another healthy node</strong> with a "hint" (metadata saying "this was meant for Node X")</li>
+        <li>When Node X comes back, the hinting node <strong>forwards the hinted data</strong> to Node X</li>
+        <li>After successful delivery, the hint is deleted</li>
+        <li>Ensures <strong>write availability</strong> even when a replica is down</li>
+        <li>Combined with sloppy quorum: W=2 can be satisfied by <em>any</em> 2 nodes, not just the designated replicas</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--blue);">
+      <h3>Read Repair</h3>
+      <p>Passive anti-entropy that piggybacks on normal reads:</p>
+      <ul>
+        <li>Coordinator reads from R replicas for a quorum read</li>
+        <li>If the R replies have <strong>different versions</strong>, the coordinator identifies the latest version</li>
+        <li>The coordinator <strong>pushes the latest version</strong> to the stale replicas in the background</li>
+        <li>Gradually heals inconsistencies without dedicated repair jobs</li>
+        <li>Works well for frequently-read keys; cold keys still need periodic Merkle tree anti-entropy</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <pre>
+<span style="color:var(--primary);">Failure Detection &amp; Recovery Timeline</span>
+
+  Time ──────────────────────────────────────────────────────────────────&rarr;
+
+  Node X     [  ALIVE  ] &times; [  DOWN  ........................] [  RECOVERING  ] [  ALIVE  ]
+                           |                                    |                |
+                           |  Heartbeat misses detected         |  Node X back   |  Fully synced
+                           |  via gossip (2-3 seconds)          |  online        |  via Merkle
+                           |                                    |                |  tree anti-entropy
+                           v                                    v                v
+  Other      Hinted handoff activated.          Hinted data forwarded.     Read repair +
+  Nodes      Writes to Node X are stored        Node X replays hints.     anti-entropy
+             on other nodes with hints.         Merkle trees compared.    complete.
+    </pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 9. SCALING OUT ════════════════════════════ -->
+<section id="scaling" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">9</span>
+    <h2>Scaling Out</h2>
+  </div>
+
+  <div class="card">
+    <h3>Adding Nodes: Consistent Hashing Advantage</h3>
+    <p>When a new node joins the cluster, consistent hashing ensures <strong>only ~1/N of the data moves</strong>:</p>
+    <div class="code-block">
+      <span class="code-label">Scale-Out</span>
+<span class="cm">── Cluster of 30 nodes, adding Node 31 ──</span>
+
+Total data           = <span class="num">30 TB</span> (RF=3)
+Data per node        = <span class="num">~1 TB</span>
+Data to move         = 30TB / 31 = <span class="num">~968 GB</span>  (only 3.2% of total data!)
+
+<span class="cm">── Contrast with naive hash(key) % N ──</span>
+Data to move         = 30TB &times; 30/31 = <span class="num">~29 TB</span>  (96.8% of data! Disaster.)
+
+<span class="cm">── How it works with virtual shards ──</span>
+1. New node is assigned <span class="num">~2,114</span> vnodes (65536/31)
+2. These vnodes are taken from existing nodes (each gives up ~70 vnodes)
+3. For each reassigned vnode, data is <span class="kw">streamed</span> from existing owners
+4. Once streaming is complete, ring map is updated atomically
+5. Client ring caches are refreshed via gossip
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Avoiding the "Scale-by-2x" Problem</h3>
+    <p>Some systems (like naive mod-based sharding) can only scale efficiently by doubling the node count. This is wasteful and operationally dangerous.</p>
+    <div class="grid-2" style="margin-top: 1rem;">
+      <div class="callout callout-red">
+        <div class="callout-title">Naive Mod Sharding</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Must go 4 &rarr; 8 &rarr; 16 &rarr; 32 nodes. Adding 1 node is catastrophic. Each scale event moves ~50% of data. Must over-provision or accept long migration windows.</p>
+      </div>
+      <div class="callout callout-green">
+        <div class="callout-title">Consistent Hashing + Vnodes</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Add 1 node at a time. Each addition moves ~1/N of data. Load is redistributed evenly across all existing nodes (each donates a small amount). Scale linearly and incrementally.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Scale-Out Procedure</h3>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--blue);">1</div>
+        <div class="step-title">Provision Node</div>
+        <div class="step-desc">New node boots, joins gossip cluster, advertises itself. Raft metadata cluster assigns it vnodes.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--purple);">2</div>
+        <div class="step-title">Stream Data</div>
+        <div class="step-desc">For each assigned vnode, the new node streams SSTable data from current owners. Reads continue serving from old owners.</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--secondary);">3</div>
+        <div class="step-title">Catch Up</div>
+        <div class="step-desc">Once bulk streaming completes, catch up on writes that happened during streaming (dual-write or replay log).</div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num" style="background: var(--accent);">4</div>
+        <div class="step-title">Cutover</div>
+        <div class="step-desc">Update ring map atomically. New node starts serving reads and writes. Old owners delete the migrated vnode data.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 10. LATENCY NUMBERS ════════════════════════════ -->
+<section id="latency" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--accent), var(--warning));">10</span>
+    <h2>Latency Numbers Every Engineer Should Know</h2>
+  </div>
+
+  <div class="card">
+    <h3>Hardware Latency Reference</h3>
+    <div style="max-width: 700px;">
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>L1 Cache Reference</span>
+          <span>~0.5 ns</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 1%; background: var(--success);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>L2 Cache Reference</span>
+          <span>~7 ns</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 1.5%; background: var(--success);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>Main Memory (DRAM)</span>
+          <span>~100 ns</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 3%; background: var(--secondary);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>SSD Random Read (4KB)</span>
+          <span>~100 &mu;s</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 15%; background: var(--blue);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>Network Round Trip (same DC)</span>
+          <span>~500 &mu;s</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 25%; background: var(--purple);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>SSD Sequential Read (1MB)</span>
+          <span>~1 ms</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 35%; background: var(--warning);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>HDD Disk Seek</span>
+          <span>~5-10 ms</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 70%; background: var(--accent);"></div>
+        </div>
+      </div>
+      <div class="latency-bar-container">
+        <div class="latency-label">
+          <span>Network Round Trip (cross-DC)</span>
+          <span>~50-150 ms</span>
+        </div>
+        <div class="latency-bar">
+          <div class="latency-fill" style="width: 100%; background: var(--danger);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Request Flow: Latency Breakdown</h3>
+    <div class="code-block">
+      <span class="code-label">Read Path Latency Budget (&lt;5ms target)</span>
+<span class="cm">── Cache HIT path (p50: ~1-2ms) ──</span>
+Client &rarr; Network RTT to KV node        <span class="num">0.5 ms</span>
+  &rarr; Hash key, find coordinator          <span class="num">0.01 ms</span>
+  &rarr; Check memtable (skip list)          <span class="num">0.01 ms</span>  <span class="op">&larr; HIT? Return!</span>
+  &rarr; Check block cache (in-memory)       <span class="num">0.01 ms</span>  <span class="op">&larr; HIT? Return!</span>
+  &rarr; Serialize response                  <span class="num">0.01 ms</span>
+  &rarr; Network RTT back to client          <span class="num">0.5 ms</span>
+                                    Total: <span class="str">~1.0 ms</span>
+
+<span class="cm">── Cache MISS path (p99: ~3-5ms) ──</span>
+Client &rarr; Network RTT to KV node        <span class="num">0.5 ms</span>
+  &rarr; Check memtable (MISS)               <span class="num">0.01 ms</span>
+  &rarr; Check block cache (MISS)            <span class="num">0.01 ms</span>
+  &rarr; Check Bloom filter (L0)             <span class="num">0.001 ms</span>  (negative &rarr; skip)
+  &rarr; Check Bloom filter (L1)             <span class="num">0.001 ms</span>  (positive &rarr; read)
+  &rarr; Read SSTable index from SSD         <span class="num">0.1 ms</span>   (4KB read)
+  &rarr; Read data block from SSD            <span class="num">0.1 ms</span>   (4KB read)
+  &rarr; Decompress + deserialize            <span class="num">0.05 ms</span>
+  &rarr; Network RTT back to client          <span class="num">0.5 ms</span>
+                                    Total: <span class="str">~1.3 ms</span>
+
+<span class="cm">── Quorum read (R=2, parallel) ──</span>
+  Send to 2 replicas in parallel:
+  Fastest replica responds in           <span class="num">~1.0 ms</span>
+  Second replica responds in            <span class="num">~1.5 ms</span>
+  Wait for 2nd (quorum):                <span class="str">~1.5 ms</span>  <span class="hl-green">WITHIN 5ms BUDGET</span>
+    </div>
+
+    <div class="code-block" style="margin-top: 1rem;">
+      <span class="code-label">Write Path Latency Budget (&lt;10ms target)</span>
+<span class="cm">── Write path (p99: ~5-8ms) ──</span>
+Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
+  &rarr; Coordinator sends to 3 replicas     <span class="num">0.01 ms</span>  (parallel fan-out)
+
+  <span class="cm">On each replica (in parallel):</span>
+  &rarr; Append to WAL (sequential SSD)      <span class="num">0.1 ms</span>   (fsync)
+  &rarr; Insert into memtable                <span class="num">0.01 ms</span>
+  &rarr; Send ACK to coordinator             <span class="num">0.5 ms</span>   (network)
+
+  Wait for W=2 ACKs (quorum):           <span class="num">~1.2 ms</span>
+  &rarr; Network RTT back to client          <span class="num">0.5 ms</span>
+                                    Total: <span class="str">~2.2 ms</span>  <span class="hl-green">WITHIN 10ms BUDGET</span>
+
+<span class="cm">── Worst case (SSD stall + GC + network jitter) ──</span>
+  All of above + SSD tail latency        <span class="num">+2-3 ms</span>
+  + GC pause (Java/Go runtime)           <span class="num">+1-2 ms</span>
+                                    Total: <span class="str">~6-7 ms</span>  <span class="hl-green">STILL WITHIN BUDGET</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 11. MULTI-DATACENTER ════════════════════════════ -->
+<section id="multi-dc" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, #6366f1, #818cf8);">11</span>
+    <h2>Multi-Datacenter Replication</h2>
+  </div>
+
+  <div class="card">
+    <h3>Architecture: Active-Active Multi-DC</h3>
+    <div class="diagram">
+      <pre>
+       <span style="color:var(--primary);">DC-West (San Francisco)</span>                    <span style="color:var(--blue);">DC-East (Virginia)</span>
+  +-------------------------------+      +-------------------------------+
+  |  Client &rarr; Local Coordinator  |      |  Client &rarr; Local Coordinator  |
+  |                               |      |                               |
+  |  [Node W1] [Node W2] [Node W3]|      |  [Node E1] [Node E2] [Node E3]|
+  |      |         |         |     |      |      |         |         |     |
+  |  Local RF=3 (quorum within DC)|      |  Local RF=3 (quorum within DC)|
+  +-------------------------------+      +-------------------------------+
+             |                                      |
+             +------- <span style="color:var(--warning);">Async Cross-DC Replication</span> -------+
+             |         (50-150ms RTT, batched)       |
+             +---------------------------------------+
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Per-DC Local Quorum</h3>
+    <ul>
+      <li><strong>Writes:</strong> Client writes to the <em>local DC</em> coordinator. Local quorum (W=2 of 3 local replicas) satisfies the write. The coordinator then <strong>asynchronously replicates to remote DCs</strong>.</li>
+      <li><strong>Reads:</strong> Client reads from <em>local DC</em> replicas only. No cross-DC round trip for reads. Local quorum R=2 provides strong consistency within the DC.</li>
+      <li><strong>Cross-DC replication:</strong> Asynchronous, batched. A dedicated replication thread per vnode streams changes to the corresponding vnode in remote DCs.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Conflict Resolution for Multi-DC</h3>
+    <p>Since writes can occur simultaneously in different DCs, conflicts are inevitable:</p>
+    <div class="grid-2" style="margin-top: 1rem;">
+      <div class="callout callout-orange">
+        <div class="callout-title">Last-Write-Wins (LWW) with Hybrid Logical Clocks</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">Use <strong>Hybrid Logical Clocks (HLC)</strong> that combine wall-clock time with a logical counter. HLCs tolerate clock skew better than pure wall-clock timestamps. The write with the highest HLC wins. Simple, deterministic, but may lose a concurrent write silently.</p>
+      </div>
+      <div class="callout callout-purple">
+        <div class="callout-title">CRDTs (Conflict-Free Replicated Data Types)</div>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">For specific data types (counters, sets, registers), use CRDTs that mathematically guarantee convergence without coordination. For example, a G-Counter can be incremented in any DC and all DCs will converge to the correct total. More complex to implement but zero data loss.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>DC Failover</h3>
+    <ul>
+      <li><strong>Detection:</strong> Health checker monitors cross-DC connectivity. If a DC is unreachable for &gt;30s, it is declared down.</li>
+      <li><strong>Failover:</strong> DNS/load balancer routes all traffic to the surviving DC. Since each DC has a full copy (RF=3 per DC), no data loss for committed writes.</li>
+      <li><strong>Recovery:</strong> When the failed DC comes back, anti-entropy (Merkle trees) syncs the delta. Hinted handoff forwards any writes that were meant for that DC during the outage.</li>
+      <li><strong>Conflict window:</strong> Writes that were in-flight (committed locally but not yet replicated cross-DC) at the moment of failure may cause conflicts. These are resolved by LWW or application merge on recovery.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 12. OPERATIONAL ════════════════════════════ -->
+<section id="ops" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, #ec4899, #f472b6);">12</span>
+    <h2>Operational Excellence</h2>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <h3>Monitoring</h3>
+      <ul>
+        <li><strong>Latency:</strong> p50, p99, p999 for get/put per node and per cluster</li>
+        <li><strong>Throughput:</strong> Read QPS, Write QPS, replication lag</li>
+        <li><strong>Storage:</strong> Disk usage, compaction backlog, memtable size</li>
+        <li><strong>Cluster health:</strong> Node up/down, gossip convergence time</li>
+        <li><strong>Consistency:</strong> Read repair rate, Merkle tree divergence count</li>
+        <li><strong>Hot keys:</strong> Track top-N keys by access frequency</li>
+        <li><strong>Alerting:</strong> PagerDuty on p99 &gt; 5ms, node down &gt; 30s, disk &gt; 80%</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Rollout Strategy</h3>
+      <ul>
+        <li><strong>Canary deployment:</strong> New version on 1 node first, monitor for 30 min</li>
+        <li><strong>Rolling restart:</strong> One node at a time, wait for it to rejoin and sync before proceeding</li>
+        <li><strong>Feature flags:</strong> New storage engine features behind flags, gradual rollout</li>
+        <li><strong>Schema migration:</strong> Not applicable (schema-less KV), but SSTable format changes need dual-read capability</li>
+        <li><strong>Rollback:</strong> Keep previous binary version. Rollback = restart with old binary. Data format must be backward compatible.</li>
+        <li><strong>Capacity planning:</strong> Add nodes proactively when any node exceeds 70% disk or CPU</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Data Verification</h3>
+      <ul>
+        <li><strong>Checksum:</strong> Every SSTable block has a CRC32 checksum. Verified on read. Bit rot detected immediately.</li>
+        <li><strong>Background scrubbing:</strong> Periodic full scan that reads every SSTable and verifies checksums (similar to ZFS scrub)</li>
+        <li><strong>Replica verification:</strong> Merkle tree comparison runs every 1-6 hours between replica pairs</li>
+        <li><strong>Consistency audit:</strong> Sample random keys, read from all 3 replicas, verify they match</li>
+        <li><strong>Tombstone GC:</strong> Tombstones kept for gc_grace_seconds (default 10 days), then purged during compaction</li>
+        <li><strong>Backup:</strong> Snapshot SSTables (immutable) to object storage (S3) daily. Point-in-time recovery via WAL replay.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 13. INTERVIEW TIPS ════════════════════════════ -->
+<section id="tips" class="section">
+  <div class="section-header">
+    <span class="section-num" style="background: linear-gradient(135deg, var(--primary), var(--purple));">13</span>
+    <h2>Interview Tips &amp; Talking Points</h2>
+  </div>
+
+  <div class="card">
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(255,90,95,0.15); color: var(--primary);">1</div>
+      <div class="tip-content">
+        <strong>Start with Clarifying Questions</strong>
+        <p>Always ask: consistency model (strong vs eventual)? read:write ratio? value size? multi-DC? This shows you understand that design is about trade-offs, not a single "right" answer. Spend 2-3 minutes here.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(255,255,255,0.15); color: #ffffff;">2</div>
+      <div class="tip-content">
+        <strong>Don't Just Name-Drop &mdash; Explain the "Why"</strong>
+        <p>Saying "use consistent hashing" is worth 1 point. Explaining <em>why</em> naive mod-N fails and how consistent hashing solves the rebalancing problem is worth 10 points. Show you understand the mechanism, not just the vocabulary.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(252,100,45,0.15); color: var(--accent);">3</div>
+      <div class="tip-content">
+        <strong>Quorum Math Is Your Best Friend</strong>
+        <p>W + R &gt; N is the single most powerful formula in distributed systems interviews. Show you can derive strong consistency guarantees from it, and explain how tuning W and R trades off latency, availability, and consistency.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(123,47,247,0.15); color: var(--purple);">4</div>
+      <div class="tip-content">
+        <strong>Always Discuss Failure Cases</strong>
+        <p>PE-level candidates proactively discuss what happens when things go wrong. Node failure, network partition, split brain, clock skew. For each failure, describe detection, mitigation, and recovery. This is what separates L5 from L6+ answers.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(66,139,249,0.08); color: var(--blue);">5</div>
+      <div class="tip-content">
+        <strong>Know Your Latency Numbers</strong>
+        <p>When the interviewer asks "can you hit &lt;5ms reads?", you should be able to break down: network RTT (~0.5ms), SSD read (~0.1ms), memtable lookup (~0.01ms). Show that your design fits within the latency budget at each step.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(245,158,11,0.15); color: var(--warning);">6</div>
+      <div class="tip-content">
+        <strong>Compare Approaches, Don't Just Pick One</strong>
+        <p>For every major decision (LSM vs B-tree, leader vs leaderless, LWW vs vector clocks), briefly mention the alternative and explain why you chose what you did. This demonstrates depth and shows you are not just memorizing a template.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(16,185,129,0.15); color: var(--success);">7</div>
+      <div class="tip-content">
+        <strong>Back-of-Envelope Calculations Are Non-Negotiable</strong>
+        <p>10B keys &times; 1KB = 10TB. RF=3 means 30TB. 30TB / 1TB per node = 30 nodes. 100K QPS / 30 nodes = 3.3K QPS per node (easily handled). Do this calculation <em>before</em> diving into architecture. It grounds the discussion in reality.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(239,68,68,0.15); color: var(--danger);">8</div>
+      <div class="tip-content">
+        <strong>The "Build From Scratch" Trap</strong>
+        <p>Don't spend 20 minutes on the B-tree page format. The interviewer wants system design, not a coding exercise. Briefly describe the storage engine (LSM tree with memtable, WAL, SSTables, compaction) and move on to the distributed concerns: partitioning, replication, consistency, failure handling.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(123,47,247,0.15); color: var(--purple);">9</div>
+      <div class="tip-content">
+        <strong>Name Real Systems as References</strong>
+        <p>Anchor your design in reality: "Similar to how Cassandra uses consistent hashing with vnodes" or "Like DynamoDB's sloppy quorum with hinted handoff." This shows you have studied production systems, not just textbooks.</p>
+      </div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-icon" style="background: rgba(255,255,255,0.15); color: #ffffff;">10</div>
+      <div class="tip-content">
+        <strong>End with Operational Concerns</strong>
+        <p>If time allows, mention monitoring (p99 latency, replication lag), rollout strategy (canary, rolling restart), and data verification (checksums, Merkle trees). This signals PE-level ownership: you don't just design systems, you run them.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-red">
+    <div class="callout-title">PE Interview Pacing Guide (45 minutes)</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      <strong>0-3 min:</strong> Clarifying questions, scope the problem &nbsp;&bull;&nbsp;
+      <strong>3-7 min:</strong> API, capacity estimation, high-level architecture &nbsp;&bull;&nbsp;
+      <strong>7-15 min:</strong> Partitioning (consistent hashing, vnodes, shard location) &nbsp;&bull;&nbsp;
+      <strong>15-25 min:</strong> Replication, consistency (quorum, vector clocks, conflict resolution) &nbsp;&bull;&nbsp;
+      <strong>25-32 min:</strong> Storage engine (LSM tree, read/write path) &nbsp;&bull;&nbsp;
+      <strong>32-40 min:</strong> Error cases (failure detection, partition, anti-entropy, hinted handoff) &nbsp;&bull;&nbsp;
+      <strong>40-45 min:</strong> Scaling, multi-DC, operational concerns
+    </p>
+  </div>
+
+  <div class="card" style="border: 2px solid var(--primary); background: linear-gradient(135deg, rgba(255,90,95,0.05), rgba(123,47,247,0.05));">
+    <h3 style="color: var(--primary);">Key Trade-Off Summary</h3>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Decision Point</th>
+            <th>Option A</th>
+            <th>Option B</th>
+            <th>Our Choice &amp; Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Partitioning</strong></td>
+            <td>Mod N</td>
+            <td>Consistent hashing</td>
+            <td><span class="tag tag-green">Consistent hash</span> &mdash; O(1/N) data movement on rebalance</td>
+          </tr>
+          <tr>
+            <td><strong>Replication</strong></td>
+            <td>Leader-based</td>
+            <td>Leaderless quorum</td>
+            <td><span class="tag tag-green">Leaderless</span> &mdash; Higher availability, no failover gap</td>
+          </tr>
+          <tr>
+            <td><strong>Consistency</strong></td>
+            <td>Strong (Raft)</td>
+            <td>Eventual (tunable quorum)</td>
+            <td><span class="tag tag-green">Tunable quorum</span> &mdash; W+R&gt;N for strong, W=1 for fast writes</td>
+          </tr>
+          <tr>
+            <td><strong>Conflict resolution</strong></td>
+            <td>LWW</td>
+            <td>Vector clocks + app merge</td>
+            <td><span class="tag tag-green">LWW default</span> + vector clocks for critical paths</td>
+          </tr>
+          <tr>
+            <td><strong>Storage engine</strong></td>
+            <td>B-tree</td>
+            <td>LSM tree</td>
+            <td><span class="tag tag-green">LSM tree</span> &mdash; Write-optimized, fits KV workload</td>
+          </tr>
+          <tr>
+            <td><strong>Metadata</strong></td>
+            <td>Gossip only</td>
+            <td>Raft for metadata</td>
+            <td><span class="tag tag-green">Raft for metadata</span> &mdash; Strong consistency where it matters</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-DC</strong></td>
+            <td>Single-master</td>
+            <td>Active-active</td>
+            <td><span class="tag tag-green">Active-active</span> &mdash; Write locally, async replicate</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ════════════════════════════ FOOTER ════════════════════════════ -->
+<footer>
+  <p>Distributed Key/Value Store &mdash; PE System Design Reference</p>
+  <p style="margin-top: 0.5rem;">
+    <a href="index.html">&larr; Back to All Topics</a>
+  </p>
+  <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+    References: Amazon DynamoDB Paper (2007) &bull; Cassandra Architecture &bull; Google Bigtable &bull; RocksDB Internals &bull; Designing Data-Intensive Applications (Kleppmann)
+  </p>
+</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Detection Engine - Principal Engineer System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 60px 40px 50px;
+    text-align: center;
+    border-bottom: 3px solid var(--danger);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(239,68,68,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(252,100,45,0.08) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero h1 {
+    font-size: 2.7em;
+    background: linear-gradient(135deg, var(--danger), var(--accent), var(--warning));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .hero .subtitle {
+    font-size: 1.15em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .hero .topic-number {
+    position: relative;
+    display: inline-block;
+    background: rgba(239,68,68,0.2);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 15px;
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-top: 10px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .badge-row {
+    position: relative;
+    margin-top: 12px;
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--danger);
+  }
+  .hero .stat-label {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    margin: 5px;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-yellow { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+
+  /* NAV */
+  .toc {
+    background: #f8fafc;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .toc h2 { color: var(--secondary); margin-bottom: 12px; font-size: 1em; text-transform: uppercase; letter-spacing: 2px; }
+  .toc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.85em;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .toc a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* SECTIONS */
+  .container { max-width: 1300px; margin: 0 auto; padding: 0 30px; }
+  section { padding: 50px 0; border-bottom: 1px solid var(--card-border); }
+  section:last-child { border-bottom: none; }
+  section h2 {
+    font-size: 1.9em;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section h2 .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    flex-shrink: 0;
+  }
+  section h3 {
+    font-size: 1.3em;
+    color: #ffffff;
+    margin: 28px 0 14px;
+    padding-left: 12px;
+    border-left: 3px solid var(--secondary);
+  }
+  section h4 {
+    font-size: 1.1em;
+    color: var(--blue);
+    margin: 18px 0 8px;
+  }
+  p { margin: 10px 0; }
+
+  /* CARDS */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 15px 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .card-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .card-header {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* DIAGRAM BOXES */
+  .diagram-box {
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+  .diagram-box pre {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: var(--text);
+    font-size: 0.82em;
+    line-height: 1.5;
+  }
+
+  /* TABLES */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin: 20px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92em;
+  }
+  th {
+    background: linear-gradient(135deg, rgba(255,90,95,0.15), rgba(0,166,153,0.15));
+    color: var(--text);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--card-border);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  tr:last-child td { border-bottom: none; }
+
+  /* CODE */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    line-height: 1.6;
+    margin: 15px 0;
+    color: #6e7781;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+  }
+  .inline-code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+  .keyword { color: #cf222e; }
+  .string { color: #0a3069; }
+  .comment { color: #6e7781; font-style: italic; }
+  .type { color: #8250df; }
+  .func { color: #0550ae; }
+  .number { color: #f0883e; }
+
+  /* TIP BOXES */
+  .tip-box {
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    border-left: 4px solid;
+  }
+  .tip-interview { background: rgba(123,47,247,0.1); border-color: var(--purple); }
+  .tip-warning { background: rgba(245,158,11,0.1); border-color: var(--warning); }
+  .tip-success { background: rgba(16,185,129,0.1); border-color: var(--success); }
+  .tip-danger { background: rgba(239,68,68,0.1); border-color: var(--danger); }
+  .tip-info { background: rgba(66,139,249,0.08); border-color: var(--blue); }
+  .tip-box .tip-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 0.95em;
+  }
+
+  /* FLOW STEPS */
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 20px 0;
+    align-items: center;
+  }
+  .flow-step {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    font-size: 0.9em;
+    min-width: 130px;
+  }
+  .flow-arrow {
+    color: var(--primary);
+    font-size: 1.5em;
+    padding: 0 8px;
+  }
+
+  /* METRIC CARDS */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-label {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    margin-top: 4px;
+  }
+
+  /* COMPARISON */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .comparison-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .option-a { border-top: 3px solid var(--secondary); }
+  .option-b { border-top: 3px solid var(--accent); }
+  .option-c { border-top: 3px solid var(--purple); }
+
+  /* LISTS */
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  li::marker { color: var(--primary); }
+
+  /* CALIBRATION GRID */
+  .calibration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+
+  /* CONFUSION MATRIX */
+  .confusion-matrix {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0;
+    margin: 20px auto;
+    max-width: 550px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .cm-cell {
+    padding: 18px 20px;
+    text-align: center;
+    font-size: 0.9em;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .cm-header {
+    background: linear-gradient(135deg, rgba(255,90,95,0.15), rgba(0,166,153,0.15));
+    font-weight: 700;
+    color: var(--text);
+  }
+  .cm-tp { background: rgba(16,185,129,0.15); color: var(--success); font-weight: 700; }
+  .cm-tn { background: rgba(16,185,129,0.06); color: var(--success); font-weight: 700; }
+  .cm-fp { background: rgba(239,68,68,0.15); color: var(--danger); font-weight: 700; }
+  .cm-fn { background: rgba(245,158,11,0.15); color: var(--warning); font-weight: 700; }
+
+  /* LIFECYCLE */
+  .lifecycle {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 20px 0;
+    justify-content: center;
+  }
+  .lifecycle-stage {
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 0.85em;
+    font-weight: 700;
+    text-align: center;
+    min-width: 140px;
+  }
+  .lifecycle-arrow {
+    font-size: 1.4em;
+    padding: 0 6px;
+    color: var(--text-muted);
+  }
+
+  /* PROGRESS BAR */
+  .bar-chart { margin: 15px 0; }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    gap: 10px;
+  }
+  .bar-label {
+    width: 180px;
+    font-size: 0.85em;
+    text-align: right;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: white;
+  }
+
+  /* FOOTER */
+  footer {
+    background: #f8fafc;
+    padding: 30px 40px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid #e5e7eb;
+  }
+  footer a { color: var(--secondary); text-decoration: none; }
+  footer a:hover { color: var(--primary); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero { padding: 40px 20px; }
+    .hero h1 { font-size: 1.8em; }
+    .hero .subtitle { font-size: 1em; }
+    .hero .stats-row { gap: 20px; }
+    .hero .stat-value { font-size: 1.5em; }
+    .comparison { grid-template-columns: 1fr; }
+    .comparison-3 { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    .card-grid-3 { grid-template-columns: 1fr; }
+    .calibration-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 15px; }
+    .toc { padding: 15px 20px; }
+    section { padding: 30px 0; }
+    .flow-steps { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .lifecycle { flex-direction: column; gap: 0; }
+    .lifecycle-arrow { transform: rotate(90deg); padding: 4px 0; }
+    .bar-label { width: 120px; font-size: 0.78em; }
+    .confusion-matrix { grid-template-columns: auto 1fr 1fr; max-width: 100%; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.5em; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <div class="topic-number">Topic 11 &mdash; Fraud &amp; Trust</div>
+  <h1>Fraud Detection Engine</h1>
+  <p class="subtitle">Automate Flagging of Risky Claims &mdash; Principal Engineer Blueprint</p>
+  <div class="badge-row">
+    <span class="badge badge-red">System Design</span>
+    <span class="badge badge-orange">PE Interview</span>
+    <span class="badge badge-yellow">Rule Engine</span>
+    <span class="badge badge-purple">ML + Rules</span>
+    <span class="badge badge-green">Experimentation</span>
+    <span class="badge badge-blue">Airbnb Trust</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">&lt;24h</div>
+      <div class="stat-label">Flag SLA</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">&lt;2%</div>
+      <div class="stat-label">False Positive Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">15+</div>
+      <div class="stat-label">Signal Types</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">A/B</div>
+      <div class="stat-label">Experiment-Driven</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== NAV ==================== -->
+<nav class="toc">
+  <h2>Navigation</h2>
+  <div class="toc-grid">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#domain-model">Domain Model</a>
+    <a href="#rule-representation">Rule Representation</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#signal-collection">Signal Collection</a>
+    <a href="#model-lifecycle">Model Lifecycle</a>
+    <a href="#performance-metrics">Performance Metrics</a>
+    <a href="#experimentation">Experimentation</a>
+    <a href="#ml-integration">ML Integration</a>
+    <a href="#security">Security</a>
+    <a href="#trade-offs">Trade-offs</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ==================== 1. OVERVIEW ==================== -->
+<section id="overview">
+  <h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#9888;</span> Overview</h2>
+
+  <p>At Airbnb, guests file <strong>damage claims</strong> and <strong>refund requests</strong> after stays. A small but costly fraction of these claims are <strong>fraudulent</strong> &mdash; fabricated damage photos, inflated costs, collusion between guest and host, or serial claimers exploiting the trust system. Today, human agents manually review every claim. The goal is to build a <strong>Fraud Detection Engine</strong> that automatically flags risky claims with a confidence score, routing high-risk cases to specialized fraud investigators while letting low-risk claims proceed through normal workflows.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color: var(--danger);">&#128270; The Problem</div>
+      <ul>
+        <li>Agents waste time reviewing obviously legitimate claims</li>
+        <li>Fraudulent claims slip through during high-volume periods</li>
+        <li>No systematic pattern detection across claims</li>
+        <li>Fraud team cannot update detection rules without engineering deploys</li>
+        <li>No ability to A/B test new fraud models safely</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color: var(--success);">&#127919; The Goal</div>
+      <ul>
+        <li>Flag risky claims within 24 hours of submission</li>
+        <li>Non-programmer Fraud team can configure/update rules</li>
+        <li>Combine rule-based + ML signals for high accuracy</li>
+        <li>Support model versioning and safe experimentation</li>
+        <li>Maintain low false-positive rate to preserve guest trust</li>
+        <li>Full audit trail for regulatory compliance</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box tip-info">
+    <div class="tip-title" style="color: var(--blue);">&#128161; Key Signals the Fraud Team Cares About</div>
+    <p><strong>New account</strong> (created recently before claim) | <strong>Guest-host know each other</strong> (shared contacts, IP, payment info) | <strong>Frequent claims</strong> (serial claimer pattern) | <strong>Fabricated photos</strong> (metadata inconsistencies, reverse image search hits) | <strong>Suspicious email domain</strong> (disposable/temporary email providers) | <strong>Booking patterns</strong> (same-day book-and-claim) | <strong>Claim amount anomalies</strong> (far exceeds listing price)</p>
+  </div>
+</section>
+
+<!-- ==================== 2. REQUIREMENTS ==================== -->
+<section id="requirements">
+  <h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#128203;</span> Requirements</h2>
+
+  <div class="comparison">
+    <div class="card option-a">
+      <div class="card-header" style="color: #1e293b;">Functional Requirements</div>
+      <ul>
+        <li><strong>FR-1:</strong> Subscribe to <span class="inline-code">claim_created</span> events from the Claims System</li>
+        <li><strong>FR-2:</strong> Collect signals from multiple internal and external sources (account age, claim history, photo metadata, identity graph, email reputation)</li>
+        <li><strong>FR-3:</strong> Evaluate a configurable set of rules against collected signals</li>
+        <li><strong>FR-4:</strong> Produce a fraud risk score (0.0&ndash;1.0) and flag claims exceeding threshold</li>
+        <li><strong>FR-5:</strong> Support model versioning &mdash; multiple rule/model versions coexist</li>
+        <li><strong>FR-6:</strong> Fraud team can create, edit, and publish rules via a UI (no code deploys)</li>
+        <li><strong>FR-7:</strong> Route flagged claims to specialized fraud review queue</li>
+        <li><strong>FR-8:</strong> Support shadow-mode evaluation for new models (score but don't act)</li>
+      </ul>
+    </div>
+    <div class="card option-b">
+      <div class="card-header" style="color: var(--accent);">Non-Functional Requirements</div>
+      <ul>
+        <li><strong>NFR-1:</strong> SLA &mdash; flag within 24 hours of claim creation (target: &lt;1 hour for 95th percentile)</li>
+        <li><strong>NFR-2:</strong> Low false positive rate (&lt;2%) to avoid penalizing legitimate guests</li>
+        <li><strong>NFR-3:</strong> Full auditability &mdash; every decision must be explainable with signal values and rule matches</li>
+        <li><strong>NFR-4:</strong> Security &mdash; PII handling compliant with GDPR/CCPA; fraud signals must not leak to users</li>
+        <li><strong>NFR-5:</strong> Experimentation &mdash; A/B test new models with controlled traffic splits</li>
+        <li><strong>NFR-6:</strong> Availability &mdash; 99.9% uptime; degraded mode if signal sources are unavailable</li>
+        <li><strong>NFR-7:</strong> Scalability &mdash; handle 10x volume spikes during peak travel seasons</li>
+        <li><strong>NFR-8:</strong> Observability &mdash; real-time dashboards for flag rate, FP rate, model drift</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box tip-interview">
+    <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
+    <p>Interviewers expect you to <strong>prioritize the false positive rate</strong> discussion early. At Airbnb, wrongly accusing a guest of fraud is worse than missing some fraud &mdash; it destroys trust. Always frame trade-offs in terms of <em>"What happens to a legitimate guest if we get this wrong?"</em></p>
+  </div>
+</section>
+
+<!-- ==================== 3. DOMAIN MODEL ==================== -->
+<section id="domain-model">
+  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Domain Model</h2>
+
+  <p>The core domain revolves around four key entities: <strong>Signal</strong>, <strong>Rule</strong>, <strong>Policy</strong>, and <strong>Outcome</strong>. Understanding how they compose is essential to the design.</p>
+
+  <div class="diagram-box">
+<pre>
+  +-----------+       +-----------+       +-----------+       +-----------+
+  |  SIGNAL   |       |   RULE    |       |  POLICY   |       |  OUTCOME  |
+  +-----------+       +-----------+       +-----------+       +-----------+
+  | signal_id |  N:M  | rule_id   |  N:1  | policy_id |  1:1  | outcome_id|
+  | type      |------&gt;| name      |------&gt;| name      |------&gt;| claim_id  |
+  | source    |       | condition |       | version   |       | score     |
+  | value     |       | weight    |       | status    |       | flagged   |
+  | confidence|       | threshold |       | rules[]   |       | reasons[] |
+  | timestamp |       | enabled   |       | combinator|       | policy_v  |
+  | ttl       |       | category  |       | threshold |       | timestamp |
+  +-----------+       +-----------+       +-----------+       +-----------+
+
+  Signal: A single data point (e.g., account_age=2_days, claim_count=5)
+  Rule:   A predicate over one or more signals (e.g., IF account_age &lt; 30d AND claim_count &gt; 3)
+  Policy: A versioned bundle of rules with a combinator (AND/OR/WEIGHTED_SUM) and overall threshold
+  Outcome: The final decision record, including score, flag status, and all contributing reasons
+</pre>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color: #1e293b;">&#128205; Signal</div>
+      <p>A raw or derived data point collected from internal services or external APIs. Each signal has a <strong>type</strong> (categorical, numeric, boolean), a <strong>confidence</strong> score (how reliable the data source is), and a <strong>TTL</strong> (cache validity). Signals are immutable once collected.</p>
+      <p style="color: var(--text-muted); font-size: 0.9em;"><em>Examples: account_age, email_domain_reputation, photo_exif_mismatch, shared_ip_with_host, claim_frequency_90d</em></p>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color: var(--accent);">&#9881; Rule</div>
+      <p>A single conditional expression that evaluates against signals. Rules are <strong>independently testable</strong> and can be enabled/disabled without affecting others. Each rule has a <strong>weight</strong> that indicates its contribution to the overall score and a <strong>category</strong> (identity, behavioral, financial, media).</p>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color: var(--purple);">&#128220; Policy</div>
+      <p>A <strong>versioned collection of rules</strong> with a combinator strategy. A policy defines <em>how</em> individual rule results combine into a final score. Supports AND (all must match), OR (any match), and WEIGHTED_SUM (weighted average of rule scores against a threshold). Only one policy version is <span class="inline-code">IN_PRODUCTION</span> at a time.</p>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color: var(--danger);">&#128680; Outcome</div>
+      <p>The <strong>immutable decision record</strong> for a specific claim evaluation. Contains the score, the flag decision, every signal value at evaluation time, and every rule that fired. This is the <strong>audit trail</strong> &mdash; regulators and agents can trace exactly why a claim was flagged.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 4. RULE REPRESENTATION ==================== -->
+<section id="rule-representation">
+  <h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9881;</span> Rule Representation</h2>
+
+  <p>A critical design decision: how do non-programmer Fraud team members author and manage rules? Three major options, each with distinct trade-offs:</p>
+
+  <div class="comparison-3">
+    <div class="card option-a">
+      <div class="card-header" style="color: #1e293b;">Option A: Decision Table</div>
+      <p>A spreadsheet-like grid where each row is a rule and columns are signal conditions.</p>
+
+      <div class="table-wrap" style="margin-top: 12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Account Age</th>
+              <th>Claim Count (90d)</th>
+              <th>Photo EXIF Match</th>
+              <th>Risk Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>&lt; 7 days</td><td>&gt; 2</td><td>No</td><td style="color: var(--danger); font-weight: 700;">HIGH</td></tr>
+            <tr><td>&lt; 30 days</td><td>&gt; 1</td><td>Yes</td><td style="color: var(--warning); font-weight: 700;">MEDIUM</td></tr>
+            <tr><td>&gt; 30 days</td><td>&lt;= 1</td><td>Yes</td><td style="color: var(--success); font-weight: 700;">LOW</td></tr>
+            <tr><td>Any</td><td>&gt; 5</td><td>Any</td><td style="color: var(--danger); font-weight: 700;">HIGH</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <p style="color: var(--success); font-size: 0.9em;"><strong>Pros:</strong> Very intuitive for non-technical users; easy to review and audit; spreadsheet export/import</p>
+        <p style="color: var(--danger); font-size: 0.9em;"><strong>Cons:</strong> Combinatorial explosion with many signals; hard to express temporal or relational conditions; no priority/weighting between rows</p>
+      </div>
+    </div>
+
+    <div class="card option-b">
+      <div class="card-header" style="color: var(--accent);">Option B: Decision Tree</div>
+      <p>A visual flowchart where each node splits on a signal, and leaves are outcomes.</p>
+
+      <div class="diagram-box" style="margin-top: 12px; padding: 15px;">
+<pre style="font-size: 0.78em;">
+        [Account Age?]
+         /          \
+    &lt;7 days      &gt;=7 days
+       |              |
+  [Claim Count?]  [Photo Match?]
+   /       \        /       \
+  &gt;2      &lt;=2    No         Yes
+   |        |     |           |
+ HIGH    MEDIUM  MEDIUM     [Claim $?]
+                             /      \
+                          &gt;2x list  normal
+                             |        |
+                           MEDIUM    LOW
+</pre>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <p style="color: var(--success); font-size: 0.9em;"><strong>Pros:</strong> Visual and intuitive; natural priority (depth-first evaluation); easy to explain decisions ("we flagged because X then Y")</p>
+        <p style="color: var(--danger); font-size: 0.9em;"><strong>Cons:</strong> Deep trees become hard to maintain; adding a new signal may require restructuring; single-path evaluation misses multi-factor combinations</p>
+      </div>
+    </div>
+
+    <div class="card option-c">
+      <div class="card-header" style="color: var(--purple);">Option C: DSL / Weighted Signals</div>
+      <p>A domain-specific language with JSON-based rule definitions and weighted scoring.</p>
+
+<pre style="margin-top: 12px; font-size: 0.8em;">
+{
+  <span class="string">"policy_version"</span>: <span class="string">"v2.7"</span>,
+  <span class="string">"combinator"</span>: <span class="string">"WEIGHTED_SUM"</span>,
+  <span class="string">"threshold"</span>: <span class="number">0.65</span>,
+  <span class="string">"rules"</span>: [
+    {
+      <span class="string">"name"</span>: <span class="string">"new_account"</span>,
+      <span class="string">"condition"</span>: <span class="string">"account_age_days &lt; 14"</span>,
+      <span class="string">"weight"</span>: <span class="number">0.25</span>,
+      <span class="string">"score_if_true"</span>: <span class="number">1.0</span>
+    },
+    {
+      <span class="string">"name"</span>: <span class="string">"serial_claimer"</span>,
+      <span class="string">"condition"</span>: <span class="string">"claims_90d &gt; 3"</span>,
+      <span class="string">"weight"</span>: <span class="number">0.30</span>,
+      <span class="string">"score_if_true"</span>: <span class="number">1.0</span>
+    },
+    {
+      <span class="string">"name"</span>: <span class="string">"photo_suspicious"</span>,
+      <span class="string">"condition"</span>: <span class="string">"exif_mismatch OR reverse_image_hit"</span>,
+      <span class="string">"weight"</span>: <span class="number">0.20</span>,
+      <span class="string">"score_if_true"</span>: <span class="number">1.0</span>
+    },
+    {
+      <span class="string">"name"</span>: <span class="string">"guest_host_link"</span>,
+      <span class="string">"condition"</span>: <span class="string">"shared_ip OR shared_phone OR shared_payment"</span>,
+      <span class="string">"weight"</span>: <span class="number">0.25</span>,
+      <span class="string">"score_if_true"</span>: <span class="number">1.0</span>
+    }
+  ]
+}
+</pre>
+
+      <div style="margin-top: 12px;">
+        <p style="color: var(--success); font-size: 0.9em;"><strong>Pros:</strong> Fine-grained weighting; composable; versioned as JSON; extensible to ML scores; Fraud team edits via form UI that generates JSON</p>
+        <p style="color: var(--danger); font-size: 0.9em;"><strong>Cons:</strong> DSL parsing complexity; needs a validation layer; less visual than tree; requires UI investment for non-technical authoring</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box tip-success">
+    <div class="tip-title" style="color: var(--success);">&#9989; Recommended Approach</div>
+    <p><strong>Option C (DSL/Weighted Signals)</strong> is the PE-level answer. It provides the best balance of expressiveness, versioning, and extensibility. Build a <strong>form-based UI</strong> that generates the JSON DSL &mdash; Fraud team members pick signals from dropdowns, set thresholds with sliders, and adjust weights. The UI abstracts the DSL complexity while preserving its power. Combine with <strong>Option A (Decision Tables)</strong> as a "simple mode" for straightforward rules.</p>
+  </div>
+</section>
+
+<!-- ==================== 5. ARCHITECTURE ==================== -->
+<section id="architecture">
+  <h2><span class="icon" style="background: rgba(0,166,153,0.2); color: #ffffff;">&#128736;</span> Architecture</h2>
+
+  <p>Event-driven architecture with the Fraud Engine subscribing to claim events, enriching them with signals, evaluating policies, and publishing fraud decisions.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 1100 650" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif" font-size="12">
+      <defs>
+        <filter id="shadow1" x="-4%" y="-4%" width="108%" height="108%">
+          <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
+        </filter>
+        <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+        <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008F84"/></linearGradient>
+        <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6320CC"/></linearGradient>
+        <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D0"/></linearGradient>
+        <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+        <marker id="arrowSync1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#94a3b8"/></marker>
+        <marker id="arrowAsync1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#ef4444"/></marker>
+        <marker id="arrowGreen1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#10b981"/></marker>
+      </defs>
+
+      <!-- CUSTOMER (person icon) -->
+      <g filter="url(#shadow1)">
+        <circle cx="55" cy="80" r="14" fill="#94a3b8"/>
+        <circle cx="55" cy="69" r="7" fill="#1a1a2e"/>
+        <path d="M42,87 Q42,76 55,76 Q68,76 68,87" fill="#1a1a2e"/>
+      </g>
+      <text x="55" y="110" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700">Customer</text>
+
+      <!-- CLAIMS SYSTEM (service box) -->
+      <g filter="url(#shadow1)">
+        <rect x="110" y="55" width="140" height="55" rx="10" fill="url(#g1)" opacity="0.9"/>
+        <text x="180" y="79" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Claims System</text>
+        <text x="180" y="96" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">Claim Filed by Guest</text>
+      </g>
+
+      <!-- Arrow: Customer -> Claims System -->
+      <line x1="69" y1="82" x2="108" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync1)"/>
+
+      <!-- Arrow: Claims System -> Kafka claim events (async dashed) -->
+      <line x1="250" y1="82" x2="310" y2="82" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowAsync1)"/>
+      <text x="280" y="74" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="600">claim_created</text>
+
+      <!-- KAFKA "claim events" (3 circles + lines) -->
+      <g filter="url(#shadow1)" transform="translate(340, 62)">
+        <rect x="-20" y="-10" width="90" height="55" rx="8" fill="rgba(239,68,68,0.15)" stroke="#ef4444" stroke-width="1"/>
+        <circle cx="5" cy="14" r="8" fill="#ef4444"/>
+        <circle cx="25" cy="14" r="8" fill="#ef4444" opacity="0.8"/>
+        <circle cx="45" cy="14" r="8" fill="#ef4444" opacity="0.6"/>
+        <line x1="13" y1="14" x2="17" y2="14" stroke="#1a1a2e" stroke-width="2"/>
+        <line x1="33" y1="14" x2="37" y2="14" stroke="#1a1a2e" stroke-width="2"/>
+        <text x="25" y="36" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="700">Kafka</text>
+      </g>
+      <text x="365" y="58" text-anchor="middle" fill="#1e293b" font-size="9" font-style="italic">claim events</text>
+
+      <!-- Arrow: Kafka -> Fraud Engine -->
+      <line x1="410" y1="82" x2="440" y2="82" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowAsync1)"/>
+
+      <!-- FRAUD ENGINE (large box) -->
+      <g filter="url(#shadow1)">
+        <rect x="445" y="20" width="260" height="260" rx="12" fill="rgba(0,166,153,0.15)" stroke="#00A699" stroke-width="2"/>
+        <text x="575" y="42" text-anchor="middle" fill="#00A699" font-size="13" font-weight="800">FRAUD ENGINE</text>
+        <!-- Signal Collector -->
+        <rect x="465" y="55" width="220" height="30" rx="6" fill="url(#g2)" opacity="0.85"/>
+        <text x="575" y="75" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">1. Signal Collector</text>
+        <!-- Signal Cache (Redis diamond) -->
+        <g transform="translate(575, 115)">
+          <polygon points="0,-18 22,0 0,18 -22,0" fill="#ef4444" opacity="0.9"/>
+          <text x="0" y="4" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">Redis</text>
+        </g>
+        <text x="575" y="143" text-anchor="middle" fill="#1e293b" font-size="9">2. Signal Cache</text>
+        <!-- Policy Evaluator -->
+        <rect x="465" y="155" width="220" height="28" rx="6" fill="url(#g3)" opacity="0.85"/>
+        <text x="575" y="174" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">3. Policy Evaluator</text>
+        <!-- Score Calculator -->
+        <rect x="465" y="192" width="220" height="28" rx="6" fill="url(#g4)" opacity="0.85"/>
+        <text x="575" y="211" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">4. Score Calculator</text>
+        <!-- Decision Publisher -->
+        <rect x="465" y="229" width="220" height="28" rx="6" fill="url(#g1)" opacity="0.85"/>
+        <text x="575" y="248" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">5. Decision Publisher</text>
+        <!-- Internal flow arrows -->
+        <line x1="575" y1="85" x2="575" y2="97" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+        <line x1="575" y1="133" x2="575" y2="155" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+        <line x1="575" y1="183" x2="575" y2="192" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+        <line x1="575" y1="220" x2="575" y2="229" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+      </g>
+
+      <!-- Arrow: Fraud Engine -> Kafka fraud events (async) -->
+      <line x1="705" y1="82" x2="750" y2="82" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowAsync1)"/>
+      <text x="728" y="74" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="600">fraud_event</text>
+
+      <!-- KAFKA "fraud events" -->
+      <g filter="url(#shadow1)" transform="translate(785, 62)">
+        <rect x="-20" y="-10" width="90" height="55" rx="8" fill="rgba(239,68,68,0.15)" stroke="#ef4444" stroke-width="1"/>
+        <circle cx="5" cy="14" r="8" fill="#ef4444"/>
+        <circle cx="25" cy="14" r="8" fill="#ef4444" opacity="0.8"/>
+        <circle cx="45" cy="14" r="8" fill="#ef4444" opacity="0.6"/>
+        <line x1="13" y1="14" x2="17" y2="14" stroke="#1a1a2e" stroke-width="2"/>
+        <line x1="33" y1="14" x2="37" y2="14" stroke="#1a1a2e" stroke-width="2"/>
+        <text x="25" y="36" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="700">Kafka</text>
+      </g>
+      <text x="810" y="58" text-anchor="middle" fill="#1e293b" font-size="9" font-style="italic">fraud events</text>
+
+      <!-- Arrow: Kafka fraud events -> Observability Dashboard -->
+      <line x1="855" y1="72" x2="905" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync1)"/>
+      <!-- Arrow: Kafka fraud events -> Agent Review Queue -->
+      <line x1="855" y1="92" x2="905" y2="115" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync1)"/>
+
+      <!-- Observability Dashboard (Elasticsearch concentric circles + bars) -->
+      <g filter="url(#shadow1)">
+        <rect x="908" y="20" width="170" height="50" rx="10" fill="rgba(0,166,153,0.12)" stroke="#00A699" stroke-width="1.5"/>
+        <circle cx="932" cy="45" r="10" fill="none" stroke="#00A699" stroke-width="1.5"/>
+        <circle cx="932" cy="45" r="5" fill="#00A699" opacity="0.6"/>
+        <rect x="938" y="38" width="3" height="8" fill="#00A699" rx="1"/>
+        <rect x="943" y="35" width="3" height="14" fill="#00A699" rx="1" opacity="0.8"/>
+        <rect x="948" y="40" width="3" height="6" fill="#00A699" rx="1" opacity="0.6"/>
+        <text x="1000" y="42" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Observability</text>
+        <text x="1000" y="55" text-anchor="middle" fill="#94a3b8" font-size="8">Dashboard</text>
+      </g>
+
+      <!-- Agent Review Queue (service box) -->
+      <g filter="url(#shadow1)">
+        <rect x="908" y="90" width="170" height="50" rx="10" fill="url(#g5)" opacity="0.9"/>
+        <text x="993" y="112" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Agent Review Queue</text>
+        <text x="993" y="127" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Case Management</text>
+      </g>
+
+      <!-- Arrow: Fraud Engine -> Claims System (sync flag update, going left) -->
+      <line x1="445" y1="240" x2="250" y2="240" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowGreen1)"/>
+      <text x="350" y="234" text-anchor="middle" fill="#10b981" font-size="9" font-weight="600">sync flag update</text>
+      <!-- Small Claims System reference at left -->
+      <g filter="url(#shadow1)">
+        <rect x="130" y="222" width="120" height="36" rx="8" fill="url(#g1)" opacity="0.6"/>
+        <text x="190" y="244" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Claims System</text>
+      </g>
+
+      <!-- SIGNAL SOURCES (bottom row) -->
+      <text x="300" y="330" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="700" letter-spacing="2">SIGNAL SOURCES</text>
+
+      <!-- Profile Service -->
+      <g filter="url(#shadow1)">
+        <rect x="40" y="350" width="130" height="44" rx="8" fill="rgba(66,139,249,0.1)" stroke="#428BF9" stroke-width="1"/>
+        <text x="105" y="376" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Profile Service</text>
+      </g>
+      <line x1="105" y1="350" x2="500" y2="280" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+      <text x="250" y="305" text-anchor="middle" fill="#94a3b8" font-size="7">gRPC</text>
+
+      <!-- Auth Service -->
+      <g filter="url(#shadow1)">
+        <rect x="190" y="350" width="130" height="44" rx="8" fill="rgba(66,139,249,0.1)" stroke="#428BF9" stroke-width="1"/>
+        <text x="255" y="376" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Auth Service</text>
+      </g>
+      <line x1="255" y1="350" x2="530" y2="280" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+
+      <!-- Claims History -->
+      <g filter="url(#shadow1)">
+        <rect x="340" y="350" width="130" height="44" rx="8" fill="rgba(66,139,249,0.1)" stroke="#428BF9" stroke-width="1"/>
+        <text x="405" y="376" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Claims History</text>
+      </g>
+      <line x1="405" y1="350" x2="560" y2="280" stroke="#94a3b8" stroke-width="1" marker-end="url(#arrowSync1)"/>
+
+      <!-- Photo Analysis (ML) -->
+      <g filter="url(#shadow1)">
+        <rect x="490" y="350" width="130" height="44" rx="8" fill="rgba(123,47,247,0.12)" stroke="#7B2FF7" stroke-width="1"/>
+        <text x="555" y="370" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Photo Analysis</text>
+        <text x="555" y="384" text-anchor="middle" fill="#7B2FF7" font-size="8" font-weight="600">(ML)</text>
+      </g>
+      <line x1="555" y1="350" x2="575" y2="280" stroke="#7B2FF7" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowAsync1)"/>
+      <text x="572" y="310" text-anchor="middle" fill="#7B2FF7" font-size="7">async</text>
+
+      <!-- Email Reputation -->
+      <g filter="url(#shadow1)">
+        <rect x="640" y="350" width="140" height="44" rx="8" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1"/>
+        <text x="710" y="376" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Email Reputation</text>
+      </g>
+      <line x1="700" y1="350" x2="620" y2="280" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowAsync1)"/>
+      <text x="668" y="310" text-anchor="middle" fill="#f59e0b" font-size="7">HTTP async</text>
+
+      <!-- POLICY ADMIN UI (bottom right) -->
+      <g filter="url(#shadow1)">
+        <rect x="870" y="200" width="180" height="60" rx="10" fill="rgba(123,47,247,0.12)" stroke="#7B2FF7" stroke-width="1.5"/>
+        <!-- Monitor icon -->
+        <rect x="888" y="212" width="24" height="18" rx="3" fill="#7B2FF7" opacity="0.8"/>
+        <rect x="896" y="230" width="8" height="4" fill="#7B2FF7" opacity="0.6"/>
+        <rect x="892" y="234" width="16" height="2" rx="1" fill="#7B2FF7" opacity="0.5"/>
+        <text x="975" y="227" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700">Policy Admin UI</text>
+        <text x="975" y="244" text-anchor="middle" fill="#94a3b8" font-size="9">Fraud Team</text>
+      </g>
+      <!-- Arrow: Policy Admin UI -> Fraud Engine -->
+      <line x1="870" y1="230" x2="710" y2="200" stroke="#7B2FF7" stroke-width="1.5" marker-end="url(#arrowSync1)"/>
+      <text x="795" y="208" text-anchor="middle" fill="#7B2FF7" font-size="8" font-weight="600">rule management</text>
+
+      <!-- Audit Log (DB cylinder) -->
+      <g filter="url(#shadow1)" transform="translate(960, 310)">
+        <rect x="-35" y="-5" width="70" height="40" fill="#428BF9" opacity="0.8"/>
+        <ellipse cx="0" cy="-5" rx="35" ry="10" fill="#428BF9"/>
+        <ellipse cx="0" cy="35" rx="35" ry="10" fill="#428BF9" opacity="0.7"/>
+        <text x="0" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">Audit Log</text>
+        <text x="0" y="26" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Immutable</text>
+      </g>
+      <line x1="705" y1="260" x2="925" y2="320" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowSync1)"/>
+
+      <!-- Legend -->
+      <g transform="translate(40, 440)">
+        <text x="0" y="0" fill="#94a3b8" font-size="10" font-weight="700">LEGEND:</text>
+        <line x1="70" y1="-3" x2="110" y2="-3" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="115" y="0" fill="#94a3b8" font-size="9">Sync call</text>
+        <line x1="180" y1="-3" x2="220" y2="-3" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3"/>
+        <text x="225" y="0" fill="#94a3b8" font-size="9">Async / Kafka</text>
+        <polygon points="325,-10 337,-3 325,4 313,-3" fill="#ef4444" opacity="0.7"/>
+        <text x="345" y="0" fill="#94a3b8" font-size="9">Redis</text>
+        <circle cx="400" cy="-3" r="6" fill="#ef4444"/><circle cx="412" cy="-3" r="6" fill="#ef4444" opacity="0.7"/>
+        <text x="425" y="0" fill="#94a3b8" font-size="9">Kafka</text>
+      </g>
+
+      <!-- ======== NUMBERED STEP CIRCLES ======== -->
+      <!-- Step 1: Customer -> Claims System -->
+      <circle cx="88" cy="82" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="88" y="86" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+      <!-- Step 2: Claims System -> Kafka claim_created -->
+      <circle cx="280" cy="92" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="280" y="96" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+      <!-- Step 3: Kafka -> Fraud Engine Signal Collector -->
+      <circle cx="425" cy="70" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="425" y="74" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+      <!-- Step 4: Signal Collector -> Signal Sources (Profile/Auth/Claims History) -->
+      <circle cx="300" cy="310" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="300" y="314" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+      <!-- Step 5: Signal Collector -> Photo Analysis ML -->
+      <circle cx="555" cy="318" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="555" y="322" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+      <!-- Step 6: Signal Collector -> Redis Signal Cache -->
+      <circle cx="545" cy="100" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="545" y="104" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+      <!-- Step 7: Policy Evaluator evaluates rules -->
+      <circle cx="455" cy="168" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="455" y="172" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+      <!-- Step 8: Score Calculator produces score -->
+      <circle cx="455" cy="205" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="455" y="209" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+      <!-- Step 9: Decision Publisher -> Kafka fraud_event -->
+      <circle cx="728" cy="62" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="728" y="66" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+      <!-- Step 10: Kafka -> Agent Review Queue + Observability -->
+      <circle cx="880" cy="82" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="880" y="86" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+      <!-- Step 11: Fraud Engine -> Claims System (sync flag) -->
+      <circle cx="350" cy="228" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="350" y="232" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">11</text>
+    </svg>
+  </div>
+
+  <!-- ======== REQUEST FLOW REFERENCE ======== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Protocol</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Customer</td><td>Claims System</td><td>HTTPS</td><td>File a claim with evidence</td></tr>
+        <tr><td><strong>2</strong></td><td>Claims System</td><td>Kafka</td><td>Async publish</td><td><code>claim_created</code> event published</td></tr>
+        <tr><td><strong>3</strong></td><td>Kafka</td><td>Fraud Engine Signal Collector</td><td>Consumer</td><td>Start fraud evaluation</td></tr>
+        <tr><td><strong>4</strong></td><td>Signal Collector</td><td>Profile / Auth / Claims History</td><td>Sync gRPC</td><td>Fetch enrichment signals</td></tr>
+        <tr><td><strong>5</strong></td><td>Signal Collector</td><td>Photo Analysis ML Service</td><td>Async</td><td>Detect fabricated images</td></tr>
+        <tr><td><strong>6</strong></td><td>Signal Collector</td><td>Redis Signal Cache</td><td>TCP</td><td>Cache expensive signal results</td></tr>
+        <tr><td><strong>7</strong></td><td colspan="2">Policy Evaluator</td><td>Internal</td><td>Evaluate rules against collected signals</td></tr>
+        <tr><td><strong>8</strong></td><td colspan="2">Score Calculator</td><td>Internal</td><td>Produce fraud risk score</td></tr>
+        <tr><td><strong>9</strong></td><td>Decision Publisher</td><td>Kafka</td><td>Async publish</td><td><code>fraud_event</code> published with flag result</td></tr>
+        <tr><td><strong>10</strong></td><td>Kafka</td><td>Agent Review Queue + Observability Dashboard</td><td>Consumers</td><td>Route flagged claims for review and metrics</td></tr>
+        <tr><td><strong>11</strong></td><td>Fraud Engine</td><td>Claims System</td><td>Sync</td><td>Flag claim with fraud score</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ======== HAPPY PATH ======== -->
+  <h3>Happy Path</h3>
+  <div class="tip-box tip-success">
+    <div class="tip-title" style="color: var(--success);">Successful Fraud Detection Flow</div>
+    <div class="flow-steps">
+      <div class="flow-step" style="border-color: var(--primary);">
+        <strong style="color: var(--primary);">1</strong><br>Claim filed
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--danger);">
+        <strong style="color: var(--danger);">2</strong><br>Event consumed
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: #e5e7eb;">
+        <strong style="color: #1e293b;">3</strong><br>Signals collected
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--purple);">
+        <strong style="color: var(--purple);">4</strong><br>Policy evaluated
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--warning);">
+        <strong style="color: var(--warning);">5</strong><br>Score = 75 (high risk)
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--accent);">
+        <strong style="color: var(--accent);">6</strong><br>Claim flagged
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--blue);">
+        <strong style="color: var(--blue);">7</strong><br>Agent reviews
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-step" style="border-color: var(--success);">
+        <strong style="color: var(--success);">8</strong><br>Confirmed fraud
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== FAILURE PATHS ======== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Failure Scenario</th><th>Impact</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Signal source down</strong></td>
+          <td>Missing enrichment data for scoring</td>
+          <td>Graceful degradation -- skip unavailable signal, score with remaining signals</td>
+        </tr>
+        <tr>
+          <td><strong>ML service timeout</strong></td>
+          <td>Photo analysis unavailable for claim</td>
+          <td>Use cached result from Redis if available, otherwise skip and flag for manual review</td>
+        </tr>
+        <tr>
+          <td><strong>Kafka consumer lag</strong></td>
+          <td>Delayed fraud flag on claim</td>
+          <td>Flag delayed but remains within 24h SLA; monitor consumer lag with alerting</td>
+        </tr>
+        <tr>
+          <td><strong>False positive</strong></td>
+          <td>Legitimate claim incorrectly flagged as fraud</td>
+          <td>Agent marks as non-fraud; feedback loop retrains scoring model and tunes policy thresholds</td>
+        </tr>
+        <tr>
+          <td><strong>Policy misconfiguration</strong></td>
+          <td>Overly aggressive or permissive rules</td>
+          <td>Shadow mode catches regressions before production; policy changes require peer review</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Data Flow Walkthrough</h3>
+
+  <div class="flow-steps">
+    <div class="flow-step" style="border-color: var(--primary);">
+      <strong style="color: var(--primary);">1</strong><br>Guest files claim
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: var(--accent);">
+      <strong style="color: var(--accent);">2</strong><br><span class="inline-code">claim_created</span> published
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: var(--warning);">
+      <strong style="color: var(--warning);">3</strong><br>Fraud Engine consumes
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: #e5e7eb;">
+      <strong style="color: #1e293b;">4</strong><br>Collect signals
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: var(--blue);">
+      <strong style="color: var(--blue);">5</strong><br>Evaluate policy
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: var(--purple);">
+      <strong style="color: var(--purple);">6</strong><br>Publish outcome
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color: var(--danger);">
+      <strong style="color: var(--danger);">7</strong><br>Route to queue
+    </div>
+  </div>
+
+  <h3>Key Architecture Decisions</h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color: #1e293b;">Why Kafka (Event-Driven)?</div>
+      <ul>
+        <li>Decouples Claims System from fraud logic &mdash; no blocking the claim flow</li>
+        <li>Natural replay capability for backfilling when rules change</li>
+        <li>Multiple consumers: Fraud Engine, Observability, Audit all independently subscribe</li>
+        <li>Ordered processing within a claim partition (partition by <span class="inline-code">claim_id</span>)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color: var(--accent);">Why Not Synchronous?</div>
+      <ul>
+        <li>Signal collection may take seconds to minutes (external API calls)</li>
+        <li>24h SLA means no need for real-time inline blocking</li>
+        <li>Async allows retry/backoff for flaky signal sources</li>
+        <li>Claims UI shouldn't hang waiting for fraud evaluation</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box tip-warning">
+    <div class="tip-title" style="color: var(--warning);">&#9888; Degraded Mode</div>
+    <p>If a signal source is unavailable (e.g., Photo Analysis service is down), the engine should <strong>not block</strong>. Instead: (1) Mark that signal as <span class="inline-code">UNAVAILABLE</span> with confidence 0.0, (2) Evaluate the policy with available signals only, (3) If the resulting score is uncertain (near threshold), queue for <strong>manual review</strong> rather than auto-flag. Log the degraded evaluation for SLA monitoring.</p>
+  </div>
+</section>
+
+<!-- ==================== 6. SIGNAL COLLECTION ==================== -->
+<section id="signal-collection">
+  <h2><span class="icon" style="background: rgba(252,100,45,0.2); color: var(--accent);">&#128225;</span> Signal Collection</h2>
+
+  <p>Efficiently gathering signals is the performance bottleneck. Different signals have vastly different costs and latencies. The design must optimize for speed while respecting external rate limits.</p>
+
+  <h3>Sync vs. Async Collection</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Source</th>
+          <th>Latency</th>
+          <th>Cost</th>
+          <th>Strategy</th>
+          <th>Cacheable?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Account Age</td>
+          <td>Account Service (internal)</td>
+          <td>&lt;10ms</td>
+          <td>Free</td>
+          <td style="color: var(--success);">Sync (cheap check)</td>
+          <td>Yes (24h TTL)</td>
+        </tr>
+        <tr>
+          <td>Claim History</td>
+          <td>Claims DB (internal)</td>
+          <td>&lt;50ms</td>
+          <td>Free</td>
+          <td style="color: var(--success);">Sync (cheap check)</td>
+          <td>Yes (1h TTL)</td>
+        </tr>
+        <tr>
+          <td>Email Reputation</td>
+          <td>External API</td>
+          <td>200-500ms</td>
+          <td>$0.01/call</td>
+          <td style="color: var(--warning);">Async (medium)</td>
+          <td>Yes (7d TTL)</td>
+        </tr>
+        <tr>
+          <td>Guest-Host Link</td>
+          <td>Identity Graph (internal)</td>
+          <td>100-300ms</td>
+          <td>Free</td>
+          <td style="color: var(--warning);">Async (graph query)</td>
+          <td>Yes (1h TTL)</td>
+        </tr>
+        <tr>
+          <td>Photo EXIF Analysis</td>
+          <td>Photo Analysis Service</td>
+          <td>2-10s</td>
+          <td>$0.05/call</td>
+          <td style="color: var(--danger);">Async (expensive)</td>
+          <td>Yes (permanent)</td>
+        </tr>
+        <tr>
+          <td>Reverse Image Search</td>
+          <td>External API</td>
+          <td>3-15s</td>
+          <td>$0.10/call</td>
+          <td style="color: var(--danger);">Async (expensive)</td>
+          <td>Yes (24h TTL)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Short-Circuit Strategy</h3>
+
+  <div class="card">
+    <p>Run <strong>cheap checks first</strong>. If cheap signals alone produce a score above the HIGH threshold (e.g., &gt;0.9), skip expensive checks and flag immediately. This saves cost and reduces latency for obvious fraud.</p>
+
+    <div class="diagram-box" style="margin-top: 15px;">
+<pre>
+  Phase 1: CHEAP CHECKS (sync, &lt;100ms total)           Phase 2: MEDIUM CHECKS (async, &lt;1s)
+  +------------------+  +------------------+            +------------------+  +------------------+
+  | Account Age      |  | Claim History    |            | Email Reputation |  | Identity Graph   |
+  | (10ms, free)     |  | (50ms, free)     |            | (300ms, $0.01)   |  | (200ms, free)    |
+  +------------------+  +------------------+            +------------------+  +------------------+
+           |                     |                               |                     |
+           v                     v                               v                     v
+      +------------------------------------------+     +------------------------------------------+
+      | Phase 1 Score &gt; 0.9? ---YES--&gt; FLAG NOW  |     | Phase 1+2 Score &gt; 0.8? --YES--&gt; FLAG     |
+      |                   |                       |     |                      |                    |
+      |                   NO                      |     |                      NO                   |
+      |                   |                       |     |                      |                    |
+      |            Continue to Phase 2            |     |               Continue to Phase 3         |
+      +------------------------------------------+     +------------------------------------------+
+
+  Phase 3: EXPENSIVE CHECKS (async, &lt;30s)
+  +------------------+  +------------------+
+  | Photo EXIF       |  | Reverse Image    |
+  | (5s, $0.05)      |  | (10s, $0.10)     |
+  +------------------+  +------------------+
+           |                     |
+           v                     v
+      +------------------------------------------+
+      | Final Score Calculation                   |
+      | Flag if score &gt; policy.threshold          |
+      +------------------------------------------+
+</pre>
+    </div>
+  </div>
+
+  <h3>Caching Layer</h3>
+
+  <div class="card">
+    <div class="card-header" style="color: var(--blue);">Signal Cache (Redis)</div>
+    <p>Many signals are <strong>stable across multiple claims</strong> for the same user. Caching avoids redundant expensive calls.</p>
+    <ul>
+      <li><strong>Key pattern:</strong> <span class="inline-code">signal:{signal_type}:{entity_id}</span></li>
+      <li><strong>TTL per signal type:</strong> Account data (24h), email rep (7d), photo analysis (permanent, keyed by photo hash)</li>
+      <li><strong>Cache-aside pattern:</strong> Check cache first, fetch on miss, store with TTL</li>
+      <li><strong>Invalidation:</strong> Event-driven; e.g., if user updates email, invalidate <span class="inline-code">signal:email_rep:{user_id}</span></li>
+    </ul>
+  </div>
+
+  <div class="tip-box tip-interview">
+    <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
+    <p>Discuss the <strong>cost-optimization tradeoff</strong>: running expensive photo analysis for every claim is wasteful. Show the interviewer you think about operational costs, not just architecture purity. The short-circuit pattern demonstrates fiscal awareness alongside engineering judgment.</p>
+  </div>
+</section>
+
+<!-- ==================== 7. MODEL LIFECYCLE ==================== -->
+<section id="model-lifecycle">
+  <h2><span class="icon" style="background: rgba(16,185,129,0.2); color: var(--success);">&#128260;</span> Model Lifecycle</h2>
+
+  <p>Policies (rule bundles + ML models) go through a strict lifecycle with approvals, testing, and gradual rollout. This is critical for safety &mdash; a bad rule can flag thousands of legitimate claims.</p>
+
+  <div class="lifecycle">
+    <div class="lifecycle-stage" style="background: rgba(148,163,184,0.2); color: var(--text-muted); border: 2px solid var(--text-muted);">DRAFT</div>
+    <span class="lifecycle-arrow">&#8594;</span>
+    <div class="lifecycle-stage" style="background: rgba(66,139,249,0.2); color: var(--blue); border: 2px solid var(--blue);">IN_REVIEW</div>
+    <span class="lifecycle-arrow">&#8594;</span>
+    <div class="lifecycle-stage" style="background: rgba(245,158,11,0.2); color: var(--warning); border: 2px solid var(--warning);">IN_EXPERIMENT</div>
+    <span class="lifecycle-arrow">&#8594;</span>
+    <div class="lifecycle-stage" style="background: rgba(16,185,129,0.2); color: var(--success); border: 2px solid var(--success);">IN_PRODUCTION</div>
+    <span class="lifecycle-arrow">&#8594;</span>
+    <div class="lifecycle-stage" style="background: rgba(239,68,68,0.15); color: var(--danger); border: 2px solid var(--danger);">ARCHIVED</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>State</th>
+          <th>Who Can Transition</th>
+          <th>What Happens</th>
+          <th>Safeguards</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--text-muted); font-weight: 600;">DRAFT</td>
+          <td>Fraud Analyst</td>
+          <td>Author rules in the Policy Admin UI. Rules are validated syntactically. Can test against historical claims in a sandbox.</td>
+          <td>Unit tests must pass; no production impact</td>
+        </tr>
+        <tr>
+          <td style="color: var(--blue); font-weight: 600;">IN_REVIEW</td>
+          <td>Fraud Team Lead + Engineering</td>
+          <td>Peer review of rule logic. Dry-run against last 30 days of claims to estimate flag rate and FP impact.</td>
+          <td>Requires 2 approvals; dry-run report must show FP rate &lt; threshold</td>
+        </tr>
+        <tr>
+          <td style="color: var(--warning); font-weight: 600;">IN_EXPERIMENT</td>
+          <td>Fraud Team Lead</td>
+          <td>Deployed in shadow mode or A/B experiment. Scores claims but does NOT act (or acts on a small percentage). Metrics collected.</td>
+          <td>Auto-halt if FP rate exceeds 5%; max 14-day experiment window</td>
+        </tr>
+        <tr>
+          <td style="color: var(--success); font-weight: 600;">IN_PRODUCTION</td>
+          <td>Engineering + Fraud Lead</td>
+          <td>Promoted to be the active policy. Previous production policy moves to ARCHIVED. Full traffic evaluated against this version.</td>
+          <td>Rollback button; continuous monitoring; auto-rollback if FP spikes &gt;3x baseline</td>
+        </tr>
+        <tr>
+          <td style="color: var(--danger); font-weight: 600;">ARCHIVED</td>
+          <td>Automatic / Manual</td>
+          <td>Retired policy. Retained for auditing and comparison. Can be cloned to create a new DRAFT.</td>
+          <td>Immutable; cannot be re-activated directly</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-warning">
+    <div class="tip-title" style="color: var(--warning);">&#9888; Version Coexistence</div>
+    <p>During experiments, <strong>multiple policy versions evaluate the same claim simultaneously</strong>. The production version determines the actual outcome, while the experimental version's results are logged for comparison. The Outcome record stores <span class="inline-code">policy_version</span> so analysis can split by version. This is analogous to how Airbnb runs parallel ML model versions in their search ranking pipeline.</p>
+  </div>
+</section>
+
+<!-- ==================== 8. PERFORMANCE METRICS ==================== -->
+<section id="performance-metrics">
+  <h2><span class="icon" style="background: rgba(255,90,95,0.2); color: var(--primary);">&#128202;</span> Performance Metrics</h2>
+
+  <p>Measuring fraud engine quality requires careful attention to the <strong>confusion matrix</strong> and derived metrics. Unlike typical ML systems, the cost of a false positive (accusing a legitimate guest) is disproportionately higher than the cost of a false negative (missing fraud).</p>
+
+  <h3>Confusion Matrix</h3>
+
+  <div class="confusion-matrix">
+    <div class="cm-cell cm-header"></div>
+    <div class="cm-cell cm-header">Predicted: Fraud</div>
+    <div class="cm-cell cm-header">Predicted: Legit</div>
+    <div class="cm-cell cm-header">Actual: Fraud</div>
+    <div class="cm-cell cm-tp">
+      <strong>True Positive (TP)</strong><br>
+      <span style="font-size: 0.85em;">Correctly flagged fraud</span><br>
+      <span style="font-size: 0.8em; opacity: 0.8;">$$$ saved</span>
+    </div>
+    <div class="cm-cell cm-fn">
+      <strong>False Negative (FN)</strong><br>
+      <span style="font-size: 0.85em;">Missed fraud (paid out)</span><br>
+      <span style="font-size: 0.8em; opacity: 0.8;">$$$ lost</span>
+    </div>
+    <div class="cm-cell cm-header">Actual: Legit</div>
+    <div class="cm-cell cm-fp">
+      <strong>False Positive (FP)</strong><br>
+      <span style="font-size: 0.85em;">Wrongly accused guest</span><br>
+      <span style="font-size: 0.8em; opacity: 0.8;">Trust destroyed</span>
+    </div>
+    <div class="cm-cell cm-tn">
+      <strong>True Negative (TN)</strong><br>
+      <span style="font-size: 0.85em;">Correctly passed legit claim</span><br>
+      <span style="font-size: 0.8em; opacity: 0.8;">Happy guest</span>
+    </div>
+  </div>
+
+  <h3>Key Rates</h3>
+
+  <div class="metric-grid">
+    <div class="metric-card" style="border-top: 3px solid var(--success);">
+      <div class="metric-value" style="background: linear-gradient(135deg, var(--success), var(--secondary)); -webkit-background-clip: text; background-clip: text;">TPR</div>
+      <div class="metric-label">True Positive Rate<br>(Recall / Sensitivity)</div>
+      <div style="font-size: 0.8em; color: var(--text-muted); margin-top: 8px;">TP / (TP + FN)</div>
+      <div style="font-size: 0.8em; color: var(--success); margin-top: 4px;">Target: > 85%</div>
+    </div>
+    <div class="metric-card" style="border-top: 3px solid var(--danger);">
+      <div class="metric-value" style="background: linear-gradient(135deg, var(--danger), var(--accent)); -webkit-background-clip: text; background-clip: text;">FPR</div>
+      <div class="metric-label">False Positive Rate<br>(Fall-out)</div>
+      <div style="font-size: 0.8em; color: var(--text-muted); margin-top: 8px;">FP / (FP + TN)</div>
+      <div style="font-size: 0.8em; color: var(--danger); margin-top: 4px;">Target: < 2%</div>
+    </div>
+    <div class="metric-card" style="border-top: 3px solid var(--blue);">
+      <div class="metric-value" style="background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; background-clip: text;">PPV</div>
+      <div class="metric-label">Precision<br>(Positive Predictive)</div>
+      <div style="font-size: 0.8em; color: var(--text-muted); margin-top: 8px;">TP / (TP + FP)</div>
+      <div style="font-size: 0.8em; color: var(--blue); margin-top: 4px;">Target: > 70%</div>
+    </div>
+    <div class="metric-card" style="border-top: 3px solid var(--warning);">
+      <div class="metric-value" style="background: linear-gradient(135deg, var(--warning), var(--accent)); -webkit-background-clip: text; background-clip: text;">F1</div>
+      <div class="metric-label">F1 Score<br>(Harmonic Mean)</div>
+      <div style="font-size: 0.8em; color: var(--text-muted); margin-top: 8px;">2 * (P*R)/(P+R)</div>
+      <div style="font-size: 0.8em; color: var(--warning); margin-top: 4px;">Target: > 0.75</div>
+    </div>
+  </div>
+
+  <h3>Monitoring Alerts</h3>
+
+  <div class="card-grid">
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header" style="color: var(--danger);">Flag Rate Spike Alert</div>
+      <p>If the hourly flag rate exceeds <strong>2x the 7-day moving average</strong>, trigger a PagerDuty alert. Could indicate a rule misconfiguration or an actual fraud wave &mdash; both require investigation.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--warning);">
+      <div class="card-header" style="color: var(--warning);">Flag Rate Drop Alert</div>
+      <p>If the daily flag rate drops below <strong>50% of baseline</strong>, alert. Could indicate a broken signal source (e.g., Identity Graph returning empty results) or a rule accidentally disabled.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--blue);">
+      <div class="card-header" style="color: var(--blue);">FP Rate Drift Alert</div>
+      <p>Track the <strong>agent overturn rate</strong> (flagged claims that agents mark as legitimate). If overturn rate exceeds 5% over a 24h window, alert Fraud team to review rules. This is the primary <strong>false positive feedback loop</strong>.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--success);">
+      <div class="card-header" style="color: var(--success);">Agent Feedback Loop</div>
+      <p>When agents review flagged claims, they mark them as <strong>confirmed fraud</strong> or <strong>false positive</strong>. This creates labeled training data. Weekly reports show per-rule false positive rates, enabling the Fraud team to tune weights and thresholds.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 9. EXPERIMENTATION ==================== -->
+<section id="experimentation">
+  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Experimentation</h2>
+
+  <p>Safe experimentation is essential. A poorly calibrated rule change can flag thousands of legitimate claims overnight. The system supports three modes of experimentation, each with increasing risk exposure.</p>
+
+  <div class="card-grid-3">
+    <div class="card option-a">
+      <div class="card-header" style="color: #1e293b;">&#128065; Shadow Mode</div>
+      <p><strong>Risk: Zero.</strong> The experimental policy evaluates every claim and logs the result, but <em>never acts</em> on it. The production policy makes all actual decisions.</p>
+      <ul>
+        <li>Log: score, flag decision, rule matches</li>
+        <li>Compare against production outcomes</li>
+        <li>Measure: "Would this have flagged X more/fewer?"</li>
+        <li>Duration: 7-14 days recommended</li>
+      </ul>
+      <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;"><em>Use for: major policy overhauls, new ML models</em></p>
+    </div>
+    <div class="card option-b">
+      <div class="card-header" style="color: var(--accent);">&#128256; A/B Routing</div>
+      <p><strong>Risk: Controlled.</strong> Claims are randomly assigned to control (production policy) or treatment (experimental policy) based on a traffic split (e.g., 90/10).</p>
+      <ul>
+        <li>Assignment: hash(<span class="inline-code">claim_id</span>) % 100 &lt; split</li>
+        <li>Both policies produce real outcomes</li>
+        <li>Compare: flag rate, agent overturn rate, cost savings</li>
+        <li>Statistical significance required before promotion</li>
+      </ul>
+      <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;"><em>Use for: threshold tuning, weight adjustments</em></p>
+    </div>
+    <div class="card option-c">
+      <div class="card-header" style="color: var(--purple);">&#128200; Gradual Rollout</div>
+      <p><strong>Risk: Managed.</strong> Start at 5% traffic, monitor metrics for 24h, increase to 25%, then 50%, then 100% if metrics stay within bounds.</p>
+      <ul>
+        <li>Automated canary analysis at each stage</li>
+        <li>Auto-rollback if FP rate exceeds ceiling</li>
+        <li>Rollout schedule configurable per experiment</li>
+        <li>Full rollout takes 4-7 days</li>
+      </ul>
+      <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;"><em>Use for: production promotion of validated changes</em></p>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+<pre>
+  EXPERIMENTATION PIPELINE
+
+  +---------+     +-----------+     +------------------+     +------------------+     +------------+
+  | DRAFT   | --&gt; | SHADOW    | --&gt; | A/B EXPERIMENT   | --&gt; | GRADUAL ROLLOUT  | --&gt; | PRODUCTION |
+  | Policy  |     | (0% risk) |     | (10% traffic)    |     | (5%..25%..100%)  |     | (100%)     |
+  +---------+     +-----------+     +------------------+     +------------------+     +------------+
+                       |                    |                        |
+                       v                    v                        v
+                  +----------+        +----------+             +----------+
+                  | Compare  |        | Stat Sig |             | Canary   |
+                  | Metrics  |        | Analysis |             | Analysis |
+                  +----------+        +----------+             +----------+
+                       |                    |                        |
+                  FP rate OK?         p-value &lt; 0.05?           FP spike?
+                  TPR improved?       Effect size &gt; min?        Auto-rollback?
+</pre>
+  </div>
+
+  <div class="tip-box tip-info">
+    <div class="tip-title" style="color: var(--blue);">&#128161; Experiment Assignment Consistency</div>
+    <p>Use <strong>deterministic hashing</strong> of the claim_id for A/B assignment, not random. This ensures that if a claim is re-evaluated (e.g., after signal update), it stays in the same experiment bucket. Use a salt that changes per experiment to avoid bucket correlation across experiments.</p>
+  </div>
+</section>
+
+<!-- ==================== 10. ML INTEGRATION ==================== -->
+<section id="ml-integration">
+  <h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#129302;</span> ML Integration</h2>
+
+  <p>Rules alone miss subtle patterns. ML models can detect non-obvious correlations. The PE-level answer is a <strong>hybrid ensemble</strong>: rules provide explainability and fast iteration, while ML adds detection power for complex fraud patterns.</p>
+
+  <h3>Architecture: Rule-Based + ML Ensemble</h3>
+
+  <div class="diagram-box">
+<pre>
+                        +--------- SIGNALS ---------+
+                        |                            |
+                        v                            v
+              +------------------+         +------------------+
+              |  RULE ENGINE     |         |  ML MODEL        |
+              |  (DSL Policies)  |         |  (Gradient Boost)|
+              |                  |         |                  |
+              |  score: 0.72     |         |  score: 0.68     |
+              |  explainable:YES |         |  explainable:NO  |
+              +--------+---------+         +--------+---------+
+                       |                            |
+                       +---------- COMBINER --------+
+                                     |
+                              +------+------+
+                              |  ENSEMBLE   |
+                              |  STRATEGY   |
+                              |             |
+                              | MAX(rule,ml)|  &lt;-- if either is high, flag
+                              | or          |
+                              | W_AVG       |  &lt;-- weighted: 0.6*rule + 0.4*ml
+                              | or          |
+                              | RULE_VETO   |  &lt;-- rule can override ML (for compliance)
+                              +------+------+
+                                     |
+                                     v
+                              Final Score: 0.70
+                              Flagged: YES
+</pre>
+  </div>
+
+  <h3>Feature Engineering</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature Category</th>
+          <th>Example Features</th>
+          <th>Data Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>User Identity</strong></td>
+          <td>account_age_days, email_domain_is_disposable, phone_verified, id_verified, profile_completeness_pct</td>
+          <td>Account Service</td>
+        </tr>
+        <tr>
+          <td><strong>Behavioral</strong></td>
+          <td>claims_count_30d, claims_count_90d, avg_claim_amount, time_between_booking_and_claim, previous_fraud_flags</td>
+          <td>Claims DB</td>
+        </tr>
+        <tr>
+          <td><strong>Relational</strong></td>
+          <td>guest_host_shared_ip, guest_host_shared_payment, guest_host_same_city, booking_only_1_night</td>
+          <td>Identity Graph</td>
+        </tr>
+        <tr>
+          <td><strong>Media</strong></td>
+          <td>photo_exif_date_matches_stay, photo_gps_matches_listing, reverse_image_search_hits, photo_count_vs_claim_amount</td>
+          <td>Photo Analysis</td>
+        </tr>
+        <tr>
+          <td><strong>Financial</strong></td>
+          <td>claim_amount_to_listing_ratio, payment_method_is_prepaid, chargeback_history</td>
+          <td>Payments Service</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Training Data from Agent Confirmations</h3>
+
+  <div class="card">
+    <p>The <strong>agent feedback loop</strong> is the primary source of labeled training data:</p>
+    <ul>
+      <li><strong>Positive labels (fraud):</strong> Claims that agents investigate and confirm as fraudulent after flag</li>
+      <li><strong>Negative labels (legit):</strong> Claims that agents overturn (false positives) + random sample of unflagged claims confirmed as legitimate</li>
+      <li><strong>Label delay:</strong> Agent decisions take 1-7 days, so training data has inherent lag. Retrain weekly, not in real-time.</li>
+      <li><strong>Class imbalance:</strong> Fraud is ~2-5% of claims. Use SMOTE oversampling or adjust class weights in training.</li>
+      <li><strong>Concept drift:</strong> Fraudsters adapt. Monitor model staleness via monthly AUC-ROC comparison against fresh holdout set.</li>
+    </ul>
+  </div>
+
+  <div class="tip-box tip-danger">
+    <div class="tip-title" style="color: var(--danger);">&#9888; RULE_VETO Ensemble Strategy</div>
+    <p>Even when the ML model says "not fraud" (score 0.2), certain rules should <strong>always trigger a flag</strong> &mdash; for example, "guest and host share the same bank account." These are <strong>compliance-mandated rules</strong> that cannot be overridden by ML. The RULE_VETO combiner lets specified rules act as hard overrides regardless of the ML score. This is a critical point for the PE interview: not everything should be data-driven; some rules are policy-driven.</p>
+  </div>
+</section>
+
+<!-- ==================== 11. SECURITY ==================== -->
+<section id="security">
+  <h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#128274;</span> Security</h2>
+
+  <p>The Fraud Engine handles extremely sensitive data and its logic must be protected from both external attackers and internal gaming. Three pillars: access control, data protection, and anti-reverse-engineering.</p>
+
+  <div class="card-grid-3">
+    <div class="card" style="border-top: 3px solid var(--danger);">
+      <div class="card-header" style="color: var(--danger);">&#128272; RBAC (Role-Based Access Control)</div>
+      <ul>
+        <li><strong>Fraud Analyst:</strong> Create/edit DRAFT rules, view dashboards, view claim details</li>
+        <li><strong>Fraud Team Lead:</strong> Approve rules for experiment, promote to production, configure thresholds</li>
+        <li><strong>Engineering:</strong> Deploy infrastructure, manage model serving, access logs</li>
+        <li><strong>Agent:</strong> View flag status and contributing reasons (redacted); cannot view rule logic</li>
+        <li><strong>Guest/Host:</strong> Zero visibility into fraud signals or scores. Only see "Under review."</li>
+      </ul>
+      <p style="font-size: 0.85em; color: var(--text-muted); margin-top: 10px;">All role assignments audited. Principle of least privilege enforced.</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--blue);">
+      <div class="card-header" style="color: var(--blue);">&#128272; Encryption &amp; Data Protection</div>
+      <ul>
+        <li><strong>At rest:</strong> All PII encrypted with AES-256 in the fraud signals store</li>
+        <li><strong>In transit:</strong> TLS 1.3 for all service-to-service communication</li>
+        <li><strong>Data retention:</strong> Signal data retained 90 days (legal hold extends); outcomes retained 7 years (regulatory)</li>
+        <li><strong>Anonymization:</strong> Training data for ML models uses anonymized/hashed user IDs</li>
+        <li><strong>GDPR Right to Erasure:</strong> Can delete PII from signals but must retain anonymized outcome records</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--purple);">
+      <div class="card-header" style="color: var(--purple);">&#128373; Anti-Reverse-Engineering</div>
+      <ul>
+        <li><strong>No score exposure:</strong> Users never see their fraud score or which signals triggered</li>
+        <li><strong>Vague messaging:</strong> "Your claim is under additional review" &mdash; no specifics on why</li>
+        <li><strong>Delayed flagging:</strong> Don't immediately reject; add a realistic processing delay to prevent timing attacks</li>
+        <li><strong>Rule obfuscation:</strong> Even internal dashboards show rule IDs, not full logic, unless user has Fraud Analyst role</li>
+        <li><strong>Honeypot signals:</strong> Include decoy signals that don't affect scoring but detect if someone is probing the system</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box tip-warning">
+    <div class="tip-title" style="color: var(--warning);">&#9888; Adversarial Robustness</div>
+    <p>Fraudsters will adapt. If they realize "new accounts get flagged," they will age accounts before filing claims. The system must track <strong>signal distribution drift</strong> over time. If account_age for fraud claims shifts from &lt;7d to 30-60d, this signals adversarial adaptation and rules need updating. Build a <strong>monthly signal distribution report</strong> for the Fraud team.</p>
+  </div>
+</section>
+
+<!-- ==================== 12. TRADE-OFFS ==================== -->
+<section id="trade-offs">
+  <h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9878;</span> Trade-offs</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Option A</th>
+          <th>Option B</th>
+          <th>Our Choice &amp; Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Processing Mode</strong></td>
+          <td>Synchronous (inline with claim creation)</td>
+          <td>Asynchronous (event-driven, background)</td>
+          <td style="color: #1e293b;"><strong>Async.</strong> 24h SLA does not justify blocking the claim flow. Async allows retry, degraded mode, and decoupling.</td>
+        </tr>
+        <tr>
+          <td><strong>Rule Authoring</strong></td>
+          <td>Code-based rules (engineers write Java/Python)</td>
+          <td>Config-based (DSL + UI for Fraud team)</td>
+          <td style="color: #1e293b;"><strong>Config-based.</strong> Fraud team must iterate independently of engineering release cycles. Accept the complexity of a DSL parser for the velocity gain.</td>
+        </tr>
+        <tr>
+          <td><strong>Scoring Approach</strong></td>
+          <td>Binary flag (fraud yes/no)</td>
+          <td>Continuous score (0.0 to 1.0)</td>
+          <td style="color: #1e293b;"><strong>Continuous score.</strong> Enables threshold tuning, tiered routing (high/medium/low risk), and better experimentation. Binary loses too much information.</td>
+        </tr>
+        <tr>
+          <td><strong>Model Type</strong></td>
+          <td>Rules only (fully explainable)</td>
+          <td>ML only (higher recall)</td>
+          <td style="color: #1e293b;"><strong>Hybrid ensemble.</strong> Rules for compliance and explainability; ML for catching subtle patterns. Rules can veto ML for critical signals.</td>
+        </tr>
+        <tr>
+          <td><strong>Signal Collection</strong></td>
+          <td>Collect all signals for every claim</td>
+          <td>Short-circuit (skip expensive if cheap signals already decisive)</td>
+          <td style="color: #1e293b;"><strong>Short-circuit.</strong> Saves cost (external APIs), reduces latency, handles 90% of cases with cheap signals. Accept slightly lower recall for edge cases.</td>
+        </tr>
+        <tr>
+          <td><strong>False Positive vs. False Negative</strong></td>
+          <td>Aggressive flagging (high recall, more FPs)</td>
+          <td>Conservative flagging (low FPs, miss some fraud)</td>
+          <td style="color: #1e293b;"><strong>Conservative.</strong> Guest trust is paramount at Airbnb. A 2% FP rate ceiling with 85% TPR target. Accept that some fraud slips through rather than damage the brand.</td>
+        </tr>
+        <tr>
+          <td><strong>Experiment Strategy</strong></td>
+          <td>Big-bang deployment (test in staging, ship to 100%)</td>
+          <td>Shadow mode + gradual rollout</td>
+          <td style="color: #1e293b;"><strong>Shadow + gradual.</strong> Cost of a bad rollout is too high. 7-day shadow, then 5% &rarr; 25% &rarr; 100% over a week. Accept slower iteration speed for safety.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-interview">
+    <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
+    <p>The strongest signal in a PE interview is when a candidate <strong>articulates trade-offs unprompted</strong>. Don't just present the "right" answer &mdash; say "We chose X over Y because Z, and the cost of that choice is W, which we mitigate by..." This shows the judgment that distinguishes a PE from a senior engineer.</p>
+  </div>
+</section>
+
+<!-- ==================== 13. INTERVIEW TIPS ==================== -->
+<section id="interview-tips">
+  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#127919;</span> Interview Calibration</h2>
+
+  <p>This section maps candidate performance to Airbnb's interview scoring rubric. Use this to calibrate your preparation and ensure you hit the key signals interviewers look for.</p>
+
+  <div class="calibration-grid">
+    <div class="card" style="border-top: 4px solid var(--danger);">
+      <div class="card-header" style="color: var(--danger);">&#10060; Strong No</div>
+      <ul>
+        <li>Cannot identify that this is fundamentally a <strong>rule engine + signal aggregation</strong> problem</li>
+        <li>Proposes a synchronous, monolithic design that blocks claim creation</li>
+        <li>No mention of false positive impact or guest trust</li>
+        <li>Assumes fraud team will write code to update rules</li>
+        <li>No versioning or experimentation strategy</li>
+        <li>Skips signal collection design entirely</li>
+        <li>Cannot discuss how to evaluate whether the system is working</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--warning);">
+      <div class="card-header" style="color: var(--warning);">&#128528; No (Lean No)</div>
+      <ul>
+        <li>Identifies rule engine pattern but design is <strong>generic/shallow</strong></li>
+        <li>Mentions event-driven but cannot explain why async is appropriate</li>
+        <li>Proposes a single rule representation without discussing alternatives</li>
+        <li>Mentions "ML" but cannot articulate how rules and ML compose</li>
+        <li>Acknowledges false positives but no concrete strategy to manage them</li>
+        <li>Basic versioning (v1, v2) but no lifecycle or safe rollout</li>
+        <li>No discussion of observability, monitoring, or feedback loops</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--secondary);">
+      <div class="card-header" style="color: #1e293b;">&#9989; Yes (Hire)</div>
+      <ul>
+        <li>Clean domain model: Signal &rarr; Rule &rarr; Policy &rarr; Outcome</li>
+        <li>Event-driven architecture with clear rationale for async</li>
+        <li>Discusses 2-3 rule representation options with trade-offs</li>
+        <li>Short-circuit optimization for signal collection</li>
+        <li>Model lifecycle with states (DRAFT through ARCHIVED)</li>
+        <li>Confusion matrix understanding; targets for TPR and FPR</li>
+        <li>Shadow mode for safe experimentation</li>
+        <li>Agent feedback loop for continuous improvement</li>
+        <li>RBAC and anti-reverse-engineering considerations</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--success);">
+      <div class="card-header" style="color: var(--success);">&#127775; Strong Yes (Strong Hire)</div>
+      <ul>
+        <li>All of "Yes" plus:</li>
+        <li><strong>Hybrid ensemble</strong> (rules + ML) with RULE_VETO for compliance rules</li>
+        <li><strong>Phased signal collection</strong> with cost-aware short-circuiting</li>
+        <li><strong>A/B experimentation</strong> with deterministic hashing and statistical significance</li>
+        <li><strong>Gradual rollout</strong> with auto-rollback on FP spike</li>
+        <li><strong>Adversarial robustness</strong> &mdash; discusses how fraudsters adapt and how to detect it</li>
+        <li><strong>Training data pipeline</strong> from agent confirmations with class imbalance handling</li>
+        <li><strong>Degraded mode design</strong> when signal sources are unavailable</li>
+        <li>Unprompted trade-off analysis showing <strong>PE-level judgment</strong></li>
+        <li>Discusses <strong>organizational dynamics</strong>: Fraud team velocity, cross-team dependencies, on-call for the engine</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Key Phrases to Use in the Interview</h3>
+
+  <div class="card">
+    <div class="card-grid">
+      <div>
+        <h4 style="color: #1e293b;">Framing the Problem</h4>
+        <ul>
+          <li>"The core tension is between <em>catching fraud</em> and <em>preserving guest trust</em>."</li>
+          <li>"This is fundamentally a configurable rule engine with an ML augmentation layer."</li>
+          <li>"The Fraud team needs to iterate on rules independently of the engineering release cycle."</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: var(--accent);">Demonstrating Depth</h4>
+        <ul>
+          <li>"I would short-circuit expensive signals when cheap signals already cross the threshold."</li>
+          <li>"We need RULE_VETO &mdash; some signals are compliance-mandated and cannot be overridden by ML."</li>
+          <li>"Fraudsters adapt, so we monitor signal distribution drift monthly."</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: var(--purple);">Showing Judgment</h4>
+        <ul>
+          <li>"I'd prefer a conservative threshold &mdash; at Airbnb, wrongly accusing a guest is more costly than missing some fraud."</li>
+          <li>"We chose async over sync because the 24h SLA doesn't justify blocking the claim flow."</li>
+          <li>"Shadow mode before A/B before rollout &mdash; we need to de-risk at each stage."</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box tip-success">
+    <div class="tip-title" style="color: var(--success);">&#9989; Final Preparation Checklist</div>
+    <p>Before the interview, make sure you can whiteboard these in under 45 minutes:</p>
+    <ul>
+      <li>Domain model (4 entities) in 2 minutes</li>
+      <li>Architecture diagram (event flow from claim to outcome) in 5 minutes</li>
+      <li>Rule representation comparison (3 options, pick one, justify) in 5 minutes</li>
+      <li>Signal collection strategy with short-circuit optimization in 5 minutes</li>
+      <li>Model lifecycle states with experimentation strategy in 5 minutes</li>
+      <li>Confusion matrix + metrics + monitoring in 5 minutes</li>
+      <li>ML integration and ensemble strategy in 5 minutes</li>
+      <li>Trade-offs summary (3-4 key decisions with rationale) in 5 minutes</li>
+      <li>Security considerations (RBAC, anti-reverse-engineering) in 3 minutes</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <p>Fraud Detection Engine &mdash; PE System Design Deep Dive | <a href="index.html">Back to All Topics</a></p>
+  <p style="margin-top: 8px;">Based on Airbnb PE interview preparation. All architectural patterns reflect real-world fraud detection systems at scale.</p>
+</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

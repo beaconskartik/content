@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recently Viewed Listings - Airbnb System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 70px 40px 60px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .topic-number-hero {
+    position: relative;
+    display: inline-block;
+    font-size: 1em;
+    font-weight: 800;
+    color: var(--primary);
+    background: rgba(255,90,95,0.15);
+    border: 1px solid rgba(255,90,95,0.3);
+    padding: 4px 18px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .hero .subtitle {
+    font-size: 1.2em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 24px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .hero-badges {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin: 3px 2px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-easy { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid var(--success); }
+  .badge-medium { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid var(--warning); }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    background: #f8fafc;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .nav-bar h2 {
+    color: var(--secondary);
+    margin-bottom: 12px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.8em;
+    transition: all 0.3s;
+  }
+  .nav-links a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* ===== CONTAINER ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+
+  /* ===== SECTION ===== */
+  .section {
+    padding: 50px 0 30px;
+  }
+  .section + .section {
+    border-top: 1px solid #e5e7eb;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 0.72em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--secondary);
+    background: rgba(0,166,153,0.1);
+    border: 1px solid rgba(0,166,153,0.25);
+    padding: 4px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .section h2 {
+    font-size: 1.9em;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.25;
+  }
+  .section h3 {
+    font-size: 1.3em;
+    color: var(--primary);
+    margin: 24px 0 12px;
+  }
+  .section h4 {
+    font-size: 1.05em;
+    color: var(--blue);
+    margin: 18px 0 10px;
+  }
+  .section p, .section li {
+    color: var(--text-muted);
+    font-size: 0.95em;
+    line-height: 1.75;
+  }
+  .section ul, .section ol {
+    padding-left: 24px;
+    margin: 10px 0;
+  }
+  .section li {
+    margin-bottom: 6px;
+  }
+  .section li strong {
+    color: var(--text);
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 16px 0;
+    transition: border-color 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(255,90,95,0.3);
+  }
+  .card h4 {
+    margin-top: 0;
+  }
+
+  /* ===== GRID LAYOUTS ===== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  /* ===== CODE BLOCKS ===== */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 14px 0;
+    font-size: 0.85em;
+    line-height: 1.65;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    color: #24292f;
+  }
+  .kw { color: #cf222e; }
+  .fn { color: #8250df; }
+  .str { color: #0a3069; }
+  .cm { color: #6e7781; font-style: italic; }
+  .typ { color: #0550ae; }
+  .num { color: #f59e0b; }
+  .op { color: #cf222e; }
+  .var { color: #953800; }
+
+  code.inline {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+
+  /* ===== TABLES ===== */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 14px 0;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  th {
+    background: rgba(255,90,95,0.1);
+    color: var(--primary);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-muted);
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--text); }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-diagram {
+    background: linear-gradient(135deg, #0d1117, #161b22);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 32px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.82em;
+    line-height: 1.55;
+    color: var(--text-muted);
+    white-space: pre;
+  }
+  .diagram-box {
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+
+  /* ===== FLOW STEPS ===== */
+  .flow-steps {
+    margin: 16px 0;
+    counter-reset: step-counter;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    counter-increment: step-counter;
+  }
+  .flow-step-num {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85em;
+    flex-shrink: 0;
+  }
+  .flow-step-content {
+    flex: 1;
+    padding-top: 5px;
+  }
+  .flow-step-content strong { color: var(--text); }
+  .flow-step-content p { margin: 0; color: var(--text-muted); font-size: 0.92em; }
+
+  /* ===== PRIORITY TAG ===== */
+  .priority-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .p0 { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .p1 { background: rgba(252,100,45,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .p2 { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+  .p3 { background: rgba(66,139,249,0.2); color: var(--blue); border: 1px solid var(--blue); }
+
+  /* ===== METRIC BOX ===== */
+  .metric-box {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-box .metric-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-box .metric-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* ===== CALLOUT ===== */
+  .callout {
+    border-left: 4px solid var(--secondary);
+    background: rgba(0,166,153,0.06);
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+  }
+  .callout.warning {
+    border-left-color: var(--warning);
+    background: rgba(245,158,11,0.06);
+  }
+  .callout.danger {
+    border-left-color: var(--danger);
+    background: rgba(239,68,68,0.06);
+  }
+  .callout.info {
+    border-left-color: var(--blue);
+    background: rgba(66,139,249,0.06);
+  }
+  .callout p { margin: 0; }
+  .callout strong { color: var(--text); }
+
+  /* ===== TRADE-OFF CARD ===== */
+  .tradeoff {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 14px 0;
+  }
+  .tradeoff h4 {
+    margin: 0 0 12px 0;
+    color: var(--text);
+    font-size: 1em;
+  }
+  .tradeoff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .tradeoff-col h5 {
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .tradeoff-col.pros h5 { color: var(--success); }
+  .tradeoff-col.cons h5 { color: var(--danger); }
+  .tradeoff-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .tradeoff-col li {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .tradeoff-col.pros li::before { content: '+'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+  .tradeoff-col.cons li::before { content: '-'; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+  .tradeoff .verdict {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.88em;
+    color: var(--text);
+  }
+  .tradeoff .verdict strong { color: var(--text); }
+
+  /* ===== INTERVIEW TIP ===== */
+  .tip-card {
+    background: linear-gradient(135deg, rgba(123,47,247,0.08), rgba(66,139,249,0.08));
+    border: 1px solid rgba(123,47,247,0.25);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 14px 0;
+  }
+  .tip-card h4 {
+    color: var(--purple);
+    margin: 0 0 10px 0;
+  }
+  .tip-card p, .tip-card li {
+    font-size: 0.9em;
+    color: var(--text-muted);
+  }
+
+  /* ===== RECOMMENDATION TAG ===== */
+  .rec-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: rgba(16,185,129,0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    padding: 40px 30px;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid #e5e7eb;
+  }
+  .footer a {
+    color: #ffffff;
+    text-decoration: none;
+  }
+  .footer a:hover { color: var(--primary); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 50px 20px 40px; }
+    .hero h1 { font-size: 1.7em; }
+    .hero .subtitle { font-size: 1em; }
+    .nav-bar { padding: 14px 20px; }
+    .container { padding: 0 16px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .tradeoff-row { grid-template-columns: 1fr; }
+    .section h2 { font-size: 1.5em; }
+    .arch-diagram { font-size: 0.7em; padding: 16px; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--  HERO                                                         -->
+<!-- ============================================================ -->
+<section class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <div class="topic-number-hero">TOPIC 15</div>
+  <h1>Recently Viewed Listings</h1>
+  <p class="subtitle">Show the last-viewed listings when a user clicks the search box &mdash; storage schema, retrieval latency, event flow, and the sync-write vs. message-queue trade-off.</p>
+
+  <div class="hero-badges">
+    <span class="badge badge-easy">Easy</span>
+    <span class="badge badge-medium">Medium</span>
+    <span class="badge badge-red">Airbnb PE Interview</span>
+    <span class="badge badge-blue">Redis</span>
+    <span class="badge badge-purple">Kafka</span>
+    <span class="badge badge-green">Caching</span>
+    <span class="badge badge-orange">Event-Driven</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">100M</div>
+      <div class="stat-label">Views / Day</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">&lt;50ms</div>
+      <div class="stat-label">Read Latency</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">1,200</div>
+      <div class="stat-label">Writes / Sec</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">150 GB</div>
+      <div class="stat-label">Redis Footprint</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  NAV BAR                                                      -->
+<!-- ============================================================ -->
+<nav class="nav-bar">
+  <h2>Sections</h2>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#capacity">Capacity</a>
+    <a href="#event-flow">Event Flow</a>
+    <a href="#storage">Storage Options</a>
+    <a href="#data-model">Data Model</a>
+    <a href="#api">API Design</a>
+    <a href="#enrichment">Enrichment</a>
+    <a href="#cross-device">Cross-Device</a>
+    <a href="#tradeoffs">Trade-Offs</a>
+    <a href="#scalability">Scalability</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!--  S1 : OVERVIEW                                                -->
+<!-- ============================================================ -->
+<section id="overview" class="section">
+  <span class="section-label">Section 1</span>
+  <h2>Overview</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Problem Statement</h4>
+      <p>When a user clicks the search box on Airbnb, display up to <strong>20 recently viewed listings</strong> ordered by recency. Views must be recorded with sub-second latency, and reads must feel instant (&lt;50 ms p99).</p>
+    </div>
+    <div class="card">
+      <h4>Why It Matters</h4>
+      <p>This is one of the highest-engagement surfaces: <strong>~30% of bookings</strong> originate from a re-visit to a previously viewed listing. A fast, reliable recently-viewed rail directly drives revenue.</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Difficulty: Easy / Medium</strong> &mdash; The scope is small, but the interviewer expects depth on storage schema, async event flow, deduplication, and the trade-off between synchronous writes and a message queue.</p>
+  </div>
+
+  <h3>User Journey</h3>
+  <div class="arch-diagram">
+  User clicks search box
+        |
+        v
+  +-----------------+       +-----------------+       +-------------------+
+  |   Frontend UI   | ----> |   API Gateway   | ----> | Recently-Viewed   |
+  | (search overlay)|       | GET /recently-  |       |    Service        |
+  +-----------------+       |   viewed?limit= |       +-------------------+
+                            |   20            |               |
+                            +-----------------+       +-------+-------+
+                                                      |               |
+                                                      v               v
+                                                +-----------+   +-----------+
+                                                |   Redis   |   | Listing   |
+                                                | Sorted Set|   | Cache     |
+                                                +-----------+   +-----------+
+                                                      |               |
+                                                      +-------+-------+
+                                                              |
+                                                              v
+                                                      Enriched response
+                                                      (listing summaries)
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S2 : REQUIREMENTS                                            -->
+<!-- ============================================================ -->
+<section id="requirements" class="section">
+  <span class="section-label">Section 2</span>
+  <h2>Requirements</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Functional Requirements</h4>
+      <ul>
+        <li><strong>Record View:</strong> Every time a user views a listing detail page, record the event.</li>
+        <li><strong>Retrieve Last 20:</strong> Return up to 20 most-recently-viewed listings, ordered newest first.</li>
+        <li><strong>Deduplicate:</strong> If a user views the same listing multiple times, only the latest timestamp is kept (listing appears once, at the most recent position).</li>
+        <li><strong>Cross-Device Sync:</strong> A logged-in user should see the same list whether they switch from mobile to desktop.</li>
+        <li><strong>Anonymous Support:</strong> Guest users see recently viewed listings via local storage; on login, merge into server-side state.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Non-Functional Requirements</h4>
+      <ul>
+        <li><strong>Async Write &lt;100 ms:</strong> Recording a view must not add perceptible latency to the listing page load. Fire-and-forget is acceptable.</li>
+        <li><strong>Read Latency &lt;50 ms:</strong> Fetching the list must be instant to power the search-box overlay.</li>
+        <li><strong>Throughput:</strong> Support 100M view events per day (peak ~3x average).</li>
+        <li><strong>Durability:</strong> Losing a few view events is acceptable; losing the entire list is not.</li>
+        <li><strong>Data Retention:</strong> Retain up to 90 days of history; automatically evict older entries.</li>
+        <li><strong>Availability:</strong> 99.9% &mdash; feature is high-engagement but non-critical to booking flow.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Interviewer signal:</strong> Start by clarifying whether the scope includes recommendations (it does not) and whether the read API must return full listing details or just IDs (return enriched summaries).</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S3 : CAPACITY ESTIMATION                                     -->
+<!-- ============================================================ -->
+<section id="capacity" class="section">
+  <span class="section-label">Section 3</span>
+  <h2>Capacity Estimation</h2>
+
+  <div class="grid-4">
+    <div class="metric-box">
+      <div class="metric-value">100M</div>
+      <div class="metric-label">Views / Day</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">~1,200</div>
+      <div class="metric-label">Writes / Sec (avg)</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">~3,600</div>
+      <div class="metric-label">Writes / Sec (peak)</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">150 GB</div>
+      <div class="metric-label">Redis Memory</div>
+    </div>
+  </div>
+
+  <h3>Detailed Breakdown</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Calculation</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Daily events</strong></td>
+          <td>Given</td>
+          <td>100,000,000</td>
+        </tr>
+        <tr>
+          <td><strong>Average writes/sec</strong></td>
+          <td>100M / 86,400</td>
+          <td>~1,157 (round to 1,200)</td>
+        </tr>
+        <tr>
+          <td><strong>Peak writes/sec</strong></td>
+          <td>1,200 x 3 (peak factor)</td>
+          <td>~3,600</td>
+        </tr>
+        <tr>
+          <td><strong>Unique users (MAU)</strong></td>
+          <td>Assume 50M monthly active</td>
+          <td>50,000,000</td>
+        </tr>
+        <tr>
+          <td><strong>Entries per user</strong></td>
+          <td>Cap at 100 (deduplicated sorted set)</td>
+          <td>100</td>
+        </tr>
+        <tr>
+          <td><strong>Bytes per entry</strong></td>
+          <td>listing_id (8B) + score/timestamp (8B) + overhead (~14B)</td>
+          <td>~30 bytes</td>
+        </tr>
+        <tr>
+          <td><strong>Per-user sorted set</strong></td>
+          <td>100 entries x 30B</td>
+          <td>~3 KB</td>
+        </tr>
+        <tr>
+          <td><strong>Total Redis memory</strong></td>
+          <td>50M users x 3 KB</td>
+          <td>~150 GB</td>
+        </tr>
+        <tr>
+          <td><strong>Read QPS</strong></td>
+          <td>Search-box opens ~200M/day &rarr; 200M/86,400</td>
+          <td>~2,300 reads/sec</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>150 GB fits comfortably in a Redis cluster</strong> with 3-6 shards (each 25-50 GB). Redis sorted sets handle ZADD and ZREVRANGE at O(log N) and O(log N + M), making both writes and reads sub-millisecond at this data size.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S4 : EVENT FLOW                                              -->
+<!-- ============================================================ -->
+<section id="event-flow" class="section">
+  <span class="section-label">Section 4</span>
+  <h2>Event Flow: Write Path</h2>
+  <p>The key architectural decision: how does a "view" event reach storage?</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Option A: Synchronous Write <span class="priority-tag p2">SIMPLER</span></h4>
+      <div class="arch-diagram" style="font-size:0.78em;">
+  Listing Page
+      |
+      | POST /views  (sync)
+      v
+  API Server ------> Redis ZADD
+      |
+      | 200 OK (after write)
+      v
+  Client
+      </div>
+      <ul>
+        <li><strong>Pros:</strong> Simple, strong consistency, easy to debug.</li>
+        <li><strong>Cons:</strong> Adds latency to page load (~5-15 ms). Write failure blocks the response. No buffering for spikes.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Option B: Async via Kafka <span class="rec-tag">RECOMMENDED</span></h4>
+      <div class="arch-diagram" style="font-size:0.78em;">
+  Listing Page
+      |
+      | POST /views  (fire-and-forget)
+      v
+  API Server ------> Kafka Topic
+      |                   |
+      | 202 Accepted      | Consumer Group
+      v                   v
+  Client            View Worker --> Redis ZADD
+                                --> Cassandra
+      </div>
+      <ul>
+        <li><strong>Pros:</strong> Decouples write from user path. Handles spikes via Kafka buffering. Enables dual-write (Redis + Cassandra) for durability.</li>
+        <li><strong>Cons:</strong> Eventual consistency (seconds of delay). More infrastructure. Requires idempotent consumer.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Recommendation:</strong> Use <strong>Option B (async via Kafka)</strong>. The API server publishes a <code class="inline">listing.viewed</code> event and returns <code class="inline">202 Accepted</code> immediately. A consumer group processes events and writes to both Redis (for fast reads) and Cassandra (for durability). The few-second delay is invisible to the user since they do not immediately re-open the search box.</p>
+  </div>
+
+  <h3>Full Event Flow (Recommended)</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <p><strong>User views listing page</strong> &mdash; Frontend fires a beacon / POST to <code class="inline">/api/v1/views</code> with <code class="inline">{listing_id, timestamp}</code>. This is fire-and-forget (no blocking).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <p><strong>API Gateway produces to Kafka</strong> &mdash; Topic: <code class="inline">listing-views</code>, key: <code class="inline">user_id</code> (ensures ordering per user). Returns <code class="inline">202 Accepted</code>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <p><strong>View Worker consumes</strong> &mdash; Idempotent consumer performs <code class="inline">ZADD user:{id}:views {timestamp} {listing_id}</code>. ZADD naturally deduplicates: re-adding an existing member just updates the score.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <p><strong>Trim sorted set</strong> &mdash; After ZADD, run <code class="inline">ZREMRANGEBYRANK user:{id}:views 0 -(MAX+1)</code> to cap at 100 entries, evicting the oldest views.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <p><strong>Dual-write to Cassandra</strong> &mdash; For durability, also write to a Cassandra table. This is the source of truth if Redis is cold-started or flushed.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">6</div>
+      <div class="flow-step-content">
+        <p><strong>Read path</strong> &mdash; When user clicks search box, frontend calls <code class="inline">GET /api/v1/recently-viewed?limit=20</code>. Service reads from Redis with <code class="inline">ZREVRANGE</code>, enriches with listing details, and returns.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S5 : STORAGE OPTIONS                                         -->
+<!-- ============================================================ -->
+<section id="storage" class="section">
+  <span class="section-label">Section 5</span>
+  <h2>Storage Options Comparison</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Storage</th>
+          <th>Data Structure</th>
+          <th>Write Latency</th>
+          <th>Read Latency</th>
+          <th>Dedup</th>
+          <th>Ordering</th>
+          <th>Durability</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Redis Sorted Set</strong> <span class="rec-tag">BEST FIT</span></td>
+          <td>ZADD / ZREVRANGE</td>
+          <td>&lt;1 ms</td>
+          <td>&lt;1 ms</td>
+          <td>Built-in (member uniqueness)</td>
+          <td>Score = timestamp</td>
+          <td>Volatile (AOF optional)</td>
+          <td style="color: var(--success);">Primary read store</td>
+        </tr>
+        <tr>
+          <td><strong>Cassandra</strong></td>
+          <td>Wide-column: PK=user_id, CK=timestamp DESC</td>
+          <td>2-5 ms</td>
+          <td>3-10 ms</td>
+          <td>Manual (upsert on listing_id)</td>
+          <td>Clustering key</td>
+          <td>Strong (replication)</td>
+          <td style="color: var(--blue);">Durability layer</td>
+        </tr>
+        <tr>
+          <td><strong>DynamoDB</strong></td>
+          <td>PK=user_id, SK=timestamp#listing_id</td>
+          <td>2-8 ms</td>
+          <td>2-8 ms</td>
+          <td>Manual (conditional write)</td>
+          <td>Sort key</td>
+          <td>Strong</td>
+          <td style="color: var(--warning);">Good alternative to Cassandra</td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL</strong></td>
+          <td>Table with (user_id, listing_id, viewed_at); UPSERT + ORDER BY</td>
+          <td>3-15 ms</td>
+          <td>5-20 ms</td>
+          <td>UPSERT on unique constraint</td>
+          <td>ORDER BY viewed_at DESC</td>
+          <td>Strong (ACID)</td>
+          <td style="color: var(--danger);">Too slow at scale; connection limits</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>Why Redis Sorted Set wins:</strong> ZADD is O(log N) and handles deduplication natively. ZREVRANGE 0 19 fetches the top-20 in O(log N + 20). With N capped at 100 entries per user, every operation is sub-millisecond. No other store matches this latency profile for an ordered, deduplicated list.</p>
+  </div>
+
+  <div class="card">
+    <h4>Redis Sorted Set Semantics</h4>
+    <pre><code><span class="cm">-- Record a view (dedup is automatic: same listing_id updates score)</span>
+<span class="kw">ZADD</span> <span class="str">user:12345:views</span> <span class="num">1707500000</span> <span class="str">listing:98765</span>
+
+<span class="cm">-- Fetch 20 most recent views (highest score = most recent)</span>
+<span class="kw">ZREVRANGE</span> <span class="str">user:12345:views</span> <span class="num">0</span> <span class="num">19</span> <span class="kw">WITHSCORES</span>
+
+<span class="cm">-- Trim to keep only top 100 entries</span>
+<span class="kw">ZREMRANGEBYRANK</span> <span class="str">user:12345:views</span> <span class="num">0</span> <span class="num">-101</span>
+
+<span class="cm">-- Set TTL for 90-day retention</span>
+<span class="kw">EXPIRE</span> <span class="str">user:12345:views</span> <span class="num">7776000</span></code></pre>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S6 : DATA MODEL                                              -->
+<!-- ============================================================ -->
+<section id="data-model" class="section">
+  <span class="section-label">Section 6</span>
+  <h2>Data Model</h2>
+
+  <h3>Primary: Redis Sorted Set (Read/Write Store)</h3>
+  <div class="card">
+    <h4>Key Design</h4>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Redis Key</th><th>Type</th><th>Member</th><th>Score</th><th>TTL</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="inline">user:{user_id}:views</code></td>
+            <td>Sorted Set</td>
+            <td>listing_id (string)</td>
+            <td>Unix timestamp (ms)</td>
+            <td>90 days (7,776,000 sec)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Each user has exactly one key. Members are listing IDs, scores are millisecond timestamps. ZADD naturally deduplicates by member, always keeping the latest score (XX flag optional; default ZADD updates score if member exists).</p>
+  </div>
+
+  <h3>Secondary: Cassandra (Durability Layer)</h3>
+  <div class="card">
+    <h4>Table Schema</h4>
+    <pre><code><span class="kw">CREATE TABLE</span> <span class="fn">recently_viewed</span> (
+    <span class="var">user_id</span>      <span class="typ">BIGINT</span>,
+    <span class="var">listing_id</span>   <span class="typ">BIGINT</span>,
+    <span class="var">viewed_at</span>    <span class="typ">TIMESTAMP</span>,
+    <span class="var">device_type</span>  <span class="typ">TEXT</span>,
+    <span class="kw">PRIMARY KEY</span> ((<span class="var">user_id</span>), <span class="var">viewed_at</span>, <span class="var">listing_id</span>)
+) <span class="kw">WITH CLUSTERING ORDER BY</span> (<span class="var">viewed_at</span> <span class="kw">DESC</span>)
+  <span class="kw">AND</span> <span class="var">default_time_to_live</span> = <span class="num">7776000</span>;  <span class="cm">-- 90 days</span></code></pre>
+    <p>Partition key is <code class="inline">user_id</code> for fast single-user queries. Clustering by <code class="inline">viewed_at DESC</code> enables efficient range scans. TTL auto-evicts old rows.</p>
+  </div>
+
+  <h3>Write-Through Pattern</h3>
+  <div class="arch-diagram">
+  Kafka Consumer
+       |
+       |  1. ZADD to Redis   (fast, sub-ms)
+       |  2. INSERT into Cassandra  (durable, 2-5 ms)
+       |  3. ZREMRANGEBYRANK to trim Redis  (cap at 100)
+       |
+       v
+  Both stores consistent (eventually)
+
+  On Redis cache miss (cold start / eviction):
+       |
+       |  1. Query Cassandra: SELECT * FROM recently_viewed
+       |     WHERE user_id = ? LIMIT 100
+       |  2. Bulk ZADD into Redis to warm cache
+       |  3. Set TTL
+       |
+       v
+  Redis warm, subsequent reads served from cache
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S7 : API DESIGN                                              -->
+<!-- ============================================================ -->
+<section id="api" class="section">
+  <span class="section-label">Section 7</span>
+  <h2>API Design</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>POST /api/v1/views <span class="badge badge-orange">ASYNC</span></h4>
+      <p>Record a listing view. Fire-and-forget from the client.</p>
+      <pre><code><span class="cm">// Request</span>
+<span class="kw">POST</span> /api/v1/views
+<span class="var">Authorization</span>: Bearer {token}
+<span class="var">Content-Type</span>: application/json
+
+{
+  <span class="str">"listing_id"</span>: <span class="num">98765</span>,
+  <span class="str">"timestamp"</span>:  <span class="num">1707500000000</span>,
+  <span class="str">"device"</span>:     <span class="str">"mobile_ios"</span>
+}
+
+<span class="cm">// Response</span>
+<span class="num">202</span> <span class="str">Accepted</span>
+{
+  <span class="str">"status"</span>: <span class="str">"queued"</span>
+}</code></pre>
+      <p>The server validates the request, publishes to Kafka, and returns immediately. No write to Redis on the hot path.</p>
+    </div>
+    <div class="card">
+      <h4>GET /api/v1/recently-viewed <span class="badge badge-green">FAST PATH</span></h4>
+      <p>Retrieve the user's recently viewed listings with enriched summaries.</p>
+      <pre><code><span class="cm">// Request</span>
+<span class="kw">GET</span> /api/v1/recently-viewed?limit=20
+<span class="var">Authorization</span>: Bearer {token}
+
+<span class="cm">// Response</span>
+<span class="num">200</span> <span class="str">OK</span>
+{
+  <span class="str">"items"</span>: [
+    {
+      <span class="str">"listing_id"</span>: <span class="num">98765</span>,
+      <span class="str">"viewed_at"</span>:  <span class="str">"2024-02-09T18:00:00Z"</span>,
+      <span class="str">"title"</span>:      <span class="str">"Cozy cabin in Tahoe"</span>,
+      <span class="str">"thumbnail"</span>:  <span class="str">"https://cdn.airbnb.com/..."</span>,
+      <span class="str">"price_per_night"</span>: <span class="num">185</span>,
+      <span class="str">"currency"</span>:   <span class="str">"USD"</span>,
+      <span class="str">"avg_rating"</span>: <span class="num">4.92</span>,
+      <span class="str">"city"</span>:       <span class="str">"Tahoe City"</span>
+    },
+    <span class="cm">// ... up to 20 items</span>
+  ],
+  <span class="str">"count"</span>: <span class="num">20</span>
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Idempotency:</strong> The POST endpoint is naturally idempotent because ZADD with the same <code class="inline">listing_id</code> simply updates the score. Retries and duplicate Kafka messages are safe.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S8 : ENRICHMENT                                              -->
+<!-- ============================================================ -->
+<section id="enrichment" class="section">
+  <span class="section-label">Section 8</span>
+  <h2>Enrichment: Avoiding the N+1 Problem</h2>
+
+  <p>Redis stores only <code class="inline">listing_id</code> and <code class="inline">timestamp</code>. The API must enrich each ID with title, thumbnail, price, and rating. A naive approach issues 20 individual lookups &mdash; the classic N+1 query.</p>
+
+  <h3>Solution: Batch Multi-Get</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <p><strong>ZREVRANGE</strong> from Redis &mdash; returns 20 listing IDs in ~0.3 ms.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <p><strong>MGET from Listing Cache</strong> &mdash; use Redis MGET or a batch endpoint to fetch all 20 listing summaries in a single round-trip. Latency: ~1-3 ms.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <p><strong>Cache miss fallback</strong> &mdash; for any IDs not in cache, batch-query the Listing Service (gRPC <code class="inline">BatchGetListings</code>). Backfill cache for next time.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <p><strong>Merge and return</strong> &mdash; combine listing details with timestamps, preserve order, respond.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Multi-Get Pattern (Pseudocode)</h4>
+    <pre><code><span class="kw">async function</span> <span class="fn">getRecentlyViewed</span>(<span class="var">userId</span>, <span class="var">limit</span> = <span class="num">20</span>) {
+  <span class="cm">// Step 1: Fetch listing IDs from sorted set</span>
+  <span class="kw">const</span> <span class="var">entries</span> = <span class="kw">await</span> <span class="var">redis</span>.<span class="fn">zrevrange</span>(
+    <span class="str">`user:${userId}:views`</span>, <span class="num">0</span>, <span class="var">limit</span> - <span class="num">1</span>, <span class="str">'WITHSCORES'</span>
+  );
+
+  <span class="kw">const</span> <span class="var">listingIds</span> = <span class="var">entries</span>.<span class="fn">map</span>(<span class="var">e</span> => <span class="var">e</span>.<span class="var">member</span>);
+
+  <span class="cm">// Step 2: Batch fetch listing summaries (single round-trip)</span>
+  <span class="kw">const</span> <span class="var">cacheKeys</span> = <span class="var">listingIds</span>.<span class="fn">map</span>(<span class="var">id</span> => <span class="str">`listing:summary:${id}`</span>);
+  <span class="kw">const</span> <span class="var">cached</span> = <span class="kw">await</span> <span class="var">redis</span>.<span class="fn">mget</span>(<span class="var">cacheKeys</span>);
+
+  <span class="cm">// Step 3: Fetch cache misses from Listing Service</span>
+  <span class="kw">const</span> <span class="var">missIds</span> = <span class="var">listingIds</span>.<span class="fn">filter</span>((<span class="var">_</span>, <span class="var">i</span>) => !<span class="var">cached</span>[<span class="var">i</span>]);
+  <span class="kw">if</span> (<span class="var">missIds</span>.<span class="var">length</span>) {
+    <span class="kw">const</span> <span class="var">fetched</span> = <span class="kw">await</span> <span class="var">listingService</span>.<span class="fn">batchGet</span>(<span class="var">missIds</span>);
+    <span class="cm">// Backfill cache (async, don't block response)</span>
+    <span class="var">backfillCache</span>(<span class="var">fetched</span>);
+  }
+
+  <span class="cm">// Step 4: Merge and return in order</span>
+  <span class="kw">return</span> <span class="fn">mergeAndFormat</span>(<span class="var">entries</span>, <span class="var">cached</span>, <span class="var">fetched</span>);
+}</code></pre>
+  </div>
+
+  <div class="callout warning">
+    <p><strong>N+1 is the #1 pitfall interviewers watch for.</strong> Always mention MGET / batch fetch. If you say "loop through each listing ID and fetch one by one," that is a red flag.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S9 : CROSS-DEVICE & ANONYMOUS                                -->
+<!-- ============================================================ -->
+<section id="cross-device" class="section">
+  <span class="section-label">Section 9</span>
+  <h2>Cross-Device & Anonymous Users</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Anonymous Users (localStorage)</h4>
+      <ul>
+        <li><strong>Client-side storage:</strong> Store recently viewed listing IDs in <code class="inline">localStorage</code> as a JSON array with timestamps.</li>
+        <li><strong>Cap at 20 entries:</strong> On each view, push new entry and shift oldest if over limit.</li>
+        <li><strong>No server writes:</strong> Avoids creating server state for bots and one-time visitors.</li>
+        <li><strong>Enrichment:</strong> On search-box open, send IDs to <code class="inline">GET /api/v1/listings/batch</code> for summaries (no auth required).</li>
+      </ul>
+      <pre><code><span class="cm">// localStorage schema</span>
+{
+  <span class="str">"recently_viewed"</span>: [
+    { <span class="str">"id"</span>: <span class="num">98765</span>, <span class="str">"ts"</span>: <span class="num">1707500000</span> },
+    { <span class="str">"id"</span>: <span class="num">11223</span>, <span class="str">"ts"</span>: <span class="num">1707499000</span> }
+  ]
+}</code></pre>
+    </div>
+    <div class="card">
+      <h4>Merge on Login</h4>
+      <ul>
+        <li><strong>Trigger:</strong> When anonymous user signs in or creates account.</li>
+        <li><strong>Client sends:</strong> <code class="inline">POST /api/v1/views/merge</code> with the localStorage array.</li>
+        <li><strong>Server merges:</strong> For each entry, <code class="inline">ZADD</code> into the user's sorted set. ZADD only updates score if the new timestamp is higher (use <code class="inline">GT</code> flag).</li>
+        <li><strong>Client clears:</strong> Remove localStorage entries after successful merge.</li>
+        <li><strong>Idempotent:</strong> Safe to retry; duplicate ZADD is a no-op.</li>
+      </ul>
+      <pre><code><span class="cm">// Merge endpoint</span>
+<span class="kw">POST</span> /api/v1/views/merge
+{
+  <span class="str">"views"</span>: [
+    { <span class="str">"listing_id"</span>: <span class="num">98765</span>, <span class="str">"ts"</span>: <span class="num">1707500000</span> },
+    { <span class="str">"listing_id"</span>: <span class="num">11223</span>, <span class="str">"ts"</span>: <span class="num">1707499000</span> }
+  ]
+}
+
+<span class="cm">// Server: pipeline ZADD for each entry</span>
+<span class="kw">ZADD</span> <span class="str">user:12345:views</span> <span class="kw">GT</span> <span class="num">1707500000</span> <span class="str">98765</span>
+<span class="kw">ZADD</span> <span class="str">user:12345:views</span> <span class="kw">GT</span> <span class="num">1707499000</span> <span class="str">11223</span></code></pre>
+    </div>
+  </div>
+
+  <h3>Cross-Device: Logged-In Users</h3>
+  <div class="card">
+    <p>For logged-in users, all views are keyed by <code class="inline">user_id</code> on the server. Switching from mobile to desktop automatically shows the same list because both devices read from the same Redis key <code class="inline">user:{user_id}:views</code>.</p>
+    <div class="arch-diagram">
+  Mobile App                        Desktop Browser
+      |                                   |
+      | POST /views {listing: A}          | POST /views {listing: B}
+      v                                   v
+  API ---> Kafka ---> Consumer ---> Redis: user:123:views
+                                        ZADD 1707500000 A
+                                        ZADD 1707501000 B
+                                             |
+                  +------ ZREVRANGE ---------+
+                  |                          |
+                  v                          v
+            Mobile reads:              Desktop reads:
+            [B, A, ...]               [B, A, ...]    (same list)
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S10 : TRADE-OFFS TABLE                                       -->
+<!-- ============================================================ -->
+<section id="tradeoffs" class="section">
+  <span class="section-label">Section 10</span>
+  <h2>Trade-Offs</h2>
+
+  <div class="tradeoff">
+    <h4>Sync Write vs. Async (Kafka) Write</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Sync Write Advantages</h5>
+        <ul>
+          <li>Strong consistency: view appears in list immediately</li>
+          <li>Simpler architecture: no Kafka, no consumer</li>
+          <li>Easier debugging and monitoring</li>
+          <li>Lower infrastructure cost</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Sync Write Disadvantages</h5>
+        <ul>
+          <li>Adds 5-15 ms to listing page load</li>
+          <li>Redis failure blocks the response path</li>
+          <li>No spike buffering; Redis must handle peak directly</li>
+          <li>Single write target; no durability layer</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Verdict:</strong> Use async for production at Airbnb scale. The 1-2 second delay is invisible and the decoupling is worth it.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>Redis-Only vs. Redis + Cassandra (Dual Write)</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Redis-Only Advantages</h5>
+        <ul>
+          <li>Simplest possible architecture</li>
+          <li>Single store to manage and monitor</li>
+          <li>Lowest write latency</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Redis-Only Disadvantages</h5>
+        <ul>
+          <li>Data loss on Redis node failure (even with AOF)</li>
+          <li>Expensive to store 90 days of data in RAM</li>
+          <li>No analytical query support</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Verdict:</strong> Use dual-write. Redis serves reads; Cassandra provides durability and cold-start recovery. The consumer writes to both atomically (at-least-once).</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>Store Full Listing Data vs. IDs Only (in Redis)</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Full Data Advantages</h5>
+        <ul>
+          <li>Single read to serve the response</li>
+          <li>No enrichment step needed</li>
+          <li>Lower overall latency</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Full Data Disadvantages</h5>
+        <ul>
+          <li>10-50x more memory per entry</li>
+          <li>Stale data: price/rating changes not reflected</li>
+          <li>Complex update propagation</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Verdict:</strong> Store IDs only in the sorted set. Enrich from a shared listing cache that is updated independently. This keeps the recently-viewed store lean and data fresh.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>localStorage vs. Cookie for Anonymous Users</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>localStorage Advantages</h5>
+        <ul>
+          <li>5-10 MB storage vs. 4 KB cookie limit</li>
+          <li>Not sent with every HTTP request</li>
+          <li>Easy JSON serialization</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>localStorage Disadvantages</h5>
+        <ul>
+          <li>Not available in server-side rendering</li>
+          <li>Cleared when user clears browser data</li>
+          <li>No cross-subdomain access</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Verdict:</strong> localStorage is the right choice. Cookie size limits make it impractical, and the data does not need to be sent server-side on every request.</div>
+  </div>
+
+  <h3>Summary Comparison Matrix</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Option A</th>
+          <th>Option B</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Write path</strong></td>
+          <td>Synchronous to Redis</td>
+          <td>Async via Kafka</td>
+          <td style="color: var(--success);">Async (Kafka)</td>
+        </tr>
+        <tr>
+          <td><strong>Storage</strong></td>
+          <td>Redis only</td>
+          <td>Redis + Cassandra</td>
+          <td style="color: var(--success);">Dual write</td>
+        </tr>
+        <tr>
+          <td><strong>Data in sorted set</strong></td>
+          <td>Full listing objects</td>
+          <td>IDs only</td>
+          <td style="color: var(--success);">IDs only + enrich</td>
+        </tr>
+        <tr>
+          <td><strong>Anonymous storage</strong></td>
+          <td>Cookie</td>
+          <td>localStorage</td>
+          <td style="color: var(--success);">localStorage</td>
+        </tr>
+        <tr>
+          <td><strong>Enrichment</strong></td>
+          <td>Individual fetches</td>
+          <td>Batch MGET</td>
+          <td style="color: var(--success);">Batch MGET</td>
+        </tr>
+        <tr>
+          <td><strong>Deduplication</strong></td>
+          <td>Application-level check</td>
+          <td>Redis ZADD built-in</td>
+          <td style="color: var(--success);">ZADD (native)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S11 : SCALABILITY                                            -->
+<!-- ============================================================ -->
+<section id="scalability" class="section">
+  <span class="section-label">Section 11</span>
+  <h2>Scalability & Operations</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Redis Cluster Sharding</h4>
+      <ul>
+        <li><strong>Shard key:</strong> <code class="inline">user_id</code> (via hash tag in the key: <code class="inline">{user:123}:views</code>).</li>
+        <li><strong>Cluster size:</strong> 6 shards at ~25 GB each = 150 GB total capacity.</li>
+        <li><strong>Replication:</strong> Each shard has 1 replica for failover.</li>
+        <li><strong>Auto-scaling:</strong> Add shards when memory utilization exceeds 75%.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>TTL & Eviction</h4>
+      <ul>
+        <li><strong>Key-level TTL:</strong> <code class="inline">EXPIRE user:{id}:views 7776000</code> (90 days). Reset on each ZADD.</li>
+        <li><strong>Entry-level trim:</strong> <code class="inline">ZREMRANGEBYRANK</code> caps at 100 entries per user.</li>
+        <li><strong>Cassandra TTL:</strong> <code class="inline">default_time_to_live = 7776000</code> auto-deletes old rows.</li>
+        <li><strong>Inactive users:</strong> Redis key auto-expires; no manual cleanup needed.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Kafka Partitioning</h4>
+      <ul>
+        <li><strong>Topic:</strong> <code class="inline">listing-views</code> with 32-64 partitions.</li>
+        <li><strong>Partition key:</strong> <code class="inline">user_id</code> ensures in-order processing per user.</li>
+        <li><strong>Consumer group:</strong> One consumer per partition; auto-rebalance on failure.</li>
+        <li><strong>Retention:</strong> 24 hours (enough for replay on consumer failure).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Monitoring & Alerts</h4>
+      <ul>
+        <li><strong>Redis latency:</strong> Alert if p99 &gt; 5 ms (expect &lt; 1 ms).</li>
+        <li><strong>Kafka consumer lag:</strong> Alert if lag &gt; 10,000 messages.</li>
+        <li><strong>API p99 latency:</strong> Alert if GET endpoint &gt; 50 ms.</li>
+        <li><strong>Cache hit rate:</strong> Alert if listing cache hit rate drops below 95%.</li>
+        <li><strong>Redis memory:</strong> Alert at 75% utilization per shard.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>End-to-End Architecture</h3>
+  <div class="diagram-box">
+    <svg viewBox="0 0 1100 550" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+      <defs>
+        <filter id="shadow1" x="-4%" y="-4%" width="108%" height="116%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
+        </filter>
+        <linearGradient id="clientGrad1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#4f46e5"/>
+        </linearGradient>
+        <linearGradient id="gatewayGrad1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FF5A5F"/>
+          <stop offset="100%" stop-color="#E04850"/>
+        </linearGradient>
+        <linearGradient id="workerGrad1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7B2FF7"/>
+          <stop offset="100%" stop-color="#6320d0"/>
+        </linearGradient>
+        <linearGradient id="serviceGrad1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00A699"/>
+          <stop offset="100%" stop-color="#008F84"/>
+        </linearGradient>
+        <marker id="arrowHead1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+        </marker>
+        <marker id="arrowHeadAsync1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+        </marker>
+        <marker id="arrowHeadSync1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+        </marker>
+      </defs>
+
+      <!-- WRITE PATH Label -->
+      <rect x="220" y="8" width="260" height="24" rx="12" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1"/>
+      <text x="350" y="24" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700" letter-spacing="1.5">WRITE PATH (async)</text>
+
+      <!-- READ PATH Label -->
+      <rect x="220" y="298" width="260" height="24" rx="12" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1"/>
+      <text x="350" y="314" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" letter-spacing="1.5">READ PATH (sync &lt;50ms)</text>
+
+      <!-- ===== CLIENTS ===== -->
+      <!-- Web Client (monitor icon) -->
+      <g filter="url(#shadow1)">
+        <rect x="20" y="55" width="110" height="68" rx="10" fill="url(#clientGrad1)" stroke="#818cf8" stroke-width="1.5"/>
+        <!-- Monitor icon -->
+        <rect x="53" y="65" width="24" height="16" rx="2" fill="none" stroke="#e2e8f0" stroke-width="1.5"/>
+        <line x1="65" y1="81" x2="65" y2="87" stroke="#e2e8f0" stroke-width="1.5"/>
+        <line x1="57" y1="87" x2="73" y2="87" stroke="#e2e8f0" stroke-width="1.5"/>
+        <text x="75" y="101" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Web</text>
+        <text x="75" y="115" text-anchor="middle" fill="#c7d2fe" font-size="8">fires view event</text>
+      </g>
+      <!-- Mobile Client (phone icon) -->
+      <g filter="url(#shadow1)">
+        <rect x="20" y="345" width="110" height="68" rx="10" fill="url(#clientGrad1)" stroke="#818cf8" stroke-width="1.5"/>
+        <!-- Phone icon -->
+        <rect x="58" y="354" width="14" height="22" rx="2" fill="none" stroke="#e2e8f0" stroke-width="1.5"/>
+        <circle cx="65" cy="372" r="1.5" fill="#1e293b"/>
+        <text x="75" y="393" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Mobile</text>
+        <text x="75" y="405" text-anchor="middle" fill="#c7d2fe" font-size="8">fires view event</text>
+      </g>
+
+      <!-- ===== WRITE PATH FLOW ===== -->
+
+      <!-- Beacon/API box -->
+      <g filter="url(#shadow1)">
+        <rect x="180" y="55" width="130" height="68" rx="10" fill="url(#gatewayGrad1)" stroke="#FF5A5F" stroke-width="1.5"/>
+        <text x="245" y="85" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Beacon / API</text>
+        <text x="245" y="100" text-anchor="middle" fill="#fecaca" font-size="9">fire-and-forget</text>
+        <text x="245" y="113" text-anchor="middle" fill="#fecaca" font-size="8">202 Accepted</text>
+      </g>
+      <!-- Arrow: Client Web -> Beacon -->
+      <line x1="130" y1="89" x2="177" y2="89" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- Arrow: Client Mobile -> Beacon (curves up) -->
+      <path d="M 130 379 Q 155 379 155 250 Q 155 123 177 89" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- Kafka (3 circles + lines) -->
+      <g filter="url(#shadow1)" transform="translate(370, 55)">
+        <rect x="0" y="0" width="130" height="68" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <!-- Kafka icon: 3 circles with connecting lines -->
+        <circle cx="25" cy="22" r="6" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <circle cx="25" cy="42" r="6" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <circle cx="25" cy="62" r="6" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <line x1="31" y1="22" x2="38" y2="22" stroke="#ef4444" stroke-width="1"/>
+        <line x1="31" y1="42" x2="38" y2="42" stroke="#ef4444" stroke-width="1"/>
+        <line x1="31" y1="62" x2="38" y2="62" stroke="#ef4444" stroke-width="1"/>
+        <text x="80" y="30" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700">Kafka</text>
+        <text x="80" y="44" text-anchor="middle" fill="#94a3b8" font-size="8">view events</text>
+        <text x="80" y="56" text-anchor="middle" fill="#94a3b8" font-size="8">32 partitions</text>
+      </g>
+      <!-- Arrow: Beacon -> Kafka -->
+      <line x1="310" y1="89" x2="367" y2="89" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- Consumer Worker -->
+      <g filter="url(#shadow1)">
+        <rect x="560" y="55" width="130" height="68" rx="10" fill="url(#workerGrad1)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="625" y="82" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Consumer</text>
+        <text x="625" y="97" text-anchor="middle" fill="#ddd6fe" font-size="9">Worker</text>
+        <text x="625" y="113" text-anchor="middle" fill="#ddd6fe" font-size="8">idempotent</text>
+      </g>
+      <!-- Arrow: Kafka -> Consumer -->
+      <line x1="500" y1="89" x2="557" y2="89" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- Redis ZADD (diamond) -->
+      <g filter="url(#shadow1)" transform="translate(770, 42)">
+        <polygon points="65,0 130,40 65,80 0,40" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="65" y="34" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700">Redis</text>
+        <text x="65" y="47" text-anchor="middle" fill="#94a3b8" font-size="8">ZADD sorted set</text>
+        <text x="65" y="58" text-anchor="middle" fill="#94a3b8" font-size="7">per user</text>
+      </g>
+      <!-- Arrow: Consumer -> Redis -->
+      <line x1="690" y1="79" x2="775" y2="79" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- Cassandra (DB cylinder, blue) -->
+      <g filter="url(#shadow1)" transform="translate(770, 155)">
+        <rect x="15" y="12" width="100" height="50" fill="#1a2744" stroke="#428BF9" stroke-width="1.5"/>
+        <ellipse cx="65" cy="12" rx="50" ry="12" fill="#1a2744" stroke="#428BF9" stroke-width="1.5"/>
+        <ellipse cx="65" cy="62" rx="50" ry="12" fill="#1a2744" stroke="#428BF9" stroke-width="1.5"/>
+        <text x="65" y="38" text-anchor="middle" fill="#428BF9" font-size="10" font-weight="700">Cassandra</text>
+        <text x="65" y="50" text-anchor="middle" fill="#94a3b8" font-size="8">durable store</text>
+      </g>
+      <!-- Arrow: Consumer -> Cassandra -->
+      <path d="M 660 123 L 660 185 L 775 185" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowHeadAsync1)"/>
+
+      <!-- ===== READ PATH FLOW ===== -->
+
+      <!-- API Gateway (shield + checkmark) -->
+      <g filter="url(#shadow1)" transform="translate(180, 340)">
+        <rect x="0" y="0" width="130" height="68" rx="10" fill="url(#gatewayGrad1)" stroke="#FF5A5F" stroke-width="1.5"/>
+        <!-- Shield icon -->
+        <path d="M 22 20 L 22 38 Q 22 50 32 55 Q 42 50 42 38 L 42 20 L 32 15 Z" fill="none" stroke="#fff" stroke-width="1.2"/>
+        <!-- Checkmark inside shield -->
+        <polyline points="27,35 31,40 37,28" fill="none" stroke="#fff" stroke-width="1.2"/>
+        <text x="82" y="35" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">API Gateway</text>
+        <text x="82" y="50" text-anchor="middle" fill="#fecaca" font-size="8">GET /recently-viewed</text>
+      </g>
+      <!-- Arrow: Client Mobile -> API Gateway (read) -->
+      <line x1="130" y1="379" x2="177" y2="379" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowHeadSync1)"/>
+
+      <!-- Recently Viewed Service -->
+      <g filter="url(#shadow1)">
+        <rect x="370" y="340" width="140" height="68" rx="10" fill="url(#serviceGrad1)" stroke="#00A699" stroke-width="1.5"/>
+        <text x="440" y="370" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Recently Viewed</text>
+        <text x="440" y="385" text-anchor="middle" fill="#ccfbf1" font-size="10" font-weight="700">Service</text>
+        <text x="440" y="400" text-anchor="middle" fill="#ccfbf1" font-size="8">orchestrates read</text>
+      </g>
+      <!-- Arrow: API Gateway -> Service -->
+      <line x1="310" y1="374" x2="367" y2="374" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowHeadSync1)"/>
+
+      <!-- Redis ZREVRANGE (diamond, read path) -->
+      <g filter="url(#shadow1)" transform="translate(575, 330)">
+        <polygon points="55,0 110,40 55,80 0,40" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="55" y="34" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">Redis</text>
+        <text x="55" y="46" text-anchor="middle" fill="#94a3b8" font-size="8">ZREVRANGE</text>
+        <text x="55" y="57" text-anchor="middle" fill="#10b981" font-size="7">cache hit (fast)</text>
+      </g>
+      <!-- Arrow: Service -> Redis read -->
+      <line x1="510" y1="374" x2="578" y2="370" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowHeadSync1)"/>
+
+      <!-- Cassandra fallback label -->
+      <text x="630" y="425" text-anchor="middle" fill="#428BF9" font-size="8" font-style="italic">cache miss fallback</text>
+      <!-- Dashed arrow: Service -> Cassandra (fallback) -->
+      <path d="M 510 392 Q 560 430 630 430 Q 770 430 835 230" fill="none" stroke="#428BF9" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowHead1)"/>
+
+      <!-- Listing Cache (Redis diamond) -->
+      <g filter="url(#shadow1)" transform="translate(750, 330)">
+        <polygon points="55,0 110,40 55,80 0,40" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="55" y="32" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">Listing</text>
+        <text x="55" y="44" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">Cache</text>
+        <text x="55" y="57" text-anchor="middle" fill="#94a3b8" font-size="7">listing metadata</text>
+        <text x="55" y="67" text-anchor="middle" fill="#94a3b8" font-size="7">Redis MGET</text>
+      </g>
+      <!-- Arrow: Redis read -> Listing Cache -->
+      <line x1="685" y1="370" x2="753" y2="370" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowHeadSync1)"/>
+
+      <!-- Enriched Response box -->
+      <g filter="url(#shadow1)">
+        <rect x="920" y="345" width="150" height="60" rx="10" fill="#f8fafc" stroke="#10b981" stroke-width="1.5"/>
+        <text x="995" y="372" text-anchor="middle" fill="#10b981" font-size="10" font-weight="700">Enriched Response</text>
+        <text x="995" y="388" text-anchor="middle" fill="#94a3b8" font-size="8">20 listings + details</text>
+        <text x="995" y="400" text-anchor="middle" fill="#94a3b8" font-size="7">&lt;50ms total</text>
+      </g>
+      <!-- Arrow: Listing Cache -> Response -->
+      <line x1="860" y1="370" x2="917" y2="370" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowHeadSync1)"/>
+
+      <!-- DATA STORE LABELS -->
+      <g transform="translate(770, 248)">
+        <rect x="0" y="0" width="130" height="40" rx="6" fill="rgba(66,139,249,0.08)" stroke="rgba(66,139,249,0.3)" stroke-width="1"/>
+        <text x="65" y="16" text-anchor="middle" fill="#428BF9" font-size="8" font-weight="600">DATA STORES</text>
+        <text x="65" y="30" text-anchor="middle" fill="#94a3b8" font-size="7">Redis = hot | Cassandra = durable</text>
+      </g>
+
+      <!-- Connection line from write Redis to read Redis (same cluster) -->
+      <path d="M 835 122 L 835 260 Q 835 300 750 330 L 660 330" fill="none" stroke="rgba(239,68,68,0.3)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="870" y="230" fill="#94a3b8" font-size="7" transform="rotate(-90, 870, 230)">same cluster</text>
+
+      <!-- ===== NUMBERED STEP CIRCLES ===== -->
+      <!-- Step 1: User views listing -> Client fires beacon -->
+      <circle cx="105" cy="70" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="105" y="74" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Step 2: Beacon -> Ingestion API (HTTP 202) -->
+      <circle cx="155" cy="78" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="155" y="82" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+      <!-- Step 3: Ingestion API -> Kafka view_events topic -->
+      <circle cx="340" cy="75" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="340" y="79" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+      <!-- Step 4: Kafka -> Consumer Worker -->
+      <circle cx="530" cy="78" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="530" y="82" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+      <!-- Step 5: Consumer -> Redis ZADD -->
+      <circle cx="735" cy="68" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="735" y="72" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+      <!-- Step 6: Consumer -> Cassandra (durable write-through) -->
+      <circle cx="720" cy="185" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="720" y="189" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+      <!-- Step 7: User clicks search box -> API Gateway -->
+      <circle cx="155" cy="368" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="155" y="372" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+      <!-- Step 8: API Gateway -> Service -> Redis ZREVRANGE -->
+      <circle cx="545" cy="355" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="545" y="359" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+      <!-- Step 9: Service -> Listing Cache Redis MGET -->
+      <circle cx="720" cy="358" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="720" y="362" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+      <!-- Step 10: Enriched response returned to client -->
+      <circle cx="910" cy="358" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="910" y="362" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+
+    </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Action</th><th>Protocol / Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>User</td><td>Client (Web/Mobile)</td><td>Views listing page</td><td>Client fires beacon event (fire-and-forget)</td></tr>
+        <tr><td><strong>2</strong></td><td>Client Beacon</td><td>Ingestion API</td><td>POST view event</td><td>HTTP 202 Accepted, async processing</td></tr>
+        <tr><td><strong>3</strong></td><td>Ingestion API</td><td>Kafka <code class="inline">view_events</code></td><td>Produce event</td><td>Partitioned by user_id, 32 partitions</td></tr>
+        <tr><td><strong>4</strong></td><td>Kafka</td><td>Consumer Worker</td><td>Consume &amp; process</td><td>Consumer group, idempotent processing</td></tr>
+        <tr><td><strong>5</strong></td><td>Consumer</td><td>Redis</td><td>ZADD sorted set</td><td><code class="inline">user:{id}:views</code>, score = timestamp</td></tr>
+        <tr><td><strong>6</strong></td><td>Consumer</td><td>Cassandra</td><td>Durable write-through</td><td>Backup store for cold-start / Redis failure</td></tr>
+        <tr><td><strong>7</strong></td><td>User</td><td>API Gateway</td><td>Clicks search box</td><td><code class="inline">GET /recently-viewed</code></td></tr>
+        <tr><td><strong>8</strong></td><td>API Gateway &rarr; Service</td><td>Redis</td><td>ZREVRANGE top 20</td><td>Returns listing IDs ordered by recency</td></tr>
+        <tr><td><strong>9</strong></td><td>Service</td><td>Listing Cache (Redis)</td><td>MGET enrichment</td><td>Fetch title, image, price in single round-trip</td></tr>
+        <tr><td><strong>10</strong></td><td>Service</td><td>Client</td><td>Enriched response</td><td>20 listings with metadata, &lt;50 ms total</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3>Happy Path</h3>
+  <div class="card" style="border-left: 4px solid var(--success);">
+    <p style="color: var(--text); font-size: 0.95em; line-height: 1.8;">
+      <strong style="color: var(--success);">Write:</strong> User views listing &rarr; client beacon fires &rarr; Ingestion API returns <code class="inline">202</code> &rarr; Kafka <code class="inline">view_events</code> topic &rarr; Consumer Worker &rarr; <code class="inline">ZADD</code> into Redis sorted set (score = timestamp) + Cassandra durable write.
+    </p>
+    <p style="color: var(--text); font-size: 0.95em; line-height: 1.8; margin-top: 10px;">
+      <strong style="color: var(--success);">Read:</strong> User clicks search box &rarr; <code class="inline">GET /recently-viewed</code> &rarr; <code class="inline">ZREVRANGE 0 19</code> from Redis &rarr; <code class="inline">MGET</code> listing metadata from Listing Cache &rarr; return 20 enriched listings in <strong>&lt;50 ms</strong>.
+    </p>
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Failure Scenario</th><th>Impact</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Beacon lost</strong> (network drop)</td>
+          <td style="color: var(--success);">Acceptable &mdash; non-critical data</td>
+          <td>One view event missing; user won't notice. No retry needed.</td>
+        </tr>
+        <tr>
+          <td><strong>Kafka consumer lag</strong></td>
+          <td style="color: var(--warning);">Slight delay in listing appearing</td>
+          <td>Auto-scaling consumer group; alert on lag &gt; 10K messages.</td>
+        </tr>
+        <tr>
+          <td><strong>Redis down</strong></td>
+          <td style="color: var(--danger);">Read path degraded</td>
+          <td>Fallback to Cassandra query (slower, ~50-200 ms). Circuit breaker pattern.</td>
+        </tr>
+        <tr>
+          <td><strong>Listing cache miss</strong></td>
+          <td style="color: var(--warning);">Slightly slower enrichment</td>
+          <td>Fetch from Listing Service directly; populate cache on response.</td>
+        </tr>
+        <tr>
+          <td><strong>Duplicate view events</strong></td>
+          <td style="color: var(--success);">No impact</td>
+          <td><code class="inline">ZADD</code> naturally deduplicates by member (listing_id). Score updates to latest timestamp.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+
+<!-- ============================================================ -->
+<!--  S12 : INTERVIEW TIPS                                         -->
+<!-- ============================================================ -->
+<section id="interview-tips" class="section">
+  <span class="section-label">Section 12</span>
+  <h2>Interview Tips</h2>
+
+  <div class="tip-card">
+    <h4>Tip #1: Lead with the Data Structure</h4>
+    <p>The moment you hear "recently viewed," say <strong>"Redis sorted set."</strong> Explain why: ZADD handles dedup, scores give ordering, ZREVRANGE gives top-N. This immediately signals you know the right tool. The interviewer is specifically testing if you reach this answer.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #2: Proactively Discuss the Write Path Trade-Off</h4>
+    <p>Do not wait to be asked. Volunteer: <em>"We have two options for the write path: sync and async. Let me compare them."</em> Then recommend async with Kafka, explaining why the 1-2 second delay is invisible. This shows architectural maturity.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #3: Mention the N+1 Problem Before Asked</h4>
+    <p>When you describe the read path, say: <em>"Redis gives us IDs. We need to enrich them. A naive loop would be N+1 queries. Instead, we use MGET for a single batch round-trip."</em> This is a high-signal moment in the interview.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #4: Clarify Scope Early</h4>
+    <p>Ask: <em>"Is this just recently viewed, or does it include recommendations?"</em> and <em>"Should the API return listing IDs only, or enriched summaries?"</em> These clarifying questions show you think before designing.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #5: Show You Know Redis Deeply</h4>
+    <p>Drop specifics: <code class="inline">ZADD</code> is O(log N), <code class="inline">ZREVRANGE</code> is O(log N + M), the <code class="inline">GT</code> flag only updates score if new score is greater (useful for merge). <code class="inline">ZREMRANGEBYRANK</code> for capping. These details separate PE from E5.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #6: Address Anonymous Users Without Being Asked</h4>
+    <p>Say: <em>"For logged-out users, we store views in localStorage. On login, we merge via a batch ZADD with the GT flag."</em> This shows you think about the full product experience, not just the happy path.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #7: Mention Durability Strategy</h4>
+    <p>Redis is volatile. Say: <em>"For durability, the Kafka consumer dual-writes to Cassandra. On Redis cold start, we backfill from Cassandra."</em> This addresses a common follow-up before the interviewer asks it.</p>
+  </div>
+
+  <div class="tip-card">
+    <h4>Tip #8: Numbers Matter</h4>
+    <p>Do the napkin math: 100M events/day = ~1,200 writes/sec average, ~3,600 peak. 50M users x 100 entries x 30 bytes = ~150 GB in Redis. Show you can estimate and that the numbers are feasible. Interviewers love seeing this done confidently and quickly.</p>
+  </div>
+
+  <div class="callout">
+    <p><strong>Common follow-up questions:</strong></p>
+    <ul>
+      <li>"What happens if Redis goes down?" &mdash; Serve from Cassandra (slower but available), then warm Redis from Cassandra.</li>
+      <li>"How do you handle a bot viewing 10,000 listings?" &mdash; Rate limit the POST endpoint; cap sorted set at 100 entries.</li>
+      <li>"Can this power a 'continue browsing' recommendation?" &mdash; Yes, the recently-viewed data can feed an ML ranking model, but that is a separate service.</li>
+      <li>"What about GDPR deletion?" &mdash; DELETE the Redis key and issue a Cassandra DELETE for the user_id partition.</li>
+    </ul>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ============================================================ -->
+<!--  FOOTER                                                       -->
+<!-- ============================================================ -->
+<footer class="footer">
+  <p>Recently Viewed Listings &mdash; Airbnb PE System Design Series</p>
+  <p style="margin-top: 8px;"><a href="index.html">Back to All Topics</a></p>
+</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

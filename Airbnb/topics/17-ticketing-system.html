@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Ticketing System - Airbnb System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 70px 40px 60px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .topic-number-hero {
+    position: relative;
+    display: inline-block;
+    font-size: 1em;
+    font-weight: 800;
+    color: var(--primary);
+    background: rgba(255,90,95,0.15);
+    border: 1px solid rgba(255,90,95,0.3);
+    padding: 4px 18px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .hero .subtitle {
+    font-size: 1.2em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 24px;
+    max-width: 750px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .hero-badges {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin: 3px 2px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    background: #f8fafc;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .nav-bar h2 {
+    color: var(--secondary);
+    margin-bottom: 12px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.8em;
+    transition: all 0.3s;
+  }
+  .nav-links a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* ===== CONTAINER ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+
+  /* ===== SECTION ===== */
+  .section {
+    padding: 50px 0 30px;
+  }
+  .section + .section {
+    border-top: 1px solid #e5e7eb;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 0.72em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--secondary);
+    background: rgba(0,166,153,0.1);
+    border: 1px solid rgba(0,166,153,0.25);
+    padding: 4px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .section h2 {
+    font-size: 1.9em;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.25;
+  }
+  .section h3 {
+    font-size: 1.3em;
+    color: var(--primary);
+    margin: 24px 0 12px;
+  }
+  .section h4 {
+    font-size: 1.05em;
+    color: var(--blue);
+    margin: 18px 0 10px;
+  }
+  .section p, .section li {
+    color: var(--text-muted);
+    font-size: 0.95em;
+    line-height: 1.75;
+  }
+  .section ul, .section ol {
+    padding-left: 24px;
+    margin: 10px 0;
+  }
+  .section li {
+    margin-bottom: 6px;
+  }
+  .section li strong {
+    color: var(--text);
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 16px 0;
+    transition: border-color 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(255,90,95,0.3);
+  }
+  .card h4 {
+    margin-top: 0;
+  }
+
+  /* ===== GRID LAYOUTS ===== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  /* ===== CODE BLOCKS ===== */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 14px 0;
+    font-size: 0.85em;
+    line-height: 1.65;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    color: #24292f;
+  }
+  .kw { color: #cf222e; }
+  .fn { color: #8250df; }
+  .str { color: #0a3069; }
+  .cm { color: #6e7781; font-style: italic; }
+  .typ { color: #0550ae; }
+  .num { color: #f59e0b; }
+  .op { color: #cf222e; }
+  .var { color: #953800; }
+
+  code.inline {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+
+  /* ===== TABLES ===== */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 14px 0;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  th {
+    background: rgba(255,90,95,0.1);
+    color: var(--primary);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-muted);
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--text); }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-diagram {
+    background: linear-gradient(135deg, #0d1117, #161b22);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 32px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.82em;
+    line-height: 1.55;
+    color: var(--text-muted);
+    white-space: pre;
+  }
+  .diagram-box {
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+
+  /* ===== FLOW STEPS ===== */
+  .flow-steps {
+    margin: 16px 0;
+    counter-reset: step-counter;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    counter-increment: step-counter;
+  }
+  .flow-step-num {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85em;
+    flex-shrink: 0;
+  }
+  .flow-step-content {
+    flex: 1;
+    padding-top: 5px;
+  }
+  .flow-step-content strong { color: var(--text); }
+  .flow-step-content p { margin: 0; color: var(--text-muted); font-size: 0.92em; }
+
+  /* ===== PRIORITY TAG ===== */
+  .priority-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .p0 { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .p1 { background: rgba(252,100,45,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .p2 { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+  .p3 { background: rgba(66,139,249,0.2); color: var(--blue); border: 1px solid var(--blue); }
+  .p4 { background: rgba(148,163,184,0.2); color: var(--text-muted); border: 1px solid var(--text-muted); }
+
+  /* ===== METRIC BOX ===== */
+  .metric-box {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-box .metric-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-box .metric-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* ===== CALLOUT ===== */
+  .callout {
+    border-left: 4px solid var(--secondary);
+    background: rgba(0,166,153,0.06);
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+  }
+  .callout.warning {
+    border-left-color: var(--warning);
+    background: rgba(245,158,11,0.06);
+  }
+  .callout.danger {
+    border-left-color: var(--danger);
+    background: rgba(239,68,68,0.06);
+  }
+  .callout.info {
+    border-left-color: var(--blue);
+    background: rgba(66,139,249,0.06);
+  }
+  .callout p { margin: 0; }
+  .callout strong { color: var(--text); }
+
+  /* ===== TRADE-OFF CARD ===== */
+  .tradeoff {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 14px 0;
+  }
+  .tradeoff h4 {
+    margin: 0 0 12px 0;
+    color: var(--text);
+    font-size: 1em;
+  }
+  .tradeoff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .tradeoff-col h5 {
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .tradeoff-col.pros h5 { color: var(--success); }
+  .tradeoff-col.cons h5 { color: var(--danger); }
+  .tradeoff-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .tradeoff-col li {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .tradeoff-col.pros li::before { content: '+'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+  .tradeoff-col.cons li::before { content: '-'; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+  .tradeoff .verdict {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.88em;
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* ===== LIFECYCLE DIAGRAM ===== */
+  .lifecycle-diagram {
+    background: linear-gradient(135deg, #0d1117, #161b22);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .lifecycle-states {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px 0;
+  }
+  .lc-state {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .lc-state.open { background: rgba(66,139,249,0.2); color: var(--blue); border: 1px solid var(--blue); }
+  .lc-state.in-progress { background: rgba(123,47,247,0.2); color: var(--purple); border: 1px solid var(--purple); }
+  .lc-state.waiting { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+  .lc-state.resolved { background: rgba(16,185,129,0.2); color: var(--success); border: 1px solid var(--success); }
+  .lc-state.closed { background: rgba(148,163,184,0.2); color: var(--text-muted); border: 1px solid var(--text-muted); }
+  .lc-state.reopened { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .lc-arrow {
+    color: var(--text-muted);
+    font-size: 1.2em;
+    font-weight: 700;
+  }
+  .lc-branch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+  .lc-branch-label {
+    font-size: 0.72em;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* ===== INTERVIEW TIP ===== */
+  .interview-tip {
+    background: linear-gradient(135deg, rgba(123,47,247,0.08), rgba(66,139,249,0.08));
+    border: 1px solid rgba(123,47,247,0.25);
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin: 14px 0;
+  }
+  .interview-tip h4 {
+    color: var(--purple);
+    margin: 0 0 10px 0;
+    font-size: 1em;
+  }
+  .interview-tip p, .interview-tip li {
+    color: var(--text-muted);
+    font-size: 0.9em;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 50px 20px 40px; }
+    .hero h1 { font-size: 1.8em; }
+    .nav-bar { padding: 14px 20px; }
+    .container { padding: 0 16px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .tradeoff-row { grid-template-columns: 1fr; }
+    .section h2 { font-size: 1.5em; }
+    .lifecycle-states { flex-direction: column; }
+    .lc-arrow { transform: rotate(90deg); }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <div class="topic-number-hero">TOPIC 17</div>
+  <h1>Support Ticketing System</h1>
+  <p class="subtitle">Multi-channel ticket lifecycle management with SLA enforcement, intelligent assignment, and full audit trail for enterprise-grade customer support.</p>
+  <div class="hero-badges">
+    <span class="badge badge-red">PE-Level Design</span>
+    <span class="badge badge-green">Multi-Channel Ingestion</span>
+    <span class="badge badge-blue">SLA Enforcement</span>
+    <span class="badge badge-purple">Elasticsearch</span>
+    <span class="badge badge-orange">Event-Driven</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">100K</div>
+      <div class="stat-label">Tickets / Day</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">50K</div>
+      <div class="stat-label">Active Agents</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">&lt;500ms</div>
+      <div class="stat-label">Search Latency</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">P0-P4</div>
+      <div class="stat-label">Priority Tiers</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAV BAR ===== -->
+<nav class="nav-bar">
+  <h2>Sections</h2>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#capacity">Capacity</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#data-model">Data Model</a>
+    <a href="#email-ingestion">Email Ingestion</a>
+    <a href="#assignment-engine">Assignment Engine</a>
+    <a href="#sla-monitoring">SLA Monitoring</a>
+    <a href="#search-filtering">Search &amp; Filtering</a>
+    <a href="#ticket-reopening">Ticket Reopening</a>
+    <a href="#api-design">API Design</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ===== SECTION 1: OVERVIEW ===== -->
+<div class="section" id="overview">
+  <span class="section-label">Section 1</span>
+  <h2>System Overview</h2>
+  <p>A support ticketing system is the backbone of customer service operations. It tracks every customer interaction from initial contact to resolution, across multiple communication channels, providing full visibility and accountability throughout the process.</p>
+
+  <div class="grid-2" style="margin-top: 20px;">
+    <div class="card">
+      <h4 style="color: var(--primary);">Multi-Channel Ticket Creation</h4>
+      <ul>
+        <li><strong>Email:</strong> Inbound emails parsed via webhook (e.g., SendGrid Inbound Parse) automatically create or append to tickets</li>
+        <li><strong>Contact Form:</strong> Web forms on the help center site submit directly to the ticketing API</li>
+        <li><strong>In-App:</strong> Mobile and web apps surface embedded support widgets that create tickets via API</li>
+        <li><strong>Agent-Created:</strong> Support agents manually create tickets on behalf of customers (phone calls, walk-ins)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color: #1e293b;">Core Capabilities</h4>
+      <ul>
+        <li><strong>Filter &amp; Search:</strong> Agents can filter tickets by status, priority, assignee, tags, date range, and full-text search</li>
+        <li><strong>Communication Threads:</strong> Each ticket maintains a threaded conversation with internal notes and customer-facing replies</li>
+        <li><strong>Old Ticket Updates:</strong> Customers can reply to resolved tickets; the system detects thread context and reopens or creates a linked follow-up</li>
+        <li><strong>Merge Duplicates:</strong> Agents can merge duplicate tickets, consolidating threads and maintaining a redirect from the merged ticket</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>PE Scope Note:</strong> This design covers the full lifecycle from ingestion to resolution. In an interview, focus on the areas the interviewer probes deepest -- email parsing, assignment logic, SLA monitoring, or search -- and be prepared to go two levels deeper on any component.</p>
+  </div>
+</div>
+
+<!-- ===== SECTION 2: REQUIREMENTS ===== -->
+<div class="section" id="requirements">
+  <span class="section-label">Section 2</span>
+  <h2>Requirements</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color: var(--primary);">Functional Requirements</h4>
+      <ol>
+        <li><strong>Multi-Channel Create:</strong> Tickets created via email, contact form, in-app widget, or manually by agents</li>
+        <li><strong>Agent Assignment:</strong> Auto-assign via routing rules or manual assignment by team leads</li>
+        <li><strong>Ticket Lifecycle:</strong> States: <code class="inline">OPEN</code> &rarr; <code class="inline">IN_PROGRESS</code> &rarr; <code class="inline">WAITING</code> &rarr; <code class="inline">RESOLVED</code> &rarr; <code class="inline">CLOSED</code> &rarr; <code class="inline">REOPENED</code></li>
+        <li><strong>Communication Thread:</strong> Customer replies, agent responses, and internal-only notes per ticket</li>
+        <li><strong>Priority Levels:</strong> P0 (Critical) through P4 (Informational) with escalation rules</li>
+        <li><strong>SLA Tracking:</strong> Per-priority response and resolution SLAs with breach alerting</li>
+        <li><strong>Search &amp; Filter:</strong> Full-text search across subject, description, and messages; faceted filtering by status, priority, assignee, tags, date</li>
+        <li><strong>Tagging System:</strong> Freeform and predefined tags for categorization and routing</li>
+        <li><strong>Merge Duplicates:</strong> Combine duplicate tickets with full message consolidation</li>
+        <li><strong>Audit Log:</strong> Every state change, assignment, and edit tracked with actor, timestamp, and old/new values</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4 style="color: #1e293b;">Non-Functional Requirements</h4>
+      <ol>
+        <li><strong>Throughput:</strong> Handle 100K new tickets per day with burst capacity up to 3x</li>
+        <li><strong>Search Latency:</strong> Full-text search returns in &lt;500ms at p99</li>
+        <li><strong>Real-Time Dashboard:</strong> Live ticket counts and SLA metrics updated within 5 seconds</li>
+        <li><strong>Email Parsing:</strong> Process inbound emails within 30 seconds of receipt including attachments</li>
+        <li><strong>Compliance &amp; Retention:</strong> All ticket data retained for 7 years; PII redaction on request (GDPR); audit trail immutable</li>
+        <li><strong>Availability:</strong> 99.95% uptime for ticket creation and retrieval paths</li>
+        <li><strong>Consistency:</strong> Ticket state transitions must be strongly consistent (no split-brain states)</li>
+        <li><strong>Scalability:</strong> Horizontal scaling for agent pool growth (50K+ agents)</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 3: CAPACITY ===== -->
+<div class="section" id="capacity">
+  <span class="section-label">Section 3</span>
+  <h2>Capacity Estimation</h2>
+
+  <div class="grid-4">
+    <div class="metric-box">
+      <div class="metric-value">100K</div>
+      <div class="metric-label">Tickets / Day</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">50K</div>
+      <div class="metric-label">Active Agents</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">500K</div>
+      <div class="metric-label">Search Queries / Day</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">~1 GB</div>
+      <div class="metric-label">Storage / Day</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <h4 style="color: var(--blue);">Detailed Breakdown</h4>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Calculation</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Tickets per second (avg)</strong></td><td>100K / 86,400</td><td>~1.16 TPS</td></tr>
+          <tr><td><strong>Tickets per second (peak 3x)</strong></td><td>1.16 &times; 3</td><td>~3.5 TPS</td></tr>
+          <tr><td><strong>Messages per ticket</strong></td><td>Average 8 messages per ticket lifecycle</td><td>800K messages/day</td></tr>
+          <tr><td><strong>Average ticket size</strong></td><td>Ticket metadata (~2 KB) + messages (~8 KB avg)</td><td>~10 KB/ticket</td></tr>
+          <tr><td><strong>Daily storage (tickets + messages)</strong></td><td>100K &times; 10 KB</td><td>~1 GB/day</td></tr>
+          <tr><td><strong>Annual storage</strong></td><td>1 GB &times; 365</td><td>~365 GB/year</td></tr>
+          <tr><td><strong>7-year retention</strong></td><td>365 GB &times; 7</td><td>~2.5 TB total</td></tr>
+          <tr><td><strong>Search QPS (avg)</strong></td><td>500K / 86,400</td><td>~5.8 QPS</td></tr>
+          <tr><td><strong>Search QPS (peak 5x)</strong></td><td>5.8 &times; 5</td><td>~29 QPS</td></tr>
+          <tr><td><strong>Elasticsearch index size</strong></td><td>~60% of raw data with analyzed fields</td><td>~220 GB/year</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Storage Note:</strong> Attachment storage (screenshots, logs, etc.) stored in S3/Blob Storage separately. Average 2 attachments per ticket at ~500 KB each adds another ~100 GB/year. With 7-year retention, plan for ~700 GB of blob storage.</p>
+  </div>
+</div>
+
+<!-- ===== SECTION 4: ARCHITECTURE ===== -->
+<div class="section" id="architecture">
+  <span class="section-label">Section 4</span>
+  <h2>High-Level Architecture</h2>
+
+  <div class="diagram-box">
+  <svg viewBox="0 0 1100 600" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+    <defs>
+      <!-- Shadow filter -->
+      <filter id="shadow1" x="-4%" y="-4%" width="108%" height="112%">
+        <feDropShadow dx="1" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.45"/>
+      </filter>
+      <!-- Gradients for service boxes -->
+      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+      <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008F84"/></linearGradient>
+      <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D4"/></linearGradient>
+      <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6320CC"/></linearGradient>
+      <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#E04F1C"/></linearGradient>
+      <!-- Kafka icon gradient -->
+      <linearGradient id="gKafka" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+      <!-- Arrowhead markers -->
+      <marker id="arrowSync" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+      <marker id="arrowAsync" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ffa657"/></marker>
+      <marker id="arrowCDC" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8b949e"/></marker>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1100" height="600" rx="12" fill="#f1f5f9"/>
+
+    <!-- Section labels -->
+    <text x="80" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">INGESTION LAYER</text>
+    <text x="410" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">CORE SERVICES</text>
+    <text x="830" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">DATA / SEARCH</text>
+
+    <!-- ===== EMAIL CHANNEL ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="20" y="55" width="165" height="60" rx="10" fill="url(#g1)" opacity="0.9"/>
+      <!-- Envelope icon -->
+      <rect x="34" y="73" width="18" height="13" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <polyline points="34,73 43,82 52,73" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <text x="58" y="82" fill="#fff" font-size="11" font-weight="700">Email Parser</text>
+      <text x="58" y="100" fill="rgba(255,255,255,0.8)" font-size="9">SendGrid Hook</text>
+    </g>
+
+    <!-- ===== WEB FORM CHANNEL ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="20" y="135" width="165" height="60" rx="10" fill="url(#g1)" opacity="0.9"/>
+      <!-- Browser icon -->
+      <rect x="34" y="150" width="18" height="14" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <line x1="34" y1="156" x2="52" y2="156" stroke="#fff" stroke-width="1"/>
+      <circle cx="38" cy="153" r="1.2" fill="#fff"/>
+      <circle cx="42" cy="153" r="1.2" fill="#fff"/>
+      <text x="58" y="163" fill="#fff" font-size="11" font-weight="700">Web Form</text>
+      <text x="58" y="180" fill="rgba(255,255,255,0.8)" font-size="9">REST API</text>
+    </g>
+
+    <!-- ===== IN-APP CHANNEL ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="20" y="215" width="165" height="60" rx="10" fill="url(#g1)" opacity="0.9"/>
+      <!-- Phone icon -->
+      <rect x="37" y="229" width="12" height="18" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <line x1="41" y1="243" x2="45" y2="243" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="58" y="243" fill="#fff" font-size="11" font-weight="700">In-App Widget</text>
+      <text x="58" y="260" fill="rgba(255,255,255,0.8)" font-size="9">REST / WebSocket</text>
+    </g>
+
+    <!-- ===== ARROWS: Channels to Ticket Service ===== -->
+    <line x1="185" y1="85" x2="275" y2="150" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+    <line x1="185" y1="165" x2="275" y2="165" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+    <line x1="185" y1="245" x2="275" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+
+    <!-- ===== TICKET SERVICE (Central) ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="280" y="125" width="180" height="80" rx="10" fill="url(#g4)" opacity="0.92"/>
+      <!-- Clipboard icon -->
+      <rect x="296" y="146" width="14" height="18" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <rect x="299" y="143" width="8" height="4" rx="1" fill="#fff"/>
+      <line x1="300" y1="153" x2="306" y2="153" stroke="#fff" stroke-width="1"/>
+      <line x1="300" y1="157" x2="306" y2="157" stroke="#fff" stroke-width="1"/>
+      <text x="316" y="160" fill="#fff" font-size="12" font-weight="700">Ticket Service</text>
+      <text x="316" y="177" fill="rgba(255,255,255,0.8)" font-size="9">Create / Update / State Machine</text>
+    </g>
+
+    <!-- ===== ARROW: Ticket Service to Assignment Engine ===== -->
+    <line x1="460" y1="145" x2="540" y2="85" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+
+    <!-- ===== ASSIGNMENT ENGINE ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="545" y="50" width="175" height="65" rx="10" fill="url(#g2)" opacity="0.9"/>
+      <!-- People icon -->
+      <circle cx="562" cy="70" r="5" fill="none" stroke="#fff" stroke-width="1.3"/>
+      <path d="M554,84 Q558,76 562,76 Q566,76 570,84" fill="none" stroke="#fff" stroke-width="1.3"/>
+      <circle cx="574" cy="70" r="4" fill="none" stroke="#fff" stroke-width="1.1"/>
+      <path d="M568,82 Q571,76 574,76 Q577,76 580,82" fill="none" stroke="#fff" stroke-width="1.1"/>
+      <text x="586" y="78" fill="#fff" font-size="11" font-weight="700">Assignment Engine</text>
+      <text x="586" y="96" fill="rgba(255,255,255,0.8)" font-size="9">Round-Robin / Skill-Based</text>
+    </g>
+
+    <!-- ===== ARROW: Ticket Service down to Kafka ===== -->
+    <line x1="370" y1="205" x2="370" y2="280" stroke="#ffa657" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowAsync)"/>
+    <text x="380" y="255" fill="#ffa657" font-size="8" font-style="italic">events</text>
+
+    <!-- ===== KAFKA ===== -->
+    <g filter="url(#shadow1)" transform="translate(320,290)">
+      <rect x="0" y="0" width="160" height="55" rx="10" fill="#1e1e2e" stroke="#ef4444" stroke-width="1.5"/>
+      <!-- Kafka icon (3 circles + lines) -->
+      <circle cx="22" cy="18" r="5" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <circle cx="15" cy="36" r="4" fill="none" stroke="#ef4444" stroke-width="1.3"/>
+      <circle cx="30" cy="36" r="4" fill="none" stroke="#ef4444" stroke-width="1.3"/>
+      <line x1="19" y1="22" x2="17" y2="32" stroke="#ef4444" stroke-width="1.2"/>
+      <line x1="25" y1="22" x2="28" y2="32" stroke="#ef4444" stroke-width="1.2"/>
+      <text x="44" y="22" fill="#ef4444" font-size="12" font-weight="700">Kafka</text>
+      <text x="44" y="38" fill="#8b949e" font-size="9">Event Bus (Async)</text>
+    </g>
+
+    <!-- ===== ARROWS from Kafka to downstream services ===== -->
+    <!-- Kafka to Communication Svc -->
+    <line x1="345" y1="345" x2="180" y2="420" stroke="#ffa657" stroke-width="1.3" stroke-dasharray="6,3" marker-end="url(#arrowAsync)"/>
+    <!-- Kafka to SLA Monitor -->
+    <line x1="400" y1="345" x2="420" y2="420" stroke="#ffa657" stroke-width="1.3" stroke-dasharray="6,3" marker-end="url(#arrowAsync)"/>
+
+    <!-- ===== COMMUNICATION SERVICE ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="60" y="425" width="175" height="60" rx="10" fill="url(#g4)" opacity="0.9"/>
+      <!-- Chat bubble icon -->
+      <rect x="76" y="440" width="16" height="12" rx="4" fill="none" stroke="#fff" stroke-width="1.3"/>
+      <polygon points="80,452 76,458 84,452" fill="#fff" opacity="0.8"/>
+      <text x="98" y="454" fill="#fff" font-size="11" font-weight="700">Communication Svc</text>
+      <text x="98" y="470" fill="rgba(255,255,255,0.8)" font-size="9">Threads / Notes</text>
+    </g>
+
+    <!-- ===== NOTIFICATION SERVICE ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="60" y="510" width="175" height="55" rx="10" fill="url(#g5)" opacity="0.9"/>
+      <!-- Bell icon -->
+      <path d="M83,528 Q83,520 89,520 Q95,520 95,528 L97,536 L81,536 Z" fill="none" stroke="#fff" stroke-width="1.3"/>
+      <circle cx="89" cy="540" r="2" fill="#fff"/>
+      <text x="104" y="540" fill="#fff" font-size="11" font-weight="700">Notification Svc</text>
+      <text x="104" y="554" fill="rgba(255,255,255,0.8)" font-size="9">Email / Push / SMS</text>
+    </g>
+
+    <!-- Arrow: Communication to Notification -->
+    <line x1="148" y1="485" x2="148" y2="508" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSync)"/>
+
+    <!-- ===== SLA MONITOR ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="330" y="425" width="170" height="60" rx="10" fill="url(#g2)" opacity="0.9"/>
+      <!-- Clock icon -->
+      <circle cx="350" cy="455" r="10" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <line x1="350" y1="455" x2="350" y2="448" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="350" y1="455" x2="356" y2="457" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+      <text x="366" y="452" fill="#fff" font-size="11" font-weight="700">SLA Monitor</text>
+      <text x="366" y="469" fill="rgba(255,255,255,0.8)" font-size="9">Cron: every 60s</text>
+    </g>
+
+    <!-- ===== ESCALATION ===== -->
+    <g filter="url(#shadow1)">
+      <rect x="330" y="510" width="170" height="55" rx="10" fill="url(#g5)" opacity="0.9"/>
+      <text x="360" y="540" fill="#fff" font-size="11" font-weight="700">Escalation</text>
+      <text x="360" y="554" fill="rgba(255,255,255,0.8)" font-size="9">PagerDuty / Slack</text>
+    </g>
+
+    <!-- Arrow: SLA to Escalation -->
+    <line x1="415" y1="485" x2="415" y2="508" stroke="#94a3b8" stroke-width="1.3" marker-end="url(#arrowSync)"/>
+
+    <!-- ===== ARROW: Ticket Service to PostgreSQL ===== -->
+    <line x1="460" y1="170" x2="770" y2="170" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowSync)"/>
+    <text x="600" y="162" fill="#94a3b8" font-size="8">write</text>
+
+    <!-- ===== POSTGRESQL ===== -->
+    <g filter="url(#shadow1)" transform="translate(780,130)">
+      <!-- DB cylinder -->
+      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#2a4a8a" stroke="#428BF9" stroke-width="1.5"/>
+      <rect x="10" y="12" width="80" height="55" fill="#2a4a8a" stroke="none"/>
+      <line x1="10" y1="12" x2="10" y2="67" stroke="#428BF9" stroke-width="1.5"/>
+      <line x1="90" y1="12" x2="90" y2="67" stroke="#428BF9" stroke-width="1.5"/>
+      <ellipse cx="50" cy="67" rx="40" ry="12" fill="#2a4a8a" stroke="#428BF9" stroke-width="1.5"/>
+      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#3565b5" stroke="#428BF9" stroke-width="1.5"/>
+      <text x="50" y="42" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">PostgreSQL</text>
+      <text x="50" y="57" fill="rgba(255,255,255,0.7)" font-size="9" text-anchor="middle">Tickets DB</text>
+    </g>
+
+    <!-- ===== CDC Arrow: PG to Kafka to ES ===== -->
+    <line x1="830" y1="210" x2="830" y2="310" stroke="#8b949e" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrowCDC)"/>
+    <text x="838" y="265" fill="#8b949e" font-size="8" font-style="italic">CDC (Debezium)</text>
+
+    <!-- Arrow from CDC path to Kafka -->
+    <line x1="830" y1="315" x2="485" y2="315" stroke="#8b949e" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arrowCDC)"/>
+
+    <!-- Arrow from Kafka to Elasticsearch -->
+    <line x1="480" y1="310" x2="780" y2="410" stroke="#ffa657" stroke-width="1.3" stroke-dasharray="6,3" marker-end="url(#arrowAsync)"/>
+    <text x="620" y="350" fill="#ffa657" font-size="8" font-style="italic">index sync</text>
+
+    <!-- ===== ELASTICSEARCH ===== -->
+    <g filter="url(#shadow1)" transform="translate(780,395)">
+      <rect x="0" y="0" width="140" height="65" rx="10" fill="#0d2e2b" stroke="#00A699" stroke-width="1.5"/>
+      <!-- Elasticsearch concentric circles + bars -->
+      <circle cx="25" cy="32" r="12" fill="none" stroke="#00A699" stroke-width="1"/>
+      <circle cx="25" cy="32" r="7" fill="none" stroke="#00A699" stroke-width="1.2"/>
+      <circle cx="25" cy="32" r="2.5" fill="#00A699"/>
+      <rect x="34" y="24" width="3" height="16" rx="1" fill="#00A699" opacity="0.6"/>
+      <rect x="39" y="28" width="3" height="8" rx="1" fill="#00A699" opacity="0.8"/>
+      <text x="48" y="30" fill="#00A699" font-size="11" font-weight="700">Elasticsearch</text>
+      <text x="48" y="46" fill="#8b949e" font-size="9">Search Index</text>
+    </g>
+
+    <!-- ===== REDIS ===== -->
+    <g filter="url(#shadow1)" transform="translate(780,480)">
+      <rect x="0" y="0" width="140" height="55" rx="10" fill="#1e1e2e" stroke="#ef4444" stroke-width="1.5"/>
+      <!-- Redis diamond -->
+      <polygon points="25,8 38,25 25,42 12,25" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="46" y="24" fill="#ef4444" font-size="11" font-weight="700">Redis</text>
+      <text x="46" y="40" fill="#8b949e" font-size="9">Dashboard Cache</text>
+    </g>
+
+    <!-- ===== S3 ===== -->
+    <g filter="url(#shadow1)" transform="translate(780,555)">
+      <rect x="0" y="0" width="140" height="42" rx="10" fill="#1a2e1a" stroke="#4caf50" stroke-width="1.5"/>
+      <!-- S3 bucket icon -->
+      <ellipse cx="25" cy="10" rx="10" ry="4" fill="none" stroke="#4caf50" stroke-width="1.3"/>
+      <line x1="15" y1="10" x2="15" y2="30" stroke="#4caf50" stroke-width="1.3"/>
+      <line x1="35" y1="10" x2="35" y2="30" stroke="#4caf50" stroke-width="1.3"/>
+      <ellipse cx="25" cy="30" rx="10" ry="4" fill="none" stroke="#4caf50" stroke-width="1.3"/>
+      <text x="46" y="20" fill="#4caf50" font-size="11" font-weight="700">S3</text>
+      <text x="46" y="34" fill="#8b949e" font-size="9">Attachments</text>
+    </g>
+
+    <!-- ===== AGENT DASHBOARD ===== -->
+    <g filter="url(#shadow1)" transform="translate(560,420)">
+      <rect x="0" y="0" width="170" height="60" rx="10" fill="url(#g3)" opacity="0.9"/>
+      <!-- Monitor icon -->
+      <rect x="16" y="12" width="22" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <line x1="27" y1="28" x2="27" y2="34" stroke="#fff" stroke-width="1.5"/>
+      <line x1="21" y1="34" x2="33" y2="34" stroke="#fff" stroke-width="1.5"/>
+      <text x="44" y="30" fill="#fff" font-size="11" font-weight="700">Agent Dashboard</text>
+      <text x="44" y="46" fill="rgba(255,255,255,0.8)" font-size="9">Reads ES + Redis</text>
+    </g>
+
+    <!-- Arrow: Dashboard reads ES -->
+    <line x1="730" y1="445" x2="780" y2="435" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arrowSync)"/>
+    <!-- Arrow: Dashboard reads Redis -->
+    <line x1="730" y1="460" x2="780" y2="500" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arrowSync)"/>
+
+    <!-- Arrow: SLA Monitor reads PG -->
+    <path d="M500,455 Q600,455 660,300 Q700,220 770,195" fill="none" stroke="#8b949e" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowCDC)"/>
+    <text x="620" y="390" fill="#8b949e" font-size="7" font-style="italic">reads PG</text>
+
+    <!-- ===== NUMBERED STEP CIRCLES ===== -->
+    <!-- Step 1: Customer sends email / submits web form / uses in-app -->
+    <circle cx="10" cy="160" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="10" y="164" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+    <!-- Step 2: Parsers / Form Handler / API → Ticket Service -->
+    <circle cx="230" cy="145" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="230" y="149" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+    <!-- Step 3: Ticket Service → PostgreSQL (INSERT ticket) -->
+    <circle cx="615" cy="160" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="615" y="164" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+    <!-- Step 4: Ticket Service → Assignment Engine (auto-assign) -->
+    <circle cx="500" cy="110" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="500" y="114" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+    <!-- Step 5: Assignment Engine → PostgreSQL (UPDATE assignee) -->
+    <circle cx="730" cy="85" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="730" y="89" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+    <!-- Step 6: Ticket Service → Kafka (ticket.created event) -->
+    <circle cx="355" cy="255" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="355" y="259" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+    <!-- Step 7: Kafka → Notification Service (notify agent) -->
+    <circle cx="255" cy="390" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="255" y="394" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+    <!-- Step 8: PostgreSQL → Debezium CDC → Kafka → Elasticsearch -->
+    <circle cx="845" cy="265" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="845" y="269" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+    <!-- Step 9: Agent Dashboard → Elasticsearch + Redis -->
+    <circle cx="645" cy="470" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="645" y="474" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+    <!-- Step 10: SLA Monitor cron → PostgreSQL -->
+    <circle cx="525" cy="445" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="525" y="449" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+
+    <!-- Step 11: Customer replies to email → Email Parser detects thread -->
+    <circle cx="100" cy="45" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+    <text x="100" y="49" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">11</text>
+
+    <!-- Legend -->
+    <g transform="translate(20,570)">
+      <line x1="0" y1="5" x2="25" y2="5" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="30" y="9" fill="#8b949e" font-size="8">Sync</text>
+      <line x1="75" y1="5" x2="100" y2="5" stroke="#ffa657" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="105" y="9" fill="#8b949e" font-size="8">Async</text>
+      <line x1="150" y1="5" x2="175" y2="5" stroke="#8b949e" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <text x="180" y="9" fill="#8b949e" font-size="8">CDC</text>
+      <circle cx="230" cy="5" r="6" fill="#FF5A5F" stroke="#fff" stroke-width="1"/>
+      <text x="230" y="8" fill="#fff" font-size="7" font-weight="800" text-anchor="middle">N</text>
+      <text x="242" y="9" fill="#8b949e" font-size="8">Flow Step</text>
+    </g>
+  </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Customer</td><td>Email / Web Form / In-App</td><td>Sends support request via any channel</td></tr>
+        <tr><td><strong>2</strong></td><td>Email Parser / Form Handler / API</td><td>Ticket Service</td><td>Create ticket (normalized <code class="inline">TicketCreateEvent</code>)</td></tr>
+        <tr><td><strong>3</strong></td><td>Ticket Service</td><td>PostgreSQL</td><td>INSERT ticket row + first message</td></tr>
+        <tr><td><strong>4</strong></td><td>Ticket Service</td><td>Assignment Engine</td><td>Auto-assign ticket to agent</td></tr>
+        <tr><td><strong>5</strong></td><td>Assignment Engine</td><td>PostgreSQL</td><td>UPDATE assignee based on skills / load balancing</td></tr>
+        <tr><td><strong>6</strong></td><td>Ticket Service</td><td>Kafka</td><td>Publish <code class="inline">ticket.created</code> event</td></tr>
+        <tr><td><strong>7</strong></td><td>Kafka</td><td>Notification Service</td><td>Notify assigned agent (email / push / SMS)</td></tr>
+        <tr><td><strong>8</strong></td><td>PostgreSQL &rarr; Debezium CDC &rarr; Kafka</td><td>Elasticsearch</td><td>Sync ticket data for full-text search</td></tr>
+        <tr><td><strong>9</strong></td><td>Agent Dashboard</td><td>Elasticsearch + Redis</td><td>Search / filter tickets + real-time queue counts</td></tr>
+        <tr><td><strong>10</strong></td><td>SLA Monitor (cron)</td><td>PostgreSQL</td><td>Check approaching / breached SLA deadlines</td></tr>
+        <tr><td><strong>11</strong></td><td>Customer</td><td>Email Parser</td><td>Reply to email &rarr; detect thread &rarr; append message to ticket</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3>Happy Path</h3>
+  <div class="card" style="border-left: 4px solid var(--success); background: rgba(16,185,129,0.05);">
+    <h4 style="color: var(--success); margin-top: 0;">End-to-End Sunny Day Flow</h4>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">1</div>
+        <div class="flow-step-content"><strong>Customer emails support</strong><p>SendGrid Inbound Parse webhook fires, Email Parser extracts sender, subject, body, and attachments.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">2</div>
+        <div class="flow-step-content"><strong>Ticket created in PostgreSQL</strong><p>Ticket Service inserts ticket row with status=OPEN and the first message. External UUID generated for API exposure.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">3</div>
+        <div class="flow-step-content"><strong>Auto-assigned to skilled agent</strong><p>Assignment Engine matches ticket category to agent skill tags; selects least-loaded agent in that skill group.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">4</div>
+        <div class="flow-step-content"><strong>Agent notified</strong><p>Kafka event triggers Notification Service &rarr; agent receives push notification and email with ticket summary.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">5</div>
+        <div class="flow-step-content"><strong>Agent replies via dashboard</strong><p>Agent opens ticket in dashboard, types response. Communication Service creates outbound message and renders email template.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">6</div>
+        <div class="flow-step-content"><strong>Customer receives email reply</strong><p>Notification Service sends email via SendGrid. Status moves to WAITING_ON_CUSTOMER.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num" style="background: linear-gradient(135deg, var(--success), #059669);">7</div>
+        <div class="flow-step-content"><strong>Resolved and closed</strong><p>Customer confirms resolution. Agent sets status=RESOLVED. After 48h idle, auto-close cron sets status=CLOSED.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Failure Scenario</th><th>Impact</th><th>Mitigation</th><th>Recovery</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Email parse failure</strong></td>
+          <td>Inbound email not converted to ticket; customer gets no response</td>
+          <td>Dead-letter queue (DLQ) captures unparseable emails</td>
+          <td>Manual review queue for ops team; alert if DLQ depth > threshold</td>
+        </tr>
+        <tr>
+          <td><strong>Assignment Engine: no available agents</strong></td>
+          <td>Ticket sits unassigned; SLA clock ticking</td>
+          <td>Fallback: escalate to team lead after 5 min unassigned</td>
+          <td>Auto-reassign when agents come online; broadcast to all agents in skill group</td>
+        </tr>
+        <tr>
+          <td><strong>SLA breach</strong></td>
+          <td>Customer experience degrades; contractual penalties possible</td>
+          <td>SLA Monitor auto-escalates at 80% threshold (warning) and 100% (breach)</td>
+          <td>PagerDuty alert to manager; ticket priority auto-bumped; reassign to available senior agent</td>
+        </tr>
+        <tr>
+          <td><strong>Elasticsearch sync lag</strong></td>
+          <td>Agent dashboard shows stale data; recently created tickets missing from search</td>
+          <td>Dashboard shows "last synced" timestamp; agents can fall back to direct PG query</td>
+          <td>Debezium CDC resets offset and replays; monitoring alerts on replication lag > 30s</td>
+        </tr>
+        <tr>
+          <td><strong>Duplicate ticket from same email</strong></td>
+          <td>Agent sees duplicate tickets; wasted effort</td>
+          <td>Dedup by <code class="inline">Message-ID</code> header; unique constraint on external email message ID</td>
+          <td>Merge duplicate tickets via admin tool; second ticket auto-linked to first</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Component Responsibilities</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color: var(--accent);">Ingestion Layer</h4>
+      <ul>
+        <li><strong>Email Parser:</strong> Receives SendGrid Inbound Parse webhooks, extracts sender, subject, body, attachments, and detects thread context via headers</li>
+        <li><strong>Web Form / In-App:</strong> REST API endpoints that validate input, rate-limit per IP/user, and enqueue ticket creation events</li>
+        <li><strong>Normalization:</strong> All channels produce a unified <code class="inline">TicketCreateEvent</code> schema before hitting the Ticket Service</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color: var(--purple);">Core Services</h4>
+      <ul>
+        <li><strong>Ticket Service:</strong> CRUD operations, state machine enforcement, optimistic locking on updates</li>
+        <li><strong>Assignment Engine:</strong> Pluggable strategies (round-robin, skill-based, load-based) with fallback escalation</li>
+        <li><strong>Communication Service:</strong> Manages threaded messages, internal notes, and outbound reply rendering</li>
+        <li><strong>SLA Monitor:</strong> Cron job every 60 seconds evaluating all open tickets against SLA deadlines</li>
+        <li><strong>Notification Service:</strong> Sends email/push/SMS for ticket updates, SLA warnings, and escalations</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 5: DATA MODEL ===== -->
+<div class="section" id="data-model">
+  <span class="section-label">Section 5</span>
+  <h2>Data Model</h2>
+
+  <h3>tickets</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Auto-increment ticket ID (displayed as TICKET-{id})</td></tr>
+        <tr><td><strong>external_id</strong></td><td>UUID UNIQUE</td><td>Public-facing UUID for API exposure</td></tr>
+        <tr><td><strong>subject</strong></td><td>VARCHAR(500)</td><td>Ticket subject line</td></tr>
+        <tr><td><strong>description</strong></td><td>TEXT</td><td>Initial description / first message body</td></tr>
+        <tr><td><strong>status</strong></td><td>ENUM</td><td>OPEN, IN_PROGRESS, WAITING_ON_CUSTOMER, WAITING_ON_INTERNAL, RESOLVED, CLOSED, REOPENED</td></tr>
+        <tr><td><strong>priority</strong></td><td>SMALLINT</td><td>0 (P0-Critical) through 4 (P4-Informational)</td></tr>
+        <tr><td><strong>channel</strong></td><td>ENUM</td><td>EMAIL, WEB_FORM, IN_APP, PHONE, MANUAL</td></tr>
+        <tr><td><strong>requester_id</strong></td><td>BIGINT FK</td><td>References users table (the customer)</td></tr>
+        <tr><td><strong>assignee_id</strong></td><td>BIGINT FK NULL</td><td>References agents table (current assignee)</td></tr>
+        <tr><td><strong>team_id</strong></td><td>BIGINT FK NULL</td><td>References teams table for group assignment</td></tr>
+        <tr><td><strong>merged_into_id</strong></td><td>BIGINT FK NULL</td><td>If merged, points to the surviving ticket</td></tr>
+        <tr><td><strong>reopen_count</strong></td><td>SMALLINT DEFAULT 0</td><td>Number of times ticket has been reopened</td></tr>
+        <tr><td><strong>sla_first_response_at</strong></td><td>TIMESTAMP NULL</td><td>Deadline for first agent response</td></tr>
+        <tr><td><strong>sla_resolution_at</strong></td><td>TIMESTAMP NULL</td><td>Deadline for resolution</td></tr>
+        <tr><td><strong>first_responded_at</strong></td><td>TIMESTAMP NULL</td><td>Actual first response time</td></tr>
+        <tr><td><strong>resolved_at</strong></td><td>TIMESTAMP NULL</td><td>Actual resolution time</td></tr>
+        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Ticket creation time</td></tr>
+        <tr><td><strong>updated_at</strong></td><td>TIMESTAMP</td><td>Last modification time</td></tr>
+        <tr><td><strong>version</strong></td><td>INT DEFAULT 1</td><td>Optimistic locking version counter</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Indexes:</strong> <code class="inline">idx_tickets_status_priority</code> (status, priority), <code class="inline">idx_tickets_assignee</code> (assignee_id, status), <code class="inline">idx_tickets_requester</code> (requester_id, created_at DESC), <code class="inline">idx_tickets_sla_breach</code> (status, sla_resolution_at) WHERE status NOT IN ('CLOSED','RESOLVED')</p>
+  </div>
+
+  <h3>ticket_messages</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Message ID</td></tr>
+        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Parent ticket reference</td></tr>
+        <tr><td><strong>author_id</strong></td><td>BIGINT FK</td><td>User or agent who sent the message</td></tr>
+        <tr><td><strong>author_type</strong></td><td>ENUM</td><td>CUSTOMER, AGENT, SYSTEM</td></tr>
+        <tr><td><strong>message_type</strong></td><td>ENUM</td><td>REPLY (customer-visible), INTERNAL_NOTE, SYSTEM_EVENT</td></tr>
+        <tr><td><strong>body</strong></td><td>TEXT</td><td>Message content (HTML sanitized)</td></tr>
+        <tr><td><strong>attachments</strong></td><td>JSONB</td><td>Array of {filename, s3_key, content_type, size_bytes}</td></tr>
+        <tr><td><strong>email_message_id</strong></td><td>VARCHAR(255) NULL</td><td>Original email Message-ID header for threading</td></tr>
+        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Message timestamp</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>ticket_tags</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Ticket reference (composite PK with tag)</td></tr>
+        <tr><td><strong>tag</strong></td><td>VARCHAR(100)</td><td>Normalized lowercase tag name</td></tr>
+        <tr><td><strong>added_by</strong></td><td>BIGINT FK</td><td>Agent who added the tag</td></tr>
+        <tr><td><strong>added_at</strong></td><td>TIMESTAMP</td><td>When the tag was added</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>ticket_history (Audit Log)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>History entry ID</td></tr>
+        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Ticket reference</td></tr>
+        <tr><td><strong>actor_id</strong></td><td>BIGINT FK</td><td>Who made the change</td></tr>
+        <tr><td><strong>actor_type</strong></td><td>ENUM</td><td>AGENT, SYSTEM, CUSTOMER</td></tr>
+        <tr><td><strong>action</strong></td><td>VARCHAR(50)</td><td>STATUS_CHANGE, ASSIGNMENT, PRIORITY_CHANGE, TAG_ADD, TAG_REMOVE, MERGE, FIELD_UPDATE</td></tr>
+        <tr><td><strong>field_name</strong></td><td>VARCHAR(100) NULL</td><td>Which field changed</td></tr>
+        <tr><td><strong>old_value</strong></td><td>TEXT NULL</td><td>Previous value (serialized)</td></tr>
+        <tr><td><strong>new_value</strong></td><td>TEXT NULL</td><td>New value (serialized)</td></tr>
+        <tr><td><strong>metadata</strong></td><td>JSONB NULL</td><td>Additional context (e.g., merge source ticket ID)</td></tr>
+        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Immutable timestamp of the change</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warning">
+    <p><strong>Immutability Constraint:</strong> The <code class="inline">ticket_history</code> table is append-only. No UPDATE or DELETE operations are permitted. Enforce via database-level triggers or application-layer write-only access patterns. This ensures compliance audit trails cannot be tampered with.</p>
+  </div>
+
+  <h3>agent_assignments</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Assignment record ID</td></tr>
+        <tr><td><strong>agent_id</strong></td><td>BIGINT FK</td><td>Agent reference</td></tr>
+        <tr><td><strong>team_id</strong></td><td>BIGINT FK</td><td>Agent's team</td></tr>
+        <tr><td><strong>skills</strong></td><td>TEXT[]</td><td>Array of skill tags (billing, technical, refund, etc.)</td></tr>
+        <tr><td><strong>current_load</strong></td><td>INT DEFAULT 0</td><td>Number of currently assigned open tickets</td></tr>
+        <tr><td><strong>max_capacity</strong></td><td>INT DEFAULT 20</td><td>Max concurrent tickets this agent handles</td></tr>
+        <tr><td><strong>is_online</strong></td><td>BOOLEAN</td><td>Whether agent is currently available</td></tr>
+        <tr><td><strong>last_assigned_at</strong></td><td>TIMESTAMP NULL</td><td>Used for round-robin fairness</td></tr>
+        <tr><td><strong>shift_start</strong></td><td>TIME</td><td>Agent shift start (for timezone-aware routing)</td></tr>
+        <tr><td><strong>shift_end</strong></td><td>TIME</td><td>Agent shift end</td></tr>
+        <tr><td><strong>timezone</strong></td><td>VARCHAR(50)</td><td>Agent timezone (e.g., America/Los_Angeles)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SECTION 6: EMAIL INGESTION ===== -->
+<div class="section" id="email-ingestion">
+  <span class="section-label">Section 6</span>
+  <h2>Email Ingestion Pipeline</h2>
+
+  <p>Email is the highest-volume ingestion channel. The pipeline uses SendGrid Inbound Parse to receive emails as structured webhook payloads, then applies threading logic, spam filtering, and normalization before ticket creation.</p>
+
+  <div class="arch-diagram">
+<span style="color:#79c0ff;">INBOUND EMAIL FLOW</span>
+
+  Customer Email
+       |
+       v
++------------------+     +-------------------+     +-------------------+
+| <span style="color:#ff7b72;">SendGrid</span>          |---->| <span style="color:#d2a8ff;">Email Parser Svc</span>   |---->| <span style="color:#ffa657;">Thread Detector</span>   |
+| Inbound Parse    |     | (Webhook Handler) |     | (Reply Matching)  |
+| (MX Record)      |     +-------------------+     +--------+----------+
++------------------+              |                          |
+                                  v                          v
+                         +-------------------+     +-------------------+
+                         | <span style="color:#d2a8ff;">Spam Filter</span>       |     | <span style="color:#a5d6ff;">Existing Ticket?</span>  |
+                         | (SpamAssassin/ML) |     |   YES --> Append   |
+                         +-------------------+     |   NO  --> Create   |
+                                                   +-------------------+
+  </div>
+
+  <h3>Webhook Payload Processing</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <p><strong>Receive Webhook</strong> -- SendGrid POSTs multipart form data containing <code class="inline">from</code>, <code class="inline">to</code>, <code class="inline">subject</code>, <code class="inline">text</code>, <code class="inline">html</code>, <code class="inline">attachments</code>, and full email headers.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <p><strong>Extract Sender Identity</strong> -- Parse the <code class="inline">From</code> header to identify the customer. Look up in users table; if unknown, create a placeholder contact record.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <p><strong>Thread Detection</strong> -- Check for existing ticket context using two methods:</p>
+        <ul>
+          <li><strong>In-Reply-To Header:</strong> Match the <code class="inline">In-Reply-To</code> or <code class="inline">References</code> header against stored <code class="inline">email_message_id</code> values in <code class="inline">ticket_messages</code></li>
+          <li><strong>Subject Pattern:</strong> Regex match for <code class="inline">[TICKET-12345]</code> pattern in subject line (injected by outbound reply emails)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <p><strong>Spam Filtering</strong> -- Run through SpamAssassin scoring and ML-based classifier. Emails scoring above threshold are quarantined for manual review rather than auto-creating tickets.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <p><strong>Attachment Handling</strong> -- Upload attachments to S3 with content-type validation (block executables), virus scan via ClamAV, and store references in the message <code class="inline">attachments</code> JSONB field.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">6</div>
+      <div class="flow-step-content">
+        <p><strong>Ticket Creation or Append</strong> -- If thread detected: append message to existing ticket and trigger state re-evaluation. If new: create ticket with <code class="inline">channel=EMAIL</code>, default priority P3, and route through Assignment Engine.</p>
+      </div>
+    </div>
+  </div>
+
+  <pre><code><span class="cm">// Email parser webhook handler (simplified)</span>
+<span class="kw">async function</span> <span class="fn">handleInboundEmail</span>(webhookPayload) {
+  <span class="kw">const</span> { from, subject, text, html, headers, attachments } = <span class="fn">parsePayload</span>(webhookPayload);
+
+  <span class="cm">// Step 1: Identify sender</span>
+  <span class="kw">const</span> requester = <span class="kw">await</span> <span class="fn">findOrCreateUser</span>(from);
+
+  <span class="cm">// Step 2: Detect thread via In-Reply-To or subject pattern</span>
+  <span class="kw">const</span> inReplyTo = headers[<span class="str">'In-Reply-To'</span>];
+  <span class="kw">const</span> subjectMatch = subject.<span class="fn">match</span>(<span class="str">/\[TICKET-(\d+)\]/</span>);
+
+  <span class="kw">let</span> existingTicket = <span class="kw">null</span>;
+  <span class="kw">if</span> (inReplyTo) {
+    existingTicket = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+      SELECT t.* FROM tickets t
+      JOIN ticket_messages tm ON tm.ticket_id = t.id
+      WHERE tm.email_message_id = $1`</span>, [inReplyTo]);
+  } <span class="kw">else if</span> (subjectMatch) {
+    existingTicket = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'SELECT * FROM tickets WHERE id = $1'</span>, [subjectMatch[<span class="num">1</span>]]);
+  }
+
+  <span class="cm">// Step 3: Spam check</span>
+  <span class="kw">const</span> spamScore = <span class="kw">await</span> <span class="fn">checkSpam</span>({ from, subject, text });
+  <span class="kw">if</span> (spamScore > <span class="num">5.0</span>) <span class="kw">return</span> <span class="fn">quarantineEmail</span>(webhookPayload);
+
+  <span class="cm">// Step 4: Upload attachments to S3</span>
+  <span class="kw">const</span> storedAttachments = <span class="kw">await</span> Promise.<span class="fn">all</span>(
+    attachments.<span class="fn">map</span>(a => <span class="fn">uploadToS3</span>(a, { virusScan: <span class="kw">true</span> }))
+  );
+
+  <span class="cm">// Step 5: Create or append</span>
+  <span class="kw">if</span> (existingTicket) {
+    <span class="kw">await</span> <span class="fn">appendMessage</span>(existingTicket.id, { requester, text, storedAttachments });
+    <span class="kw">await</span> <span class="fn">evaluateReopen</span>(existingTicket); <span class="cm">// may reopen if resolved/closed</span>
+  } <span class="kw">else</span> {
+    <span class="kw">await</span> <span class="fn">createTicket</span>({ requester, subject, description: text,
+      channel: <span class="str">'EMAIL'</span>, priority: <span class="num">3</span>, attachments: storedAttachments });
+  }
+}</code></pre>
+</div>
+
+<!-- ===== SECTION 7: ASSIGNMENT ENGINE ===== -->
+<div class="section" id="assignment-engine">
+  <span class="section-label">Section 7</span>
+  <h2>Assignment Engine</h2>
+
+  <p>The assignment engine routes tickets to agents using a pluggable strategy pattern. The strategy is selected based on team configuration, with fallback to the next available strategy if the primary yields no candidate.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color: var(--blue);">Round-Robin Assignment</h4>
+      <p>Distributes tickets evenly across available agents in a team. Uses <code class="inline">last_assigned_at</code> timestamp to maintain fairness. Simplest strategy; works well for homogeneous teams.</p>
+      <pre><code><span class="cm">-- Round-robin: next agent in rotation</span>
+<span class="kw">SELECT</span> agent_id <span class="kw">FROM</span> agent_assignments
+<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
+  <span class="kw">AND</span> is_online = <span class="kw">true</span>
+  <span class="kw">AND</span> current_load < max_capacity
+<span class="kw">ORDER BY</span> last_assigned_at <span class="kw">ASC NULLS FIRST</span>
+<span class="kw">LIMIT</span> <span class="num">1</span>
+<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+    </div>
+    <div class="card">
+      <h4 style="color: #1e293b;">Load-Based Assignment</h4>
+      <p>Routes to the agent with the lowest current load relative to their capacity. Accounts for part-time agents and those handling complex tickets that occupy more capacity.</p>
+      <pre><code><span class="cm">-- Load-based: lowest utilization ratio</span>
+<span class="kw">SELECT</span> agent_id,
+  (current_load::float / max_capacity) <span class="kw">AS</span> util
+<span class="kw">FROM</span> agent_assignments
+<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
+  <span class="kw">AND</span> is_online = <span class="kw">true</span>
+  <span class="kw">AND</span> current_load < max_capacity
+<span class="kw">ORDER BY</span> util <span class="kw">ASC</span>
+<span class="kw">LIMIT</span> <span class="num">1</span>
+<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+    </div>
+    <div class="card">
+      <h4 style="color: var(--purple);">Skill-Based Assignment</h4>
+      <p>Matches ticket tags (e.g., "billing", "technical", "refund") against agent skill arrays. Returns the best-matching agent with available capacity. Critical for specialized support teams.</p>
+      <pre><code><span class="cm">-- Skill-based: match ticket tags to agent skills</span>
+<span class="kw">SELECT</span> agent_id,
+  <span class="fn">array_length</span>(skills & <span class="var">:ticket_tags</span>, <span class="num">1</span>) <span class="kw">AS</span> match_score
+<span class="kw">FROM</span> agent_assignments
+<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
+  <span class="kw">AND</span> is_online = <span class="kw">true</span>
+  <span class="kw">AND</span> current_load < max_capacity
+  <span class="kw">AND</span> skills && <span class="var">:ticket_tags</span>  <span class="cm">-- overlap operator</span>
+<span class="kw">ORDER BY</span> match_score <span class="kw">DESC</span>, current_load <span class="kw">ASC</span>
+<span class="kw">LIMIT</span> <span class="num">1</span>
+<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+    </div>
+    <div class="card">
+      <h4 style="color: var(--accent);">Priority-Based + Auto-Escalation</h4>
+      <p>P0/P1 tickets bypass normal routing and go to senior agents or on-call engineers. If no agent is assigned within the SLA warning threshold, the system auto-escalates to the team lead, then to the department manager.</p>
+      <pre><code><span class="cm">// Auto-escalation chain on SLA breach</span>
+<span class="kw">const</span> escalationChain = [
+  { level: <span class="num">1</span>, target: <span class="str">'team_lead'</span>,    delay: <span class="str">'50% of SLA'</span> },
+  { level: <span class="num">2</span>, target: <span class="str">'dept_manager'</span>,  delay: <span class="str">'80% of SLA'</span> },
+  { level: <span class="num">3</span>, target: <span class="str">'vp_support'</span>,    delay: <span class="str">'100% of SLA'</span> },
+  { level: <span class="num">4</span>, target: <span class="str">'pagerduty_oncall'</span>, delay: <span class="str">'SLA breached'</span> },
+];</code></pre>
+    </div>
+  </div>
+
+  <div class="callout warning">
+    <p><strong>Race Condition Prevention:</strong> The <code class="inline">FOR UPDATE SKIP LOCKED</code> clause prevents two concurrent assignment operations from selecting the same agent. If the chosen agent's row is locked by another transaction, it is skipped and the next candidate is selected. This is critical at scale with 100K tickets/day.</p>
+  </div>
+</div>
+
+<!-- ===== SECTION 8: SLA MONITORING ===== -->
+<div class="section" id="sla-monitoring">
+  <span class="section-label">Section 8</span>
+  <h2>SLA Monitoring</h2>
+
+  <h3>SLA Matrix by Priority</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Priority</th><th>Label</th><th>First Response SLA</th><th>Resolution SLA</th><th>Escalation Warning</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="priority-tag p0">P0</span></td>
+          <td><strong>Critical</strong> -- Site-wide outage, payment failures</td>
+          <td><strong>15 min</strong></td>
+          <td><strong>1 hr</strong></td>
+          <td>At 50% (30 min)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p1">P1</span></td>
+          <td><strong>High</strong> -- Major feature broken for user</td>
+          <td><strong>1 hr</strong></td>
+          <td><strong>4 hr</strong></td>
+          <td>At 50% (2 hr)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p2">P2</span></td>
+          <td><strong>Medium</strong> -- Non-critical bug, workaround exists</td>
+          <td><strong>4 hr</strong></td>
+          <td><strong>24 hr</strong></td>
+          <td>At 75% (18 hr)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p3">P3</span></td>
+          <td><strong>Low</strong> -- General question, feature request</td>
+          <td><strong>24 hr</strong></td>
+          <td><strong>72 hr</strong></td>
+          <td>At 75% (54 hr)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p4">P4</span></td>
+          <td><strong>Informational</strong> -- Feedback, cosmetic issues</td>
+          <td><strong>48 hr</strong></td>
+          <td><strong>1 week</strong></td>
+          <td>At 90% (6.3 days)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>SLA Monitor Cron Job</h3>
+  <p>A cron job runs every 60 seconds to check all non-closed tickets against their SLA deadlines. It identifies three categories: approaching breach (warning), breached (escalation), and healthy.</p>
+
+  <pre><code><span class="cm">// SLA Monitor - runs every 60 seconds</span>
+<span class="kw">async function</span> <span class="fn">checkSLACompliance</span>() {
+  <span class="kw">const</span> now = <span class="kw">new</span> Date();
+
+  <span class="cm">// Find tickets approaching first-response SLA breach</span>
+  <span class="kw">const</span> warningTickets = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+    SELECT id, priority, assignee_id, sla_first_response_at
+    FROM tickets
+    WHERE status IN ('OPEN', 'REOPENED')
+      AND first_responded_at IS NULL
+      AND sla_first_response_at IS NOT NULL
+      AND sla_first_response_at - INTERVAL '25%' *
+          (sla_first_response_at - created_at) < $1
+      AND sla_first_response_at > $1`</span>, [now]);
+
+  <span class="cm">// Find tickets that have BREACHED SLA</span>
+  <span class="kw">const</span> breachedTickets = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+    SELECT id, priority, assignee_id, sla_first_response_at, sla_resolution_at
+    FROM tickets
+    WHERE status NOT IN ('CLOSED', 'RESOLVED')
+      AND (
+        (first_responded_at IS NULL AND sla_first_response_at < $1)
+        OR
+        (resolved_at IS NULL AND sla_resolution_at < $1)
+      )`</span>, [now]);
+
+  <span class="cm">// Trigger notifications and escalations</span>
+  <span class="kw">for</span> (<span class="kw">const</span> ticket <span class="kw">of</span> warningTickets) {
+    <span class="kw">await</span> <span class="fn">notifyAgent</span>(ticket, <span class="str">'SLA_WARNING'</span>);
+  }
+  <span class="kw">for</span> (<span class="kw">const</span> ticket <span class="kw">of</span> breachedTickets) {
+    <span class="kw">await</span> <span class="fn">escalateTicket</span>(ticket);
+    <span class="kw">await</span> <span class="fn">recordSLABreach</span>(ticket);
+  }
+}</code></pre>
+
+  <h3>SLA Clock Pause on WAITING_ON_CUSTOMER</h3>
+  <div class="card">
+    <h4 style="color: var(--warning);">Clock Pause Logic</h4>
+    <p>When a ticket transitions to <code class="inline">WAITING_ON_CUSTOMER</code>, the SLA clock pauses. The remaining SLA time is stored, and when the customer responds (ticket returns to <code class="inline">IN_PROGRESS</code>), the SLA deadline is recalculated by adding the remaining time to the current timestamp.</p>
+    <pre><code><span class="cm">// Pause SLA clock when entering WAITING_ON_CUSTOMER</span>
+<span class="kw">function</span> <span class="fn">pauseSLAClock</span>(ticket) {
+  <span class="kw">const</span> now = <span class="kw">new</span> Date();
+  <span class="kw">const</span> remainingMs = ticket.sla_resolution_at - now;
+  <span class="kw">return</span> db.<span class="fn">query</span>(<span class="str">`
+    UPDATE tickets SET
+      sla_remaining_ms = $1,
+      sla_paused_at = NOW()
+    WHERE id = $2`</span>, [Math.<span class="fn">max</span>(<span class="num">0</span>, remainingMs), ticket.id]);
+}
+
+<span class="cm">// Resume SLA clock when customer responds</span>
+<span class="kw">function</span> <span class="fn">resumeSLAClock</span>(ticket) {
+  <span class="kw">return</span> db.<span class="fn">query</span>(<span class="str">`
+    UPDATE tickets SET
+      sla_resolution_at = NOW() + (sla_remaining_ms || ' ms')::INTERVAL,
+      sla_remaining_ms = NULL,
+      sla_paused_at = NULL
+    WHERE id = $1`</span>, [ticket.id]);
+}</code></pre>
+  </div>
+</div>
+
+<!-- ===== SECTION 9: SEARCH & FILTERING ===== -->
+<div class="section" id="search-filtering">
+  <span class="section-label">Section 9</span>
+  <h2>Search &amp; Filtering</h2>
+
+  <p>Search is powered by Elasticsearch, kept in sync with PostgreSQL via Change Data Capture (CDC) using Debezium. This ensures the search index is eventually consistent (typically within 1-2 seconds) without coupling the write path to ES.</p>
+
+  <div class="arch-diagram">
+<span style="color:#79c0ff;">SEARCH PIPELINE</span>
+
+  PostgreSQL                  Debezium CDC               Elasticsearch
++----------------+       +------------------+       +------------------+
+| tickets        |------>| WAL Reader       |------>| tickets_index    |
+| ticket_messages|------>| (Change Events)  |------>| (Denormalized)   |
+| ticket_tags    |------>|                  |------>|                  |
++----------------+       +------------------+       +------------------+
+                                                           |
+                                                    +------+------+
+                                                    |             |
+                                               Full-Text    Faceted
+                                               Search       Filters
+                                               (subject,    (status,
+                                               body,        priority,
+                                               messages)    assignee,
+                                                            tags, date)
+  </div>
+
+  <h3>Elasticsearch Index Mapping</h3>
+  <pre><code>{
+  <span class="str">"mappings"</span>: {
+    <span class="str">"properties"</span>: {
+      <span class="str">"ticket_id"</span>:    { <span class="str">"type"</span>: <span class="str">"long"</span> },
+      <span class="str">"external_id"</span>:  { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
+      <span class="str">"subject"</span>:      { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span>,
+                         <span class="str">"fields"</span>: { <span class="str">"keyword"</span>: { <span class="str">"type"</span>: <span class="str">"keyword"</span> } } },
+      <span class="str">"description"</span>:  { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span> },
+      <span class="str">"messages"</span>:     { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span> },
+      <span class="str">"status"</span>:       { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
+      <span class="str">"priority"</span>:     { <span class="str">"type"</span>: <span class="str">"integer"</span> },
+      <span class="str">"channel"</span>:      { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
+      <span class="str">"assignee_id"</span>:  { <span class="str">"type"</span>: <span class="str">"long"</span> },
+      <span class="str">"requester_id"</span>: { <span class="str">"type"</span>: <span class="str">"long"</span> },
+      <span class="str">"tags"</span>:         { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
+      <span class="str">"created_at"</span>:   { <span class="str">"type"</span>: <span class="str">"date"</span> },
+      <span class="str">"updated_at"</span>:   { <span class="str">"type"</span>: <span class="str">"date"</span> },
+      <span class="str">"resolved_at"</span>:  { <span class="str">"type"</span>: <span class="str">"date"</span> }
+    }
+  }
+}</code></pre>
+
+  <h3>Full-Text Search Query</h3>
+  <pre><code><span class="cm">// Search with full-text + faceted filtering</span>
+<span class="kw">const</span> searchQuery = {
+  query: {
+    bool: {
+      must: [
+        { multi_match: {
+          query: <span class="var">userQuery</span>,
+          fields: [<span class="str">'subject^3'</span>, <span class="str">'description^2'</span>, <span class="str">'messages'</span>],
+          type: <span class="str">'best_fields'</span>,
+          fuzziness: <span class="str">'AUTO'</span>
+        }}
+      ],
+      filter: [
+        ...(status  ? [{ term: { status: <span class="var">status</span> } }]  : []),
+        ...(priority !== <span class="kw">undefined</span> ? [{ term: { priority: <span class="var">priority</span> } }] : []),
+        ...(assignee ? [{ term: { assignee_id: <span class="var">assignee</span> } }] : []),
+        ...(tags     ? [{ terms: { tags: <span class="var">tags</span> } }]       : []),
+        ...(dateFrom ? [{ range: { created_at: { gte: <span class="var">dateFrom</span>, lte: <span class="var">dateTo</span> } } }] : []),
+      ]
+    }
+  },
+  aggs: {  <span class="cm">// Real-time dashboard counts</span>
+    by_status:   { terms: { field: <span class="str">'status'</span> } },
+    by_priority: { terms: { field: <span class="str">'priority'</span> } },
+    by_channel:  { terms: { field: <span class="str">'channel'</span> } }
+  },
+  sort: [{ _score: <span class="str">'desc'</span> }, { created_at: <span class="str">'desc'</span> }],
+  size: <span class="num">20</span>,
+  from: <span class="var">offset</span>
+};</code></pre>
+
+  <h3>Real-Time Dashboard</h3>
+  <div class="grid-3">
+    <div class="card" style="text-align:center; border-left: 3px solid var(--blue);">
+      <h4 style="color: var(--blue); margin-bottom: 4px;">Open Tickets</h4>
+      <p>Live count via ES aggregation on <code class="inline">status=OPEN</code>, refreshed every 5 seconds via WebSocket push or polling.</p>
+    </div>
+    <div class="card" style="text-align:center; border-left: 3px solid var(--danger);">
+      <h4 style="color: var(--danger); margin-bottom: 4px;">SLA Breached</h4>
+      <p>Count of tickets where current time exceeds <code class="inline">sla_resolution_at</code> and status is not RESOLVED/CLOSED.</p>
+    </div>
+    <div class="card" style="text-align:center; border-left: 3px solid var(--success);">
+      <h4 style="color: var(--success); margin-bottom: 4px;">Resolved Today</h4>
+      <p>Count of tickets with <code class="inline">resolved_at</code> within today's date range, broken down by priority.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 10: TICKET REOPENING ===== -->
+<div class="section" id="ticket-reopening">
+  <span class="section-label">Section 10</span>
+  <h2>Ticket Reopening</h2>
+
+  <p>Handling updates to resolved or closed tickets requires a carefully designed policy that balances customer convenience with agent workflow efficiency and reporting accuracy.</p>
+
+  <h3>Reopening Policy</h3>
+  <div class="grid-2">
+    <div class="card" style="border-left: 3px solid var(--warning);">
+      <h4 style="color: var(--warning);">Reply Within 7 Days</h4>
+      <p>If a customer replies to a <code class="inline">RESOLVED</code> or <code class="inline">CLOSED</code> ticket within 7 days of resolution:</p>
+      <ul>
+        <li>Ticket status transitions to <code class="inline">REOPENED</code></li>
+        <li>Original assignee is re-assigned (if available) for context continuity</li>
+        <li><code class="inline">reopen_count</code> is incremented</li>
+        <li>SLA clock resets with a fresh resolution deadline</li>
+        <li>Audit log records the reopen event with the triggering message</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--blue);">
+      <h4 style="color: var(--blue);">Reply After 7 Days</h4>
+      <p>If a customer replies more than 7 days after resolution:</p>
+      <ul>
+        <li>A <strong>new ticket</strong> is created automatically</li>
+        <li>The new ticket includes a <code class="inline">related_ticket_id</code> link to the original</li>
+        <li>The customer's reply is the opening message of the new ticket</li>
+        <li>Agent can view the linked ticket's full history for context</li>
+        <li>Original ticket remains in its final state (no reopen)</li>
+      </ul>
+    </div>
+  </div>
+
+  <pre><code><span class="cm">// Evaluate whether to reopen or create new linked ticket</span>
+<span class="kw">async function</span> <span class="fn">evaluateReopen</span>(existingTicket) {
+  <span class="kw">const</span> REOPEN_WINDOW_DAYS = <span class="num">7</span>;
+  <span class="kw">const</span> resolvedAt = existingTicket.resolved_at || existingTicket.updated_at;
+  <span class="kw">const</span> daysSinceResolved = <span class="fn">diffInDays</span>(<span class="kw">new</span> Date(), resolvedAt);
+
+  <span class="kw">if</span> ([<span class="str">'RESOLVED'</span>, <span class="str">'CLOSED'</span>].<span class="fn">includes</span>(existingTicket.status)) {
+    <span class="kw">if</span> (daysSinceResolved <= REOPEN_WINDOW_DAYS) {
+      <span class="cm">// Reopen the existing ticket</span>
+      <span class="kw">await</span> <span class="fn">transitionState</span>(existingTicket.id, <span class="str">'REOPENED'</span>);
+      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
+        UPDATE tickets SET
+          reopen_count = reopen_count + 1,
+          sla_resolution_at = NOW() + $1::INTERVAL
+        WHERE id = $2`</span>,
+        [<span class="fn">getSLADuration</span>(existingTicket.priority), existingTicket.id]
+      );
+      <span class="kw">await</span> <span class="fn">reassignOriginalAgent</span>(existingTicket);
+    } <span class="kw">else</span> {
+      <span class="cm">// Create new linked ticket</span>
+      <span class="kw">await</span> <span class="fn">createTicket</span>({
+        ...existingTicket,
+        status: <span class="str">'OPEN'</span>,
+        related_ticket_id: existingTicket.id,
+        reopen_count: <span class="num">0</span>
+      });
+    }
+  }
+}</code></pre>
+
+  <h3>Reopen Count as Quality Metric</h3>
+  <div class="callout">
+    <p><strong>Quality Signal:</strong> The <code class="inline">reopen_count</code> field serves as a key quality metric. High reopen rates for an agent indicate incomplete resolutions. Teams track average reopen rate per agent and per category to identify training gaps. Dashboard alerting triggers when team reopen rate exceeds 15%.</p>
+  </div>
+
+  <h3>Ticket Lifecycle State Machine</h3>
+  <div class="lifecycle-diagram">
+    <div class="lifecycle-states">
+      <span class="lc-state open">OPEN</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state in-progress">IN_PROGRESS</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state waiting">WAITING</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state in-progress">IN_PROGRESS</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state resolved">RESOLVED</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state closed">CLOSED</span>
+    </div>
+    <div class="lc-branch">
+      <span class="lc-branch-label">customer replies within 7d</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state reopened">REOPENED</span>
+      <span class="lc-arrow">&rarr;</span>
+      <span class="lc-state in-progress">IN_PROGRESS</span>
+      <span class="lc-branch-label">(re-enters normal flow)</span>
+    </div>
+    <div class="lc-branch" style="margin-top: 8px;">
+      <span class="lc-branch-label">auto-close after 48hr in RESOLVED with no reply</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 11: API DESIGN ===== -->
+<div class="section" id="api-design">
+  <span class="section-label">Section 11</span>
+  <h2>API Design</h2>
+
+  <h3>Ticket CRUD</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>POST</strong></td><td><code class="inline">/api/v1/tickets</code></td><td>Create a new ticket (subject, description, priority, channel, tags, requester_id)</td></tr>
+        <tr><td><strong>GET</strong></td><td><code class="inline">/api/v1/tickets/:id</code></td><td>Get ticket details with messages, tags, and audit history</td></tr>
+        <tr><td><strong>PATCH</strong></td><td><code class="inline">/api/v1/tickets/:id</code></td><td>Update ticket fields (status, priority, tags); requires <code class="inline">version</code> for optimistic locking</td></tr>
+        <tr><td><strong>GET</strong></td><td><code class="inline">/api/v1/tickets</code></td><td>List tickets with filtering (status, priority, assignee, tags, date range, page, limit)</td></tr>
+        <tr><td><strong>DELETE</strong></td><td><code class="inline">/api/v1/tickets/:id</code></td><td>Soft-delete (mark as deleted, retain for compliance); admin-only</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Messages</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>POST</strong></td><td><code class="inline">/api/v1/tickets/:id/messages</code></td><td>Add a reply or internal note (body, message_type, attachments)</td></tr>
+        <tr><td><strong>GET</strong></td><td><code class="inline">/api/v1/tickets/:id/messages</code></td><td>List messages for a ticket (paginated, ordered by created_at)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Assignment</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>POST</strong></td><td><code class="inline">/api/v1/tickets/:id/assign</code></td><td>Manual assignment (agent_id) or auto-assign (strategy: round_robin | load_based | skill_based)</td></tr>
+        <tr><td><strong>POST</strong></td><td><code class="inline">/api/v1/tickets/:id/escalate</code></td><td>Manually escalate to next level in escalation chain</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Merge</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>POST</strong></td><td><code class="inline">/api/v1/tickets/:id/merge</code></td><td>Merge source ticket into target. Body: <code class="inline">{ target_ticket_id }</code>. Copies all messages, sets <code class="inline">merged_into_id</code>, closes source.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Search</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>GET</strong></td><td><code class="inline">/api/v1/tickets/search</code></td><td>Full-text search. Params: q, status, priority, assignee_id, tags[], date_from, date_to, page, limit</td></tr>
+        <tr><td><strong>GET</strong></td><td><code class="inline">/api/v1/tickets/dashboard</code></td><td>Real-time aggregated counts by status, priority, channel. Returns faceted counts for dashboard widgets.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Example: Create Ticket Request</h3>
+  <pre><code><span class="cm">// POST /api/v1/tickets</span>
+{
+  <span class="str">"subject"</span>: <span class="str">"Cannot complete booking - payment error"</span>,
+  <span class="str">"description"</span>: <span class="str">"I keep getting a 'Payment Failed' error when trying to book..."</span>,
+  <span class="str">"priority"</span>: <span class="num">1</span>,
+  <span class="str">"channel"</span>: <span class="str">"IN_APP"</span>,
+  <span class="str">"requester_id"</span>: <span class="str">"usr_a1b2c3d4"</span>,
+  <span class="str">"tags"</span>: [<span class="str">"payment"</span>, <span class="str">"booking"</span>, <span class="str">"error"</span>],
+  <span class="str">"attachments"</span>: [
+    { <span class="str">"filename"</span>: <span class="str">"screenshot.png"</span>, <span class="str">"content_type"</span>: <span class="str">"image/png"</span>, <span class="str">"data"</span>: <span class="str">"base64..."</span> }
+  ]
+}
+
+<span class="cm">// Response: 201 Created</span>
+{
+  <span class="str">"id"</span>: <span class="str">"TICKET-48291"</span>,
+  <span class="str">"external_id"</span>: <span class="str">"f47ac10b-58cc-4372-a567-0e02b2c3d479"</span>,
+  <span class="str">"status"</span>: <span class="str">"OPEN"</span>,
+  <span class="str">"priority"</span>: <span class="num">1</span>,
+  <span class="str">"assignee"</span>: { <span class="str">"id"</span>: <span class="str">"agt_x7y8z9"</span>, <span class="str">"name"</span>: <span class="str">"Sarah Chen"</span> },
+  <span class="str">"sla"</span>: {
+    <span class="str">"first_response_due"</span>: <span class="str">"2026-02-09T15:30:00Z"</span>,
+    <span class="str">"resolution_due"</span>: <span class="str">"2026-02-09T18:30:00Z"</span>
+  },
+  <span class="str">"created_at"</span>: <span class="str">"2026-02-09T14:30:00Z"</span>
+}</code></pre>
+
+  <h3>Example: Merge Tickets Request</h3>
+  <pre><code><span class="cm">// POST /api/v1/tickets/48291/merge</span>
+{
+  <span class="str">"target_ticket_id"</span>: <span class="num">48285</span>,
+  <span class="str">"reason"</span>: <span class="str">"Duplicate report of the same payment issue from same customer"</span>
+}
+
+<span class="cm">// Response: 200 OK</span>
+{
+  <span class="str">"merged_ticket_id"</span>: <span class="num">48291</span>,
+  <span class="str">"target_ticket_id"</span>: <span class="num">48285</span>,
+  <span class="str">"messages_transferred"</span>: <span class="num">3</span>,
+  <span class="str">"source_status"</span>: <span class="str">"CLOSED"</span>,
+  <span class="str">"source_merged_into_id"</span>: <span class="num">48285</span>
+}</code></pre>
+</div>
+
+<!-- ===== SECTION 12: TRADE-OFFS ===== -->
+<div class="section" id="tradeoffs">
+  <span class="section-label">Section 12</span>
+  <h2>Trade-offs &amp; Design Decisions</h2>
+
+  <div class="tradeoff">
+    <h4>PostgreSQL (Primary) + Elasticsearch (Search) vs. Single Database</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Advantages</h5>
+        <ul>
+          <li>Strong consistency for ticket state in PostgreSQL (ACID)</li>
+          <li>Elasticsearch excels at full-text search and aggregations</li>
+          <li>Each system optimized for its access pattern</li>
+          <li>CDC decouples write and search paths</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Drawbacks</h5>
+        <ul>
+          <li>Eventual consistency between PG and ES (1-2s lag)</li>
+          <li>Operational overhead of maintaining two data stores plus CDC</li>
+          <li>Must handle ES index corruption / rebuild scenarios</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">Verdict: Worth the complexity. Ticket state needs ACID guarantees, and search needs sub-500ms full-text capability. A single DB cannot serve both well at scale.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>Pluggable Assignment Strategies vs. Single Algorithm</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Advantages</h5>
+        <ul>
+          <li>Different teams can use different strategies based on their structure</li>
+          <li>Easy to A/B test assignment strategies to optimize metrics</li>
+          <li>Graceful fallback chain when primary strategy yields no candidates</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Drawbacks</h5>
+        <ul>
+          <li>More complex configuration and testing surface</li>
+          <li>Agents may be confused by inconsistent routing across teams</li>
+          <li>Strategy interactions can produce unexpected behavior during transitions</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">Verdict: Essential for enterprise. Start with round-robin, add skill-based as you grow. The Strategy pattern keeps complexity contained.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>Reopen vs. New Linked Ticket (7-Day Policy)</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Advantages</h5>
+        <ul>
+          <li>Reopening preserves context and reduces agent ramp-up time</li>
+          <li>New ticket after 7 days keeps metrics clean (resolution times not skewed)</li>
+          <li>Linked tickets maintain traceability without corrupting the original</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Drawbacks</h5>
+        <ul>
+          <li>7-day window is somewhat arbitrary; may need per-priority tuning</li>
+          <li>Customers may be confused when a new ticket is created instead of reopening</li>
+          <li>Linked ticket context requires UI support to be useful</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">Verdict: The 7-day policy balances UX with metrics integrity. Make the window configurable per team/priority for flexibility.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>SLA Clock Pause vs. Continuous Timer</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Advantages</h5>
+        <ul>
+          <li>Fair to agents -- they should not be penalized while waiting on customer</li>
+          <li>More accurate SLA compliance reporting</li>
+          <li>Industry standard approach (Zendesk, Jira Service Management use this)</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Drawbacks</h5>
+        <ul>
+          <li>Adds complexity to SLA calculation logic</li>
+          <li>Potential for gaming (agent marks WAITING to buy time)</li>
+          <li>Must track pause/resume events precisely in the audit log</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">Verdict: Must-have for fair SLA tracking. Mitigate gaming via audit logs and manager dashboards showing pause frequency per agent.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>Email Threading via Headers vs. Subject Pattern Only</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Advantages</h5>
+        <ul>
+          <li>In-Reply-To header is the RFC standard; most reliable for modern clients</li>
+          <li>Subject pattern [TICKET-12345] is a fallback for clients that strip headers</li>
+          <li>Dual approach covers nearly all email clients</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Drawbacks</h5>
+        <ul>
+          <li>Some email clients strip or modify In-Reply-To headers</li>
+          <li>Subject pattern can be manually edited by customers</li>
+          <li>Must handle both match and conflict scenarios</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">Verdict: Use both with In-Reply-To as primary. The subject pattern is cheap insurance for edge cases. Conflicts should prefer the header.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 13: INTERVIEW TIPS ===== -->
+<div class="section" id="interview-tips">
+  <span class="section-label">Section 13</span>
+  <h2>Interview Tips</h2>
+
+  <div class="grid-2">
+    <div class="interview-tip">
+      <h4>Start with the Ticket Lifecycle</h4>
+      <p>Draw the state machine diagram first. It anchors the entire discussion and shows you understand the domain. Every other component (assignment, SLA, search) hangs off state transitions.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Clarify Multi-Channel Early</h4>
+      <p>Ask the interviewer which channels matter most. Email ingestion is the deepest rabbit hole (threading, spam, attachments). If they want depth there, be ready to discuss SendGrid Inbound Parse, MIME parsing, and thread detection.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>SLA is the Differentiator</h4>
+      <p>Most candidates design a basic CRUD ticketing system. What separates PE-level answers is the SLA monitoring system: per-priority matrices, clock pausing, escalation chains, and breach alerting. This is where operational excellence shows.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Assignment is a Strategy Pattern</h4>
+      <p>Do not hard-code assignment logic. Present it as a pluggable strategy with a clear interface. Discuss round-robin as the baseline, then layer on skill-based and load-based. Mention <code class="inline">FOR UPDATE SKIP LOCKED</code> for concurrency.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Audit Log is Non-Negotiable</h4>
+      <p>In regulated industries (finance, healthcare), immutable audit trails are a legal requirement. Design it as append-only from day one. Mention WORM (Write Once Read Many) storage for compliance archives.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Search Architecture Trade-off</h4>
+      <p>Be explicit about why you separate PostgreSQL (source of truth) from Elasticsearch (search). Discuss CDC via Debezium, eventual consistency trade-offs, and how you would rebuild the ES index from scratch if needed.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Merge is Harder Than It Looks</h4>
+      <p>Ticket merging requires transferring messages, consolidating tags, updating assignees, handling SLA recalculation, and maintaining redirect references. Discuss the atomic transaction requirements and how you handle in-flight notifications for the merged ticket.</p>
+    </div>
+    <div class="interview-tip">
+      <h4>Discuss Observability</h4>
+      <p>Mention metrics you would track: ticket creation rate, median time to first response, SLA compliance percentage, reopen rate, agent utilization. These show you think beyond the technical system to the business outcomes it serves.</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 20px;">
+    <p><strong>Final Advice:</strong> This system is deceptively simple on the surface. The PE-level depth comes from edge cases: What happens when an agent goes offline mid-assignment? How do you handle SLA when a ticket is reassigned? What if a customer replies to a merged ticket? Prepare for these second-order questions.</p>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ===== FOOTER ===== -->
+<div style="background: #f8fafc; border-top: 1px solid #e5e7eb; padding: 40px; text-align: center; margin-top: 60px;">
+  <p style="color: var(--text-muted); font-size: 0.9em;">Support Ticketing System -- PE-Level System Design</p>
+  <p style="color: var(--text-muted); font-size: 0.8em; margin-top: 8px;">Multi-channel ticket lifecycle management with SLA enforcement, intelligent assignment, and audit trail</p>
+  <a href="index.html" style="display: inline-block; margin-top: 16px; color: #ffffff; text-decoration: none; font-weight: 600; padding: 8px 20px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background: rgba(255,255,255,0.15);">&#8592; Back to All Topics</a>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

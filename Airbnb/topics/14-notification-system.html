@@ -1,0 +1,2441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Channel Notification System (SMS/Email/Push) - Airbnb System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 70px 40px 60px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .topic-number-hero {
+    position: relative;
+    display: inline-block;
+    font-size: 1em;
+    font-weight: 800;
+    color: var(--primary);
+    background: rgba(255,90,95,0.15);
+    border: 1px solid rgba(255,90,95,0.3);
+    padding: 4px 18px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .hero .subtitle {
+    font-size: 1.2em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 24px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .hero-badges {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin: 3px 2px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-medium-hard { background: rgba(123,47,247,0.15); color: var(--purple); border: 1px solid var(--purple); }
+
+  /* ===== NAV ===== */
+  .nav-bar {
+    background: #f8fafc;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .nav-bar h2 {
+    color: var(--secondary);
+    margin-bottom: 12px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.8em;
+    transition: all 0.3s;
+  }
+  .nav-links a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* ===== CONTAINER ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+
+  /* ===== SECTION ===== */
+  .section {
+    padding: 50px 0 30px;
+  }
+  .section + .section {
+    border-top: 1px solid #e5e7eb;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 0.72em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--secondary);
+    background: rgba(0,166,153,0.1);
+    border: 1px solid rgba(0,166,153,0.25);
+    padding: 4px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .section h2 {
+    font-size: 1.9em;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.25;
+  }
+  .section h3 {
+    font-size: 1.3em;
+    color: var(--primary);
+    margin: 24px 0 12px;
+  }
+  .section h4 {
+    font-size: 1.05em;
+    color: var(--blue);
+    margin: 18px 0 10px;
+  }
+  .section p, .section li {
+    color: var(--text-muted);
+    font-size: 0.95em;
+    line-height: 1.75;
+  }
+  .section ul, .section ol {
+    padding-left: 24px;
+    margin: 10px 0;
+  }
+  .section li {
+    margin-bottom: 6px;
+  }
+  .section li strong {
+    color: var(--text);
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 16px 0;
+    transition: border-color 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(255,90,95,0.3);
+  }
+  .card h4 {
+    margin-top: 0;
+  }
+
+  /* ===== GRID LAYOUTS ===== */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  /* ===== CODE BLOCKS ===== */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 14px 0;
+    font-size: 0.85em;
+    line-height: 1.65;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    color: #24292f;
+  }
+  .kw { color: #cf222e; }
+  .fn { color: #8250df; }
+  .str { color: #0a3069; }
+  .cm { color: #6e7781; font-style: italic; }
+  .typ { color: #0550ae; }
+  .num { color: #f59e0b; }
+  .op { color: #cf222e; }
+  .var { color: #953800; }
+
+  code.inline {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+
+  /* ===== TABLES ===== */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 14px 0;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  th {
+    background: rgba(255,90,95,0.1);
+    color: var(--primary);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-muted);
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--text); }
+
+  /* ===== ARCHITECTURE DIAGRAM ===== */
+  .arch-diagram {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .arch-diagram svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ===== FLOW STEPS ===== */
+  .flow-steps {
+    margin: 16px 0;
+    counter-reset: step-counter;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    counter-increment: step-counter;
+  }
+  .flow-step-num {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85em;
+    flex-shrink: 0;
+  }
+  .flow-step-content {
+    flex: 1;
+    padding-top: 5px;
+  }
+  .flow-step-content strong { color: var(--text); }
+  .flow-step-content p { margin: 0; color: var(--text-muted); font-size: 0.92em; }
+
+  /* ===== PRIORITY TAG ===== */
+  .priority-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .p0 { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .p1 { background: rgba(252,100,45,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .p2 { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+  .p3 { background: rgba(66,139,249,0.2); color: var(--blue); border: 1px solid var(--blue); }
+
+  /* ===== METRIC BOX ===== */
+  .metric-box {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-box .metric-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-box .metric-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* ===== CALLOUT ===== */
+  .callout {
+    border-left: 4px solid var(--secondary);
+    background: rgba(0,166,153,0.06);
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 16px 0;
+  }
+  .callout.warning {
+    border-left-color: var(--warning);
+    background: rgba(245,158,11,0.06);
+  }
+  .callout.danger {
+    border-left-color: var(--danger);
+    background: rgba(239,68,68,0.06);
+  }
+  .callout.info {
+    border-left-color: var(--blue);
+    background: rgba(66,139,249,0.06);
+  }
+  .callout p { margin: 0; }
+  .callout strong { color: var(--text); }
+
+  /* ===== TRADE-OFF CARD ===== */
+  .tradeoff {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 14px 0;
+  }
+  .tradeoff h4 {
+    margin: 0 0 12px 0;
+    color: var(--text);
+    font-size: 1em;
+  }
+  .tradeoff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .tradeoff-col h5 {
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .tradeoff-col.pros h5 { color: var(--success); }
+  .tradeoff-col.cons h5 { color: var(--danger); }
+  .tradeoff-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .tradeoff-col li {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .tradeoff-col.pros li::before { content: '+'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+  .tradeoff-col.cons li::before { content: '-'; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+  .tradeoff .verdict {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.88em;
+    color: var(--text);
+  }
+  .tradeoff .verdict strong { color: var(--text); }
+
+  /* ===== INTERVIEW TIP ===== */
+  .tip-card {
+    background: linear-gradient(135deg, rgba(123,47,247,0.08), rgba(66,139,249,0.08));
+    border: 1px solid rgba(123,47,247,0.25);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 14px 0;
+  }
+  .tip-card h4 {
+    color: var(--purple);
+    margin: 0 0 10px 0;
+  }
+  .tip-card p, .tip-card li {
+    font-size: 0.9em;
+    color: var(--text-muted);
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    padding: 40px 30px;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid #e5e7eb;
+  }
+  .footer a {
+    color: #ffffff;
+    text-decoration: none;
+  }
+  .footer a:hover { color: var(--primary); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 50px 20px 40px; }
+    .hero h1 { font-size: 1.7em; }
+    .hero .subtitle { font-size: 1em; }
+    .nav-bar { padding: 14px 20px; }
+    .container { padding: 0 16px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .tradeoff-row { grid-template-columns: 1fr; }
+    .section h2 { font-size: 1.5em; }
+    .arch-diagram { padding: 12px; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.4em; }
+    .hero .stats-row { gap: 16px; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--  HERO                                                         -->
+<!-- ============================================================ -->
+<div class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <div class="topic-number-hero">TOPIC 14</div>
+  <h1>Multi-Channel Notification System</h1>
+  <p class="subtitle">SMS / Email / Push / In-App -- Principal Engineer level system design for Airbnb's notification infrastructure</p>
+  <div class="hero-badges">
+    <span class="badge badge-medium-hard">Medium-Hard</span>
+    <span class="badge badge-orange">Communication</span>
+    <span class="badge badge-blue">Distributed Systems</span>
+    <span class="badge badge-green">Event-Driven</span>
+    <span class="badge badge-purple">Multi-Provider</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">30M+</div>
+      <div class="stat-label">Notifications / Day</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">4</div>
+      <div class="stat-label">Channels</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">&lt;30s</div>
+      <div class="stat-label">Transactional SLA</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">14</div>
+      <div class="stat-label">Sections</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  NAVIGATION                                                   -->
+<!-- ============================================================ -->
+<nav class="nav-bar">
+  <h2>Sections</h2>
+  <div class="nav-links">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#capacity">Capacity</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#data-model">Data Model</a>
+    <a href="#api-design">API Design</a>
+    <a href="#notification-flow">Notification Flow</a>
+    <a href="#priority-rate">Priority &amp; Rate Limiting</a>
+    <a href="#reliability">Reliability</a>
+    <a href="#template-engine">Template Engine</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#deep-dives">Deep Dives</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!--  S1 - OVERVIEW                                                -->
+<!-- ============================================================ -->
+<section class="section" id="overview">
+  <span class="section-label">Section 1</span>
+  <h2>Overview</h2>
+  <p>Design a notification system that delivers messages across multiple channels -- <strong>Email</strong> (SendGrid / Amazon SES), <strong>SMS</strong> (Twilio), <strong>Push</strong> (Apple APNS / Google FCM), and <strong>In-App</strong> -- to Airbnb's global user base of hundreds of millions of accounts.</p>
+
+  <h3>Notification Categories</h3>
+  <div class="grid-3">
+    <div class="card">
+      <h4 style="color:var(--primary)">Transactional</h4>
+      <ul>
+        <li>Booking confirmations</li>
+        <li>Payment receipts</li>
+        <li>Cancellation notices</li>
+        <li>Payout notifications</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent)">Operational</h4>
+      <ul>
+        <li>Host messages / guest replies</li>
+        <li>Review reminders</li>
+        <li>Check-in instructions</li>
+        <li>Calendar updates</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue)">Marketing &amp; Security</h4>
+      <ul>
+        <li>Promotional campaigns</li>
+        <li>Price drop alerts</li>
+        <li>Security alerts (2FA, login)</li>
+        <li>Account verification</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Why this matters at Airbnb:</strong> Notifications are the nervous system of the marketplace. A missed booking confirmation destroys trust. A delayed security alert creates liability. A flood of marketing spam drives unsubscribes. The system must balance reliability, latency, user preferences, cost, and regulatory compliance simultaneously.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S2 - REQUIREMENTS                                            -->
+<!-- ============================================================ -->
+<section class="section" id="requirements">
+  <span class="section-label">Section 2</span>
+  <h2>Requirements</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--success)">Functional Requirements</h4>
+      <ol>
+        <li><strong>Multi-channel delivery</strong> -- Send via Email, SMS, Push, and In-App</li>
+        <li><strong>User preference management</strong> -- Opt-in/out per channel per notification category</li>
+        <li><strong>Template management with i18n</strong> -- Localized templates supporting 60+ languages</li>
+        <li><strong>Scheduling</strong> -- Immediate (transactional) + delayed (marketing, reminders)</li>
+        <li><strong>Batch campaigns</strong> -- Fan-out to millions of recipients for marketing</li>
+        <li><strong>Delivery tracking</strong> -- Track sent / delivered / opened / clicked states</li>
+        <li><strong>Retry failed deliveries</strong> -- Automatic retry with back-off</li>
+        <li><strong>Quiet hours</strong> -- Respect per-user do-not-disturb windows</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--warning)">Non-Functional Requirements</h4>
+      <ol>
+        <li><strong>At-least-once delivery</strong> -- Never silently drop a notification</li>
+        <li><strong>Latency &lt;30s</strong> for transactional notifications (P0/P1)</li>
+        <li><strong>Throughput 1M+ notifications/day</strong>, peak 3000/sec</li>
+        <li><strong>Rate limiting per channel</strong> -- Respect provider API limits</li>
+        <li><strong>Cost optimization</strong> -- Route to cheapest viable channel</li>
+        <li><strong>Idempotency</strong> -- No duplicate sends for the same event</li>
+        <li><strong>Observability</strong> -- End-to-end latency, delivery rates, bounce rates</li>
+        <li><strong>Regulatory compliance</strong> -- CAN-SPAM, GDPR, TCPA for SMS</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S3 - CAPACITY                                                -->
+<!-- ============================================================ -->
+<section class="section" id="capacity">
+  <span class="section-label">Section 3</span>
+  <h2>Capacity Estimation</h2>
+
+  <div class="grid-4">
+    <div class="metric-box">
+      <div class="metric-value">10M</div>
+      <div class="metric-label">Daily Active Users</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">30M</div>
+      <div class="metric-label">Notifications / Day</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">~350/s</div>
+      <div class="metric-label">Avg Throughput</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-value">3,000/s</div>
+      <div class="metric-label">Peak Throughput</div>
+    </div>
+  </div>
+
+  <h3>Per-Channel Breakdown</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Volume / Day</th>
+          <th>Avg Latency Target</th>
+          <th>Cost per Unit</th>
+          <th>Daily Cost (est.)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Email</strong></td>
+          <td>20M</td>
+          <td>&lt; 60 seconds</td>
+          <td>$0.0001 (SES)</td>
+          <td>$2,000</td>
+        </tr>
+        <tr>
+          <td><strong>Push</strong></td>
+          <td>8M</td>
+          <td>&lt; 5 seconds</td>
+          <td>Free (APNS/FCM)</td>
+          <td>Infrastructure only</td>
+        </tr>
+        <tr>
+          <td><strong>SMS</strong></td>
+          <td>2M</td>
+          <td>&lt; 10 seconds</td>
+          <td>$0.0075 (Twilio avg)</td>
+          <td>$15,000</td>
+        </tr>
+        <tr>
+          <td><strong>In-App</strong></td>
+          <td>Included in Push/Feed</td>
+          <td>Real-time (WebSocket)</td>
+          <td>Infrastructure only</td>
+          <td>--</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Storage Estimation</h3>
+  <div class="card">
+    <ul>
+      <li><strong>Notification records:</strong> 30M/day x 500 bytes = <strong>15 GB/day</strong> = 450 GB/month = ~5.4 TB/year</li>
+      <li><strong>Templates:</strong> ~5,000 templates x 60 locales x 2KB = ~600 MB (small, cached)</li>
+      <li><strong>Preference records:</strong> 100M users x 200 bytes = ~20 GB (fits in cache)</li>
+      <li><strong>Device tokens:</strong> 80M tokens x 300 bytes = ~24 GB</li>
+      <li><strong>Analytics events:</strong> 30M/day x 5 events x 200 bytes = <strong>30 GB/day</strong></li>
+    </ul>
+  </div>
+
+  <div class="callout warning">
+    <p><strong>Key insight:</strong> SMS is 2 orders of magnitude more expensive than email. The system must intelligently route to push/email first and only use SMS for critical/P0 notifications or when users have no other reachable channel. This alone can save millions per year.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S4 - HIGH-LEVEL ARCHITECTURE                                 -->
+<!-- ============================================================ -->
+<section class="section" id="architecture">
+  <span class="section-label">Section 4</span>
+  <h2>High-Level Architecture</h2>
+
+  <div class="arch-diagram">
+<svg viewBox="0 0 1100 640" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <!-- Shadow filter -->
+    <filter id="ns-shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <!-- Gradients -->
+    <linearGradient id="ns-g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+    <linearGradient id="ns-g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008F84"/></linearGradient>
+    <linearGradient id="ns-g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#2D6FD4"/></linearGradient>
+    <linearGradient id="ns-g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#5E1DD4"/></linearGradient>
+    <linearGradient id="ns-g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#D4511F"/></linearGradient>
+    <!-- Arrowheads -->
+    <marker id="ns-arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+    <marker id="ns-arrow-dash" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- ========== COLUMN HEADERS ========== -->
+  <text x="70" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">EVENT SOURCES</text>
+  <text x="280" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">EVENT BUS</text>
+  <text x="490" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">CORE SERVICE</text>
+  <text x="710" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">PRIORITY QUEUES</text>
+  <text x="870" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">DISPATCHERS</text>
+  <text x="1030" y="22" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="middle">PROVIDERS</text>
+
+  <!-- ========== EVENT SOURCES (Left) ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(10,36)">
+    <rect width="125" height="50" rx="10" fill="url(#ns-g1)" opacity="0.9"/>
+    <text x="62" y="25" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Booking</text>
+    <text x="62" y="40" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Events</text>
+  </g>
+  <g filter="url(#ns-shadow)" transform="translate(10,96)">
+    <rect width="125" height="50" rx="10" fill="url(#ns-g2)" opacity="0.9"/>
+    <text x="62" y="25" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Payment</text>
+    <text x="62" y="40" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Events</text>
+  </g>
+  <g filter="url(#ns-shadow)" transform="translate(10,156)">
+    <rect width="125" height="50" rx="10" fill="url(#ns-g3)" opacity="0.9"/>
+    <text x="62" y="25" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Message</text>
+    <text x="62" y="40" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Events</text>
+  </g>
+  <g filter="url(#ns-shadow)" transform="translate(10,216)">
+    <rect width="125" height="50" rx="10" fill="url(#ns-g5)" opacity="0.9"/>
+    <text x="62" y="25" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Marketing</text>
+    <text x="62" y="40" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Events</text>
+  </g>
+  <g filter="url(#ns-shadow)" transform="translate(10,276)">
+    <rect width="125" height="50" rx="10" fill="url(#ns-g4)" opacity="0.9"/>
+    <text x="62" y="25" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Security</text>
+    <text x="62" y="40" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Events</text>
+  </g>
+
+  <!-- ========== KAFKA (Event Bus) ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(220,120)">
+    <rect x="0" y="0" width="120" height="120" rx="10" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.5"/>
+    <!-- Kafka icon: 3 circles with connecting lines -->
+    <circle cx="60" cy="30" r="10" fill="#ef4444" opacity="0.8"/>
+    <circle cx="35" cy="70" r="10" fill="#ef4444" opacity="0.8"/>
+    <circle cx="85" cy="70" r="10" fill="#ef4444" opacity="0.8"/>
+    <line x1="55" y1="39" x2="40" y2="61" stroke="#ef4444" stroke-width="1.5"/>
+    <line x1="65" y1="39" x2="80" y2="61" stroke="#ef4444" stroke-width="1.5"/>
+    <line x1="45" y1="70" x2="75" y2="70" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="60" y="102" fill="#ef4444" font-size="11" font-weight="700" text-anchor="middle">Kafka</text>
+    <text x="60" y="115" fill="rgba(239,68,68,0.6)" font-size="8" text-anchor="middle">Event Bus</text>
+  </g>
+
+  <!-- Arrows: Sources -> Kafka -->
+  <line x1="135" y1="61" x2="220" y2="155" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="135" y1="121" x2="220" y2="165" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="135" y1="181" x2="220" y2="180" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="135" y1="241" x2="220" y2="195" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="135" y1="301" x2="220" y2="210" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== NOTIFICATION SERVICE (Core) ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(400,80)">
+    <rect width="180" height="200" rx="10" fill="url(#ns-g1)" opacity="0.9"/>
+    <!-- Shield icon at top -->
+    <path d="M90,18 L108,27 L108,44 C108,56 90,62 90,62 C90,62 72,56 72,44 L72,27 Z" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="1.5"/>
+    <text x="90" y="80" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Notification</text>
+    <text x="90" y="97" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Service</text>
+    <line x1="25" y1="108" x2="155" y2="108" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    <text x="90" y="126" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Preference Check</text>
+    <text x="90" y="142" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Template Render</text>
+    <text x="90" y="158" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Priority Routing</text>
+    <text x="90" y="174" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Rate Limiting</text>
+    <text x="90" y="190" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Deduplication</text>
+  </g>
+
+  <!-- Arrow: Kafka -> Notification Service -->
+  <line x1="340" y1="180" x2="400" y2="180" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== PRIORITY QUEUES ========== -->
+  <!-- P0 -->
+  <g transform="translate(648,42)">
+    <rect width="80" height="30" rx="5" fill="rgba(239,68,68,0.25)" stroke="#ef4444" stroke-width="1.2"/>
+    <text x="40" y="20" fill="#ef4444" font-size="10" font-weight="700" text-anchor="middle">P0 Queue</text>
+  </g>
+  <!-- P1 -->
+  <g transform="translate(648,82)">
+    <rect width="80" height="30" rx="5" fill="rgba(252,100,45,0.2)" stroke="#FC642D" stroke-width="1.2"/>
+    <text x="40" y="20" fill="#FC642D" font-size="10" font-weight="700" text-anchor="middle">P1 Queue</text>
+  </g>
+  <!-- P2 -->
+  <g transform="translate(648,122)">
+    <rect width="80" height="30" rx="5" fill="rgba(245,158,11,0.2)" stroke="#f59e0b" stroke-width="1.2"/>
+    <text x="40" y="20" fill="#f59e0b" font-size="10" font-weight="700" text-anchor="middle">P2 Queue</text>
+  </g>
+  <!-- P3 -->
+  <g transform="translate(648,162)">
+    <rect width="80" height="30" rx="5" fill="rgba(66,139,249,0.2)" stroke="#428BF9" stroke-width="1.2"/>
+    <text x="40" y="20" fill="#428BF9" font-size="10" font-weight="700" text-anchor="middle">P3 Queue</text>
+  </g>
+
+  <!-- Arrows: Notification Service -> Priority Queues -->
+  <line x1="580" y1="130" x2="648" y2="57" stroke="#ef4444" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="580" y1="155" x2="648" y2="97" stroke="#FC642D" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="580" y1="180" x2="648" y2="137" stroke="#f59e0b" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="580" y1="205" x2="648" y2="177" stroke="#428BF9" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== CHANNEL DISPATCHERS ========== -->
+  <!-- Email Dispatcher -->
+  <g filter="url(#ns-shadow)" transform="translate(800,34)">
+    <rect width="115" height="46" rx="10" fill="url(#ns-g2)" opacity="0.9"/>
+    <text x="57" y="22" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Email</text>
+    <text x="57" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Dispatcher</text>
+  </g>
+  <!-- SMS Dispatcher -->
+  <g filter="url(#ns-shadow)" transform="translate(800,90)">
+    <rect width="115" height="46" rx="10" fill="url(#ns-g2)" opacity="0.9"/>
+    <text x="57" y="22" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">SMS</text>
+    <text x="57" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Dispatcher</text>
+  </g>
+  <!-- Push Dispatcher -->
+  <g filter="url(#ns-shadow)" transform="translate(800,146)">
+    <rect width="115" height="46" rx="10" fill="url(#ns-g2)" opacity="0.9"/>
+    <text x="57" y="22" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Push</text>
+    <text x="57" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Dispatcher</text>
+  </g>
+  <!-- In-App Dispatcher -->
+  <g filter="url(#ns-shadow)" transform="translate(800,202)">
+    <rect width="115" height="46" rx="10" fill="url(#ns-g2)" opacity="0.9"/>
+    <text x="57" y="22" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">In-App</text>
+    <text x="57" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Dispatcher</text>
+  </g>
+
+  <!-- Arrows: Queues -> Dispatchers -->
+  <line x1="728" y1="57" x2="800" y2="57" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="728" y1="97" x2="800" y2="113" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="728" y1="137" x2="800" y2="169" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="728" y1="177" x2="800" y2="225" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== EXTERNAL PROVIDERS (dashed + cloud) ========== -->
+  <!-- SendGrid -->
+  <g transform="translate(968,34)">
+    <rect width="115" height="46" rx="8" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3"/>
+    <ellipse cx="30" cy="17" rx="13" ry="8" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <ellipse cx="42" cy="20" rx="10" ry="7" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <text x="62" y="38" fill="#94a3b8" font-size="9" text-anchor="middle">SendGrid/SES</text>
+  </g>
+  <!-- Twilio -->
+  <g transform="translate(968,90)">
+    <rect width="115" height="46" rx="8" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3"/>
+    <ellipse cx="30" cy="17" rx="13" ry="8" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <ellipse cx="42" cy="20" rx="10" ry="7" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <text x="62" y="38" fill="#94a3b8" font-size="9" text-anchor="middle">Twilio</text>
+  </g>
+  <!-- APNS/FCM -->
+  <g transform="translate(968,146)">
+    <rect width="115" height="46" rx="8" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3"/>
+    <ellipse cx="30" cy="17" rx="13" ry="8" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <ellipse cx="42" cy="20" rx="10" ry="7" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <text x="62" y="38" fill="#94a3b8" font-size="9" text-anchor="middle">APNS / FCM</text>
+  </g>
+  <!-- WebSocket Server -->
+  <g transform="translate(968,202)">
+    <rect width="115" height="46" rx="8" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3"/>
+    <ellipse cx="30" cy="17" rx="13" ry="8" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <ellipse cx="42" cy="20" rx="10" ry="7" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <text x="62" y="38" fill="#94a3b8" font-size="9" text-anchor="middle">WebSocket/SSE</text>
+  </g>
+
+  <!-- Arrows: Dispatchers -> Providers -->
+  <line x1="915" y1="57" x2="968" y2="57" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <line x1="915" y1="113" x2="968" y2="113" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <line x1="915" y1="169" x2="968" y2="169" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <line x1="915" y1="225" x2="968" y2="225" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+
+  <!-- ========== DATA LAYER (Bottom Center) ========== -->
+  <!-- PostgreSQL -->
+  <g filter="url(#ns-shadow)" transform="translate(310,370)">
+    <ellipse cx="55" cy="12" rx="50" ry="12" fill="#5DA0FF"/>
+    <rect x="5" y="12" width="100" height="50" fill="#428BF9"/>
+    <ellipse cx="55" cy="62" rx="50" ry="12" fill="#3070D0"/>
+    <ellipse cx="55" cy="12" rx="50" ry="12" fill="#5DA0FF"/>
+    <text x="55" y="34" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">PostgreSQL</text>
+    <text x="55" y="49" fill="rgba(255,255,255,0.8)" font-size="8" text-anchor="middle">Notifications</text>
+  </g>
+
+  <!-- Redis (Rate Limiting + Dedup) -->
+  <g filter="url(#ns-shadow)" transform="translate(480,360)">
+    <polygon points="60,4 114,44 60,84 6,44" fill="#ef4444" opacity="0.9"/>
+    <text x="60" y="38" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Redis</text>
+    <text x="60" y="51" fill="rgba(255,255,255,0.8)" font-size="8" text-anchor="middle">Rate Limit</text>
+    <text x="60" y="62" fill="rgba(255,255,255,0.7)" font-size="8" text-anchor="middle">+ Dedup</text>
+  </g>
+
+  <!-- Template Store -->
+  <g filter="url(#ns-shadow)" transform="translate(160,370)">
+    <ellipse cx="50" cy="12" rx="46" ry="12" fill="#5DA0FF"/>
+    <rect x="4" y="12" width="92" height="45" fill="#428BF9"/>
+    <ellipse cx="50" cy="57" rx="46" ry="12" fill="#3070D0"/>
+    <ellipse cx="50" cy="12" rx="46" ry="12" fill="#5DA0FF"/>
+    <text x="50" y="32" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Template</text>
+    <text x="50" y="46" fill="rgba(255,255,255,0.8)" font-size="8" text-anchor="middle">Store</text>
+  </g>
+
+  <!-- Arrows: Notification Service -> Data Layer -->
+  <line x1="460" y1="280" x2="365" y2="370" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="510" y1="280" x2="530" y2="360" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+  <line x1="440" y1="280" x2="230" y2="370" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== PREFERENCE SERVICE ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(640,310)">
+    <rect width="130" height="60" rx="10" fill="url(#ns-g4)" opacity="0.9"/>
+    <text x="65" y="26" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Preference</text>
+    <text x="65" y="42" fill="rgba(255,255,255,0.9)" font-size="10" text-anchor="middle">Service</text>
+    <text x="65" y="55" fill="#64748b" font-size="8" text-anchor="middle">Redis + DB</text>
+  </g>
+
+  <!-- Arrow: Notification Service -> Preference Service -->
+  <line x1="580" y1="250" x2="640" y2="330" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ns-arrow)"/>
+
+  <!-- ========== DEAD LETTER QUEUE ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(800,280)">
+    <rect width="130" height="65" rx="10" fill="rgba(239,68,68,0.12)" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="65" y="22" fill="#ef4444" font-size="10" font-weight="700" text-anchor="middle">Dead Letter</text>
+    <text x="65" y="37" fill="#ef4444" font-size="10" font-weight="700" text-anchor="middle">Queue (DLQ)</text>
+    <text x="65" y="55" fill="rgba(239,68,68,0.6)" font-size="8" text-anchor="middle">Failed + Retry</text>
+  </g>
+
+  <!-- Arrow: Dispatchers -> DLQ (dashed, failures) -->
+  <line x1="857" y1="248" x2="857" y2="280" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <text x="878" y="268" fill="rgba(239,68,68,0.6)" font-size="7">failures</text>
+
+  <!-- ========== ANALYTICS / TRACKING ========== -->
+  <g filter="url(#ns-shadow)" transform="translate(640,420)">
+    <rect width="145" height="60" rx="10" fill="url(#ns-g3)" opacity="0.9"/>
+    <text x="72" y="26" fill="#fff" font-size="10" font-weight="700" text-anchor="middle">Analytics</text>
+    <text x="72" y="42" fill="rgba(255,255,255,0.9)" font-size="9" text-anchor="middle">Tracking Service</text>
+    <text x="72" y="55" fill="#64748b" font-size="8" text-anchor="middle">ClickHouse / ES</text>
+  </g>
+
+  <!-- Delivery webhooks from providers -> Analytics (dashed) -->
+  <line x1="1020" y1="248" x2="1020" y2="450" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 3"/>
+  <line x1="1020" y1="450" x2="785" y2="450" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <text x="920" y="465" fill="#94a3b8" font-size="8">delivery webhooks</text>
+
+  <!-- DLQ -> Retry back to Notification Service (dashed) -->
+  <path d="M800,320 Q730,340 580,230" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#ns-arrow-dash)"/>
+  <text x="680" y="295" fill="rgba(239,68,68,0.5)" font-size="7">retry</text>
+
+  <!-- ========== LEGEND ========== -->
+  <rect x="30" y="540" width="450" height="80" rx="8" fill="rgba(30,41,59,0.7)" stroke="#334155" stroke-width="1"/>
+  <text x="50" y="565" fill="#94a3b8" font-size="10" font-weight="600">LEGEND:</text>
+  <line x1="50" y1="580" x2="90" y2="580" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ns-arrow)"/>
+  <text x="98" y="584" fill="#94a3b8" font-size="9">Synchronous flow</text>
+  <line x1="220" y1="580" x2="260" y2="580" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#ns-arrow-dash)"/>
+  <text x="268" y="584" fill="#94a3b8" font-size="9">Async / External</text>
+  <text x="50" y="606" fill="#94a3b8" font-size="9">Sources -> Kafka -> Notification Svc -> Priority Queues -> Dispatchers -> Providers</text>
+  <!-- Priority legend -->
+  <rect x="395" y="557" width="8" height="8" rx="2" fill="#ef4444"/><text x="408" y="565" fill="#94a3b8" font-size="8">P0 Security</text>
+  <rect x="395" y="572" width="8" height="8" rx="2" fill="#FC642D"/><text x="408" y="580" fill="#94a3b8" font-size="8">P1 Transactional</text>
+  <rect x="395" y="587" width="8" height="8" rx="2" fill="#f59e0b"/><text x="408" y="595" fill="#94a3b8" font-size="8">P2 Operational</text>
+  <rect x="395" y="602" width="8" height="8" rx="2" fill="#428BF9"/><text x="408" y="610" fill="#94a3b8" font-size="8">P3 Marketing</text>
+
+  <!-- ========== NUMBERED STEP CIRCLES ========== -->
+  <!-- Step 1: Event Sources -> Kafka -->
+  <circle cx="178" cy="170" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="178" y="174" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+  <!-- Step 2: Kafka -> Notification Service -->
+  <circle cx="370" cy="170" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="370" y="174" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+  <!-- Step 3: Notification Service -> Preference Service -->
+  <circle cx="615" cy="290" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="615" y="294" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+  <!-- Step 4: Notification Service -> Template Service -->
+  <circle cx="340" cy="290" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="340" y="294" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+  <!-- Step 5: Notification Service -> Priority Router -->
+  <circle cx="615" cy="145" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="615" y="149" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+  <!-- Step 6: Priority queues -> Email Dispatcher -> SendGrid -->
+  <circle cx="942" cy="48" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="942" y="52" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+  <!-- Step 7: Priority queues -> SMS Dispatcher -> Twilio -->
+  <circle cx="942" cy="104" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="942" y="108" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+  <!-- Step 8: Priority queues -> Push Dispatcher -> APNS/FCM -->
+  <circle cx="942" cy="160" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="942" y="164" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+  <!-- Step 9: Priority queues -> In-App Dispatcher -> WebSocket -->
+  <circle cx="942" cy="216" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="942" y="220" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+  <!-- Step 10: External providers -> Delivery webhooks -> Analytics -->
+  <circle cx="920" cy="440" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="920" y="444" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+  <!-- Step 11: Failed deliveries -> DLQ -> retry -->
+  <circle cx="740" cy="310" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="740" y="314" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">11</text>
+</svg>
+  </div>
+
+  <!-- ========== REQUEST FLOW REFERENCE ========== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Step</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Protocol / Mechanism</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Event Sources (Booking/Payment/Message)</td>
+        <td>Kafka Event Bus</td>
+        <td>Kafka Producer (Async)</td>
+        <td>Booking, payment, message, marketing, and security events published to Kafka topics</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Kafka</td>
+        <td>Notification Service</td>
+        <td>Kafka Consumer (Pull)</td>
+        <td>Notification service consumes events, begins processing pipeline</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Notification Service</td>
+        <td>Preference Service</td>
+        <td>gRPC / HTTP (Internal)</td>
+        <td>Check user opt-in/out per channel and category; respect quiet hours</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Notification Service</td>
+        <td>Template Service</td>
+        <td>gRPC / HTTP (Internal)</td>
+        <td>Resolve template + i18n locale; render final notification content</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Notification Service</td>
+        <td>Priority Router</td>
+        <td>Internal Queue Write</td>
+        <td>Classify notification as P0&ndash;P3 and route to priority-specific queues</td>
+      </tr>
+      <tr>
+        <td><strong>6</strong></td>
+        <td>Priority Queue &rarr; Email Dispatcher</td>
+        <td>SendGrid / SES</td>
+        <td>HTTPS API</td>
+        <td>Email formatted and dispatched to SendGrid or Amazon SES</td>
+      </tr>
+      <tr>
+        <td><strong>7</strong></td>
+        <td>Priority Queue &rarr; SMS Dispatcher</td>
+        <td>Twilio</td>
+        <td>HTTPS API</td>
+        <td>SMS payload dispatched to Twilio with per-country routing</td>
+      </tr>
+      <tr>
+        <td><strong>8</strong></td>
+        <td>Priority Queue &rarr; Push Dispatcher</td>
+        <td>APNS / FCM</td>
+        <td>HTTPS API</td>
+        <td>Push notification sent to Apple (APNS) or Google (FCM)</td>
+      </tr>
+      <tr>
+        <td><strong>9</strong></td>
+        <td>Priority Queue &rarr; In-App Dispatcher</td>
+        <td>WebSocket Server</td>
+        <td>WebSocket / SSE</td>
+        <td>Real-time in-app notification pushed to connected clients</td>
+      </tr>
+      <tr>
+        <td><strong>10</strong></td>
+        <td>External Providers</td>
+        <td>Analytics / Tracking</td>
+        <td>Webhooks (HTTPS)</td>
+        <td>Delivery confirmations, opens, clicks tracked via provider webhooks</td>
+      </tr>
+      <tr>
+        <td><strong>11</strong></td>
+        <td>Failed Deliveries</td>
+        <td>Dead Letter Queue &rarr; Retry</td>
+        <td>Async Queue + Backoff</td>
+        <td>Failed notifications moved to DLQ; retried with exponential backoff</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ========== HAPPY PATH ========== -->
+  <h3>Happy Path</h3>
+  <div class="flow-steps">
+    <div class="flow-step"><div class="flow-step-num">1</div><div class="flow-step-content"><strong>Booking event fires</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">2</div><div class="flow-step-content"><strong>Kafka consumed</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">3</div><div class="flow-step-content"><strong>Check preferences</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">4</div><div class="flow-step-content"><strong>Render template</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">5</div><div class="flow-step-content"><strong>Route by priority</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">6</div><div class="flow-step-content"><strong>Dispatch to email + push</strong></div></div>
+    <div class="flow-step"><div class="flow-step-num">10</div><div class="flow-step-content"><strong>Delivered + tracked</strong></div></div>
+  </div>
+
+  <!-- ========== FAILURE PATHS ========== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Failure Scenario</th>
+        <th>Impact</th>
+        <th>Mitigation / Fallback</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Provider down</strong> (SendGrid / Twilio / APNS)</td>
+        <td>Channel delivery fails for all users on that provider</td>
+        <td>Circuit breaker trips; automatic failover to backup channel (e.g., SMS if email down)</td>
+      </tr>
+      <tr>
+        <td><strong>Rate limit exceeded</strong> (provider-side)</td>
+        <td>Dispatch queue backs up, delivery delayed</td>
+        <td>Queue backpressure with adaptive rate; priority queues ensure P0 drains first</td>
+      </tr>
+      <tr>
+        <td><strong>Template render error</strong></td>
+        <td>Notification body fails to generate</td>
+        <td>Fallback to plain-text default template; alert engineering team</td>
+      </tr>
+      <tr>
+        <td><strong>DLQ overflow</strong></td>
+        <td>Retry queue grows unbounded; stale notifications pile up</td>
+        <td>Alert + manual intervention; TTL-based expiry on DLQ items; dashboard monitoring</td>
+      </tr>
+      <tr>
+        <td><strong>Preference service down</strong></td>
+        <td>Cannot check user opt-in/out preferences</td>
+        <td>Default to opt-in for transactional (P0/P1); suppress marketing (P3) until service recovers</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Component Responsibilities</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--primary)">Notification Service (Core)</h4>
+      <ul>
+        <li>Consumes events from Kafka topics</li>
+        <li>Checks user preferences (opt-in/out)</li>
+        <li>Resolves and renders templates with i18n</li>
+        <li>Applies quiet hours and rate limits</li>
+        <li>Deduplicates using idempotency keys</li>
+        <li>Routes to priority-specific queues</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent)">Channel Dispatchers</h4>
+      <ul>
+        <li>Dedicated workers per channel (Email, SMS, Push, In-App)</li>
+        <li>Manage provider-specific payload formatting</li>
+        <li>Handle provider rate limits and back-pressure</li>
+        <li>Report delivery status back via webhooks</li>
+        <li>Support multi-provider failover</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--secondary)">Preference Service</h4>
+      <ul>
+        <li>User preferences stored in PostgreSQL, cached in Redis</li>
+        <li>Per-category, per-channel opt-in/opt-out</li>
+        <li>Quiet hours with timezone awareness</li>
+        <li>Global unsubscribe / suppression list</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue)">Template Service</h4>
+      <ul>
+        <li>Handlebars templates with variable substitution</li>
+        <li>60+ locale support with fallback chain</li>
+        <li>Template versioning and A/B testing</li>
+        <li>Preview and test-send modes</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S5 - DATA MODEL                                              -->
+<!-- ============================================================ -->
+<section class="section" id="data-model">
+  <span class="section-label">Section 5</span>
+  <h2>Data Model</h2>
+
+  <h3>notifications</h3>
+  <p>Primary record for every notification sent. Partitioned by <code class="inline">created_at</code> (monthly) for efficient archival.</p>
+  <pre><code><span class="kw">CREATE TABLE</span> <span class="fn">notifications</span> (
+    <span class="var">id</span>                   <span class="typ">UUID</span> <span class="kw">PRIMARY KEY</span>,
+    <span class="var">user_id</span>              <span class="typ">BIGINT</span> <span class="kw">NOT NULL</span>,
+    <span class="var">category</span>             <span class="typ">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'booking_confirm', 'payment_receipt', 'security_alert'</span>
+    <span class="var">channel</span>              <span class="typ">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'email', 'sms', 'push', 'in_app'</span>
+    <span class="var">template_id</span>          <span class="typ">UUID</span> <span class="kw">NOT NULL</span>,
+    <span class="var">params_json</span>          <span class="typ">JSONB</span>,                     <span class="cm">-- template variables: {guest_name, listing, dates...}</span>
+    <span class="var">status</span>               <span class="typ">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'pending','queued','sent','delivered','opened','clicked','failed','bounced'</span>
+    <span class="var">priority</span>             <span class="typ">SMALLINT</span> <span class="kw">NOT NULL DEFAULT</span> <span class="num">2</span>, <span class="cm">-- 0=security, 1=transactional, 2=operational, 3=marketing</span>
+    <span class="var">idempotency_key</span>      <span class="typ">VARCHAR(128)</span> <span class="kw">UNIQUE</span>,      <span class="cm">-- prevents duplicate sends</span>
+    <span class="var">scheduled_at</span>         <span class="typ">TIMESTAMPTZ</span>,               <span class="cm">-- NULL = immediate</span>
+    <span class="var">sent_at</span>              <span class="typ">TIMESTAMPTZ</span>,
+    <span class="var">delivered_at</span>         <span class="typ">TIMESTAMPTZ</span>,
+    <span class="var">opened_at</span>            <span class="typ">TIMESTAMPTZ</span>,
+    <span class="var">clicked_at</span>           <span class="typ">TIMESTAMPTZ</span>,
+    <span class="var">provider_message_id</span>  <span class="typ">VARCHAR(256)</span>,              <span class="cm">-- external ID from SendGrid/Twilio/etc.</span>
+    <span class="var">provider</span>             <span class="typ">VARCHAR(50)</span>,               <span class="cm">-- 'sendgrid', 'ses', 'twilio', 'apns', 'fcm'</span>
+    <span class="var">retry_count</span>          <span class="typ">SMALLINT</span> <span class="kw">DEFAULT</span> <span class="num">0</span>,
+    <span class="var">error_message</span>        <span class="typ">TEXT</span>,
+    <span class="var">created_at</span>           <span class="typ">TIMESTAMPTZ</span> <span class="kw">DEFAULT NOW()</span>,
+    <span class="var">updated_at</span>           <span class="typ">TIMESTAMPTZ</span> <span class="kw">DEFAULT NOW()</span>
+) <span class="kw">PARTITION BY RANGE</span> (created_at);
+
+<span class="cm">-- Indexes</span>
+<span class="kw">CREATE INDEX</span> idx_notif_user_created <span class="kw">ON</span> notifications(user_id, created_at <span class="kw">DESC</span>);
+<span class="kw">CREATE INDEX</span> idx_notif_status <span class="kw">ON</span> notifications(status) <span class="kw">WHERE</span> status <span class="kw">IN</span> (<span class="str">'pending'</span>,<span class="str">'queued'</span>);
+<span class="kw">CREATE INDEX</span> idx_notif_scheduled <span class="kw">ON</span> notifications(scheduled_at) <span class="kw">WHERE</span> scheduled_at <span class="kw">IS NOT NULL</span>;</code></pre>
+
+  <h3>notification_preferences</h3>
+  <pre><code><span class="kw">CREATE TABLE</span> <span class="fn">notification_preferences</span> (
+    <span class="var">user_id</span>            <span class="typ">BIGINT</span> <span class="kw">NOT NULL</span>,
+    <span class="var">category</span>           <span class="typ">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'booking', 'payment', 'marketing', 'security'</span>
+    <span class="var">channel</span>            <span class="typ">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'email', 'sms', 'push', 'in_app'</span>
+    <span class="var">enabled</span>            <span class="typ">BOOLEAN</span> <span class="kw">NOT NULL DEFAULT TRUE</span>,
+    <span class="var">quiet_hours_start</span>  <span class="typ">TIME</span>,                     <span class="cm">-- e.g. 22:00 (user local time)</span>
+    <span class="var">quiet_hours_end</span>    <span class="typ">TIME</span>,                     <span class="cm">-- e.g. 08:00</span>
+    <span class="var">timezone</span>           <span class="typ">VARCHAR(50)</span> <span class="kw">DEFAULT</span> <span class="str">'UTC'</span>,
+    <span class="var">updated_at</span>         <span class="typ">TIMESTAMPTZ</span> <span class="kw">DEFAULT NOW()</span>,
+    <span class="kw">PRIMARY KEY</span> (user_id, category, channel)
+);</code></pre>
+
+  <h3>notification_templates</h3>
+  <pre><code><span class="kw">CREATE TABLE</span> <span class="fn">notification_templates</span> (
+    <span class="var">id</span>                 <span class="typ">UUID</span> <span class="kw">PRIMARY KEY</span>,
+    <span class="var">name</span>               <span class="typ">VARCHAR(100)</span> <span class="kw">NOT NULL</span>,    <span class="cm">-- 'booking_confirmation'</span>
+    <span class="var">category</span>           <span class="typ">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,
+    <span class="var">channel</span>            <span class="typ">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,
+    <span class="var">locale</span>             <span class="typ">VARCHAR(10)</span> <span class="kw">NOT NULL</span>,     <span class="cm">-- 'en', 'fr', 'ja', 'zh-CN'</span>
+    <span class="var">subject_template</span>   <span class="typ">TEXT</span>,                     <span class="cm">-- email subject / push title</span>
+    <span class="var">body_template</span>      <span class="typ">TEXT</span> <span class="kw">NOT NULL</span>,             <span class="cm">-- Handlebars template</span>
+    <span class="var">version</span>            <span class="typ">INTEGER</span> <span class="kw">NOT NULL DEFAULT</span> <span class="num">1</span>,
+    <span class="var">is_active</span>          <span class="typ">BOOLEAN</span> <span class="kw">DEFAULT TRUE</span>,
+    <span class="var">ab_test_group</span>      <span class="typ">VARCHAR(10)</span>,              <span class="cm">-- NULL, 'A', 'B' for A/B testing</span>
+    <span class="var">created_at</span>         <span class="typ">TIMESTAMPTZ</span> <span class="kw">DEFAULT NOW()</span>,
+    <span class="kw">UNIQUE</span>(name, channel, locale, version)
+);</code></pre>
+
+  <h3>device_tokens</h3>
+  <pre><code><span class="kw">CREATE TABLE</span> <span class="fn">device_tokens</span> (
+    <span class="var">user_id</span>    <span class="typ">BIGINT</span> <span class="kw">NOT NULL</span>,
+    <span class="var">device_id</span>  <span class="typ">VARCHAR(128)</span> <span class="kw">NOT NULL</span>,
+    <span class="var">platform</span>   <span class="typ">VARCHAR(10)</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- 'ios', 'android', 'web'</span>
+    <span class="var">token</span>      <span class="typ">VARCHAR(512)</span> <span class="kw">NOT NULL</span>,       <span class="cm">-- APNS/FCM token</span>
+    <span class="var">active</span>     <span class="typ">BOOLEAN</span> <span class="kw">DEFAULT TRUE</span>,
+    <span class="var">app_version</span> <span class="typ">VARCHAR(20)</span>,
+    <span class="var">created_at</span> <span class="typ">TIMESTAMPTZ</span> <span class="kw">DEFAULT NOW()</span>,
+    <span class="var">last_used_at</span> <span class="typ">TIMESTAMPTZ</span>,
+    <span class="kw">PRIMARY KEY</span> (user_id, device_id)
+);
+
+<span class="kw">CREATE INDEX</span> idx_device_token <span class="kw">ON</span> device_tokens(token);
+<span class="kw">CREATE INDEX</span> idx_device_active <span class="kw">ON</span> device_tokens(user_id) <span class="kw">WHERE</span> active = <span class="kw">TRUE</span>;</code></pre>
+
+  <div class="callout">
+    <p><strong>Sharding strategy:</strong> The <code class="inline">notifications</code> table is partitioned by time (monthly) and sharded by <code class="inline">user_id</code>. This supports both the write-heavy ingestion path and the user-centric read path (notification inbox). Hot partitions (current month) sit on SSD; older data migrates to cheaper storage.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S6 - API DESIGN                                              -->
+<!-- ============================================================ -->
+<section class="section" id="api-design">
+  <span class="section-label">Section 6</span>
+  <h2>API Design</h2>
+
+  <h3>1. Send Single Notification</h3>
+  <pre><code><span class="kw">POST</span> <span class="str">/api/v1/notifications/send</span>
+<span class="cm">Authorization: Bearer {service_token}</span>
+
+{
+  <span class="str">"user_id"</span>:          <span class="num">12345678</span>,
+  <span class="str">"category"</span>:         <span class="str">"booking_confirmation"</span>,
+  <span class="str">"channels"</span>:         [<span class="str">"email"</span>, <span class="str">"push"</span>, <span class="str">"in_app"</span>],     <span class="cm">// desired channels (filtered by prefs)</span>
+  <span class="str">"template_name"</span>:    <span class="str">"booking_confirmed"</span>,
+  <span class="str">"params"</span>: {
+    <span class="str">"guest_name"</span>:     <span class="str">"Sarah Chen"</span>,
+    <span class="str">"listing_title"</span>:  <span class="str">"Modern Loft in Shibuya"</span>,
+    <span class="str">"check_in"</span>:       <span class="str">"2026-03-15"</span>,
+    <span class="str">"check_out"</span>:      <span class="str">"2026-03-20"</span>,
+    <span class="str">"total_price"</span>:    <span class="str">"$1,250.00"</span>,
+    <span class="str">"confirmation_code"</span>: <span class="str">"HM7X9K2B"</span>
+  },
+  <span class="str">"priority"</span>:         <span class="num">1</span>,
+  <span class="str">"idempotency_key"</span>:  <span class="str">"booking_12345_confirmed_v1"</span>,
+  <span class="str">"scheduled_at"</span>:     <span class="kw">null</span>                             <span class="cm">// null = immediate</span>
+}
+
+<span class="cm">// Response 202 Accepted</span>
+{
+  <span class="str">"notification_id"</span>:  <span class="str">"550e8400-e29b-41d4-a716-446655440000"</span>,
+  <span class="str">"status"</span>:           <span class="str">"queued"</span>,
+  <span class="str">"channels_queued"</span>:  [<span class="str">"email"</span>, <span class="str">"push"</span>, <span class="str">"in_app"</span>]
+}</code></pre>
+
+  <h3>2. Send Batch Campaign</h3>
+  <pre><code><span class="kw">POST</span> <span class="str">/api/v1/notifications/batch</span>
+<span class="cm">Authorization: Bearer {marketing_service_token}</span>
+
+{
+  <span class="str">"campaign_id"</span>:      <span class="str">"summer_promo_2026"</span>,
+  <span class="str">"segment_query"</span>:    <span class="str">"users.last_booking > 30_days AND users.country IN ('US','CA')"</span>,
+  <span class="str">"category"</span>:         <span class="str">"marketing"</span>,
+  <span class="str">"channels"</span>:         [<span class="str">"email"</span>, <span class="str">"push"</span>],
+  <span class="str">"template_name"</span>:    <span class="str">"summer_deal_2026"</span>,
+  <span class="str">"params"</span>: {
+    <span class="str">"discount_pct"</span>:   <span class="num">20</span>,
+    <span class="str">"promo_code"</span>:     <span class="str">"SUMMER20"</span>
+  },
+  <span class="str">"priority"</span>:         <span class="num">3</span>,
+  <span class="str">"scheduled_at"</span>:     <span class="str">"2026-06-01T09:00:00Z"</span>,
+  <span class="str">"rate_limit"</span>:       <span class="num">50000</span>                            <span class="cm">// max sends per hour</span>
+}
+
+<span class="cm">// Response 202 Accepted</span>
+{
+  <span class="str">"batch_id"</span>:         <span class="str">"batch_a1b2c3d4"</span>,
+  <span class="str">"estimated_recipients"</span>: <span class="num">2500000</span>,
+  <span class="str">"status"</span>:           <span class="str">"scheduled"</span>,
+  <span class="str">"estimated_completion"</span>: <span class="str">"2026-06-03T09:00:00Z"</span>
+}</code></pre>
+
+  <h3>3. User Preferences</h3>
+  <pre><code><span class="cm">// GET user preferences</span>
+<span class="kw">GET</span> <span class="str">/api/v1/users/12345678/preferences</span>
+
+<span class="cm">// Response</span>
+{
+  <span class="str">"user_id"</span>: <span class="num">12345678</span>,
+  <span class="str">"preferences"</span>: [
+    { <span class="str">"category"</span>: <span class="str">"booking"</span>,   <span class="str">"channel"</span>: <span class="str">"email"</span>, <span class="str">"enabled"</span>: <span class="kw">true</span>  },
+    { <span class="str">"category"</span>: <span class="str">"booking"</span>,   <span class="str">"channel"</span>: <span class="str">"push"</span>,  <span class="str">"enabled"</span>: <span class="kw">true</span>  },
+    { <span class="str">"category"</span>: <span class="str">"booking"</span>,   <span class="str">"channel"</span>: <span class="str">"sms"</span>,   <span class="str">"enabled"</span>: <span class="kw">false</span> },
+    { <span class="str">"category"</span>: <span class="str">"marketing"</span>, <span class="str">"channel"</span>: <span class="str">"email"</span>, <span class="str">"enabled"</span>: <span class="kw">true</span>,
+      <span class="str">"quiet_hours_start"</span>: <span class="str">"22:00"</span>, <span class="str">"quiet_hours_end"</span>: <span class="str">"08:00"</span> }
+  ],
+  <span class="str">"global_unsubscribe"</span>: <span class="kw">false</span>
+}
+
+<span class="cm">// UPDATE preferences</span>
+<span class="kw">PUT</span> <span class="str">/api/v1/users/12345678/preferences</span>
+{
+  <span class="str">"preferences"</span>: [
+    { <span class="str">"category"</span>: <span class="str">"marketing"</span>, <span class="str">"channel"</span>: <span class="str">"email"</span>, <span class="str">"enabled"</span>: <span class="kw">false</span> }
+  ]
+}</code></pre>
+
+  <h3>4. Notification Status</h3>
+  <pre><code><span class="kw">GET</span> <span class="str">/api/v1/notifications/550e8400-e29b-41d4-a716-446655440000/status</span>
+
+{
+  <span class="str">"notification_id"</span>: <span class="str">"550e8400-e29b-41d4-a716-446655440000"</span>,
+  <span class="str">"user_id"</span>:         <span class="num">12345678</span>,
+  <span class="str">"category"</span>:        <span class="str">"booking_confirmation"</span>,
+  <span class="str">"deliveries"</span>: [
+    {
+      <span class="str">"channel"</span>:     <span class="str">"email"</span>,
+      <span class="str">"status"</span>:      <span class="str">"opened"</span>,
+      <span class="str">"provider"</span>:    <span class="str">"sendgrid"</span>,
+      <span class="str">"sent_at"</span>:     <span class="str">"2026-03-10T14:22:01Z"</span>,
+      <span class="str">"delivered_at"</span>: <span class="str">"2026-03-10T14:22:04Z"</span>,
+      <span class="str">"opened_at"</span>:   <span class="str">"2026-03-10T14:35:12Z"</span>
+    },
+    {
+      <span class="str">"channel"</span>:     <span class="str">"push"</span>,
+      <span class="str">"status"</span>:      <span class="str">"delivered"</span>,
+      <span class="str">"provider"</span>:    <span class="str">"apns"</span>,
+      <span class="str">"sent_at"</span>:     <span class="str">"2026-03-10T14:22:01Z"</span>,
+      <span class="str">"delivered_at"</span>: <span class="str">"2026-03-10T14:22:02Z"</span>
+    }
+  ]
+}</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<!--  S7 - NOTIFICATION FLOW                                       -->
+<!-- ============================================================ -->
+<section class="section" id="notification-flow">
+  <span class="section-label">Section 7</span>
+  <h2>Notification Flow</h2>
+
+  <p>End-to-end flow from event origination to delivery confirmation.</p>
+
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <p><strong>Event Published to Kafka</strong> -- Upstream service (Booking, Payment, etc.) publishes a domain event to a Kafka topic (e.g., <code class="inline">booking.confirmed</code>). The event payload contains user_id, event type, and relevant data.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <p><strong>Notification Service Consumes Event</strong> -- A consumer group reads from the Kafka topic. The service maps the event type to notification category and determines which channels are applicable (e.g., booking_confirmation maps to email + push + in_app).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <p><strong>Idempotency Check</strong> -- The idempotency key (<code class="inline">booking_{id}_confirmed_v1</code>) is checked against Redis. If already processed, the request is dropped (preventing duplicate sends on Kafka redelivery).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <p><strong>User Preference Lookup</strong> -- Query the Preference Service (Redis-cached) for user preferences. Filter out channels the user has opted out of. Check suppression lists (unsubscribed, bounced email addresses).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <p><strong>Template Resolution + i18n Rendering</strong> -- Look up the user's locale. Fetch the appropriate template (from cache). Render with Handlebars: substitute variables, format dates/currency per locale. For email, render full HTML. For push, compose title + body within payload limits.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">6</div>
+      <div class="flow-step-content">
+        <p><strong>Quiet Hours &amp; Rate Limit Check</strong> -- If the current time (in user's timezone) falls within their quiet hours, defer the notification (re-schedule to quiet_hours_end). Apply per-user rate limits (e.g., max 5 push/hour). If rate-limited, defer or drop based on priority.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">7</div>
+      <div class="flow-step-content">
+        <p><strong>Enqueue to Channel-Specific Priority Queue</strong> -- Route the rendered notification to the appropriate channel queue (e.g., <code class="inline">email-P1</code>, <code class="inline">push-P1</code>). Priority queues ensure P0 security alerts are processed before P3 marketing.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">8</div>
+      <div class="flow-step-content">
+        <p><strong>Channel Dispatcher Sends to Provider</strong> -- The dispatcher dequeues messages and calls the external provider API (SendGrid, Twilio, APNS, FCM). It handles batching (SendGrid supports 1000/batch), connection pooling, and provider-specific formatting.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">9</div>
+      <div class="flow-step-content">
+        <p><strong>Delivery Status via Webhook Callbacks</strong> -- Providers send delivery/bounce/open/click events back via webhooks. The Analytics Service ingests these events and updates the notification record status. Failed deliveries are enqueued for retry.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-diagram">
+<span style="color:#79c0ff">Detailed Flow</span>
+
+  Kafka Topic                  Notification Service                    Channel Queues             Providers
+  +-----------+      +-------------------------------------------+    +-----------+
+  | booking.  |      |  1. Consume event                         |    |           |    +----------+
+  | confirmed |-----&gt;|  2. Idempotency check (Redis)             |    | email-P1  |---&gt;| SendGrid |--+
+  +-----------+      |  3. Preference lookup (Redis/PG)           |---&gt;|           |    +----------+  |
+                     |  4. Template render (Cache/PG)             |    +-----------+                  |
+  +-----------+      |  5. Quiet hours check                      |    |           |    +----------+  |
+  | payment.  |      |  6. Rate limit check (Redis sliding window)|    | push-P1   |---&gt;| APNS/FCM |--+
+  | completed |-----&gt;|  7. Create notification record (PG)        |---&gt;|           |    +----------+  |
+  +-----------+      |  8. Enqueue to channel queues               |    +-----------+                  |
+                     +-------------------------------------------+    |           |    +----------+  |
+  +-----------+                                                       | sms-P0    |---&gt;| Twilio   |--+
+  | security. |-----&gt;  (same pipeline, P0 priority)                   |           |    +----------+  |
+  | alert     |                                                       +-----------+                  |
+  +-----------+                                                       |           |                  |
+                                                                      | in-app    |---&gt; WebSocket    |
+                                                                      +-----------+     Server       |
+                                                                                                     |
+                                  +---------------------+    Webhook Callbacks                       |
+                                  | Analytics Service   |&lt;-------------------------------------------+
+                                  | (status updates)    |    delivery / bounce / open / click events
+                                  +---------------------+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S8 - PRIORITY & RATE LIMITING                                -->
+<!-- ============================================================ -->
+<section class="section" id="priority-rate">
+  <span class="section-label">Section 8</span>
+  <h2>Priority &amp; Rate Limiting</h2>
+
+  <h3>Priority Levels</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Label</th>
+          <th>Examples</th>
+          <th>Latency SLA</th>
+          <th>Queue</th>
+          <th>Retry?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="priority-tag p0">P0</span></td>
+          <td><strong>Security / Critical</strong></td>
+          <td>2FA codes, password reset, suspicious login</td>
+          <td>&lt; 10 seconds</td>
+          <td>Dedicated, always-hot</td>
+          <td>Aggressive (every 30s)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p1">P1</span></td>
+          <td><strong>Transactional</strong></td>
+          <td>Booking confirmation, payment receipt, cancellation</td>
+          <td>&lt; 30 seconds</td>
+          <td>High-priority</td>
+          <td>Yes (1m, 5m, 30m)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p2">P2</span></td>
+          <td><strong>Operational</strong></td>
+          <td>Review reminders, check-in instructions, host messages</td>
+          <td>&lt; 5 minutes</td>
+          <td>Standard</td>
+          <td>Yes (5m, 30m, 2hr)</td>
+        </tr>
+        <tr>
+          <td><span class="priority-tag p3">P3</span></td>
+          <td><strong>Marketing</strong></td>
+          <td>Promotions, price drops, wishlists</td>
+          <td>&lt; 24 hours</td>
+          <td>Best-effort, rate-limited</td>
+          <td>Limited (1 retry)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Queue Architecture</h3>
+  <div class="arch-diagram">
+<span style="color:#79c0ff">Priority Queue Layout (per channel)</span>
+
+  Notification            Priority Router            Channel Workers
+  Service                                            (auto-scaled)
+                     +--&gt; [P0 Queue] -----+
+  +-------+          |    (dedicated,      |     +------------------+
+  | Event |---+------+     always-hot)     +----&gt;| Email Worker x5  |
+  +-------+   |      |                    |     | (P0 gets 40% of  |
+              |      +--&gt; [P1 Queue] -----+     |  worker capacity)|
+              |      |    (high-pri)      |     +------------------+
+              +------+                    |
+              |      +--&gt; [P2 Queue] -----+     +------------------+
+              |      |    (standard)      +----&gt;| Email Worker x10 |
+              +------+                    |     | (P1-P2 share     |
+                     |                    |     |  50% capacity)   |
+                     +--&gt; [P3 Queue] -----+     +------------------+
+                          (best-effort,   |
+                           rate-limited)  |     +------------------+
+                                          +----&gt;| Email Worker x3  |
+                                                | (P3 gets 10%    |
+                                                |  capacity)       |
+                                                +------------------+
+  </div>
+
+  <h3>Rate Limiting Strategy</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--danger)">Per-User Limits</h4>
+      <ul>
+        <li><strong>Push:</strong> Max 5 per hour, 20 per day</li>
+        <li><strong>SMS:</strong> Max 3 per hour, 10 per day (except P0)</li>
+        <li><strong>Email:</strong> Max 10 per hour, 50 per day</li>
+        <li><strong>In-App:</strong> No limit (accumulated in feed)</li>
+      </ul>
+      <p style="margin-top:10px; font-size:0.88em">Implementation: Redis sliding window counter per <code class="inline">user:{id}:rate:{channel}:{window}</code></p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--warning)">Per-Provider Limits</h4>
+      <ul>
+        <li><strong>SendGrid:</strong> 100K emails/hour (plan-dependent)</li>
+        <li><strong>Amazon SES:</strong> 50K emails/hour (adjustable)</li>
+        <li><strong>Twilio:</strong> 1,600 SMS segments/sec (US short code)</li>
+        <li><strong>APNS:</strong> No published limit (connection-based)</li>
+        <li><strong>FCM:</strong> 500K messages/sec (per project)</li>
+      </ul>
+      <p style="margin-top:10px; font-size:0.88em">Implementation: Token bucket algorithm per provider with circuit breaker</p>
+    </div>
+  </div>
+
+  <pre><code><span class="cm">// Redis sliding window rate limiter (pseudo-code)</span>
+<span class="kw">async function</span> <span class="fn">checkRateLimit</span>(userId, channel, maxPerHour) {
+    <span class="kw">const</span> <span class="var">key</span> = <span class="str">`rate:${userId}:${channel}:${currentHour()}`</span>;
+    <span class="kw">const</span> <span class="var">count</span> = <span class="kw">await</span> redis.<span class="fn">incr</span>(key);
+    <span class="kw">if</span> (count === <span class="num">1</span>) <span class="kw">await</span> redis.<span class="fn">expire</span>(key, <span class="num">3600</span>);
+
+    <span class="kw">if</span> (count > maxPerHour) {
+        <span class="kw">return</span> { <span class="var">allowed</span>: <span class="kw">false</span>, <span class="var">retryAfter</span>: secondsUntilNextHour() };
+    }
+    <span class="kw">return</span> { <span class="var">allowed</span>: <span class="kw">true</span> };
+}
+
+<span class="cm">// Token bucket for provider rate limiting</span>
+<span class="kw">class</span> <span class="fn">ProviderTokenBucket</span> {
+    <span class="kw">constructor</span>(provider, tokensPerSecond) {
+        <span class="kw">this</span>.key = <span class="str">`provider:${provider}:bucket`</span>;
+        <span class="kw">this</span>.rate = tokensPerSecond;
+    }
+
+    <span class="kw">async</span> <span class="fn">acquire</span>(tokens = <span class="num">1</span>) {
+        <span class="cm">// Lua script for atomic token bucket in Redis</span>
+        <span class="kw">return await</span> redis.<span class="fn">eval</span>(TOKEN_BUCKET_LUA, <span class="kw">this</span>.key, <span class="kw">this</span>.rate, tokens);
+    }
+}</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<!--  S9 - RELIABILITY                                             -->
+<!-- ============================================================ -->
+<section class="section" id="reliability">
+  <span class="section-label">Section 9</span>
+  <h2>Reliability</h2>
+
+  <h3>Retry Strategy with Exponential Backoff</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Retry #</th>
+          <th>Delay</th>
+          <th>Cumulative Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>1 minute</td>
+          <td>1 min</td>
+          <td>Retry same provider</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>5 minutes</td>
+          <td>6 min</td>
+          <td>Retry same provider</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>30 minutes</td>
+          <td>36 min</td>
+          <td>Try fallback provider</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>2 hours</td>
+          <td>~2.5 hr</td>
+          <td>Try fallback channel</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>24 hours</td>
+          <td>~26.5 hr</td>
+          <td>Final attempt, then DLQ</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Reliability Mechanisms</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--success)">Idempotency</h4>
+      <p>Every notification carries an idempotency key (e.g., <code class="inline">booking_12345_confirmed_v1</code>). The key is stored in Redis with a 72-hour TTL. If a duplicate event arrives (Kafka redelivery), the system detects it and skips processing.</p>
+      <pre><code><span class="cm">// Idempotency check</span>
+<span class="kw">const</span> <span class="var">key</span> = <span class="str">`idem:${idempotencyKey}`</span>;
+<span class="kw">const</span> <span class="var">exists</span> = <span class="kw">await</span> redis.<span class="fn">set</span>(key, <span class="str">"1"</span>, <span class="str">"NX"</span>, <span class="str">"EX"</span>, <span class="num">259200</span>);
+<span class="kw">if</span> (!exists) <span class="kw">return</span> <span class="str">"duplicate - skip"</span>;</code></pre>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--warning)">Circuit Breaker</h4>
+      <p>Per-provider circuit breakers prevent cascading failures. If a provider's error rate exceeds 50% over a 60-second window, the circuit opens and traffic routes to the fallback provider.</p>
+      <pre><code><span class="cm">// Circuit breaker states</span>
+CLOSED  -&gt; normal operation
+OPEN    -&gt; all requests fail-fast
+HALF    -&gt; probe with 10% traffic
+
+<span class="cm">// Thresholds</span>
+errorThreshold: <span class="num">50</span>%
+windowSize:     <span class="num">60</span> seconds
+cooldownPeriod: <span class="num">30</span> seconds</code></pre>
+    </div>
+  </div>
+
+  <h3>Dead Letter Queue (DLQ)</h3>
+  <div class="card">
+    <p>After all retries are exhausted, the notification is moved to a Dead Letter Queue. The DLQ stores:</p>
+    <ul>
+      <li>The full notification payload and rendered content</li>
+      <li>All retry attempt timestamps and error messages</li>
+      <li>Provider responses and HTTP status codes</li>
+    </ul>
+    <p style="margin-top:10px">An on-call engineer reviews the DLQ dashboard daily. Automated alerts fire if DLQ depth exceeds 1,000 messages or if a specific provider's failure rate spikes.</p>
+  </div>
+
+  <h3>Channel Fallback Chain</h3>
+  <div class="arch-diagram">
+<span style="color:#79c0ff">Fallback Strategy (for critical notifications)</span>
+
+  Primary Channel Failed?
+  +-------+
+  | Email |---fail after 3 retries---+
+  +-------+                          |
+                                     v
+                              +------+------+
+                              | Push (APNS/ |---fail---+
+                              | FCM)        |          |
+                              +-------------+          v
+                                                +------+------+
+                                                | SMS (Twilio) |---fail---&gt; DLQ + Alert
+                                                +--------------+
+
+  <span style="color:#8b949e">Note: Fallback only applies to P0/P1 notifications.</span>
+  <span style="color:#8b949e">P2/P3 notifications do NOT cascade to SMS (cost control).</span>
+  </div>
+
+  <div class="callout danger">
+    <p><strong>Multi-provider failover:</strong> For email, maintain active integrations with both SendGrid and Amazon SES. Primary traffic goes to SendGrid (better deliverability tooling). If SendGrid circuit opens, SES takes over. DNS records (SPF/DKIM) must authorize both senders. Keep both warmed up by routing 10% of P3 traffic to SES at all times.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S10 - TEMPLATE ENGINE                                        -->
+<!-- ============================================================ -->
+<section class="section" id="template-engine">
+  <span class="section-label">Section 10</span>
+  <h2>Template Engine</h2>
+
+  <h3>Handlebars Template System</h3>
+  <p>Templates use Handlebars/Mustache syntax with variable substitution and locale-aware formatting helpers.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--primary)">Email Template (en)</h4>
+      <pre><code><span class="cm">&lt;!-- booking_confirmed.email.en.hbs --&gt;</span>
+<span class="kw">Subject:</span> <span class="str">Booking Confirmed - {{listing_title}}</span>
+
+&lt;h1&gt;Hi <span class="var">{{guest_name}}</span>,&lt;/h1&gt;
+&lt;p&gt;Your booking is confirmed!&lt;/p&gt;
+
+&lt;div class="details"&gt;
+  &lt;strong&gt;<span class="var">{{listing_title}}</span>&lt;/strong&gt;
+  &lt;p&gt;Check-in: <span class="var">{{formatDate check_in locale}}</span>&lt;/p&gt;
+  &lt;p&gt;Check-out: <span class="var">{{formatDate check_out locale}}</span>&lt;/p&gt;
+  &lt;p&gt;Total: <span class="var">{{formatCurrency total_price currency}}</span>&lt;/p&gt;
+  &lt;p&gt;Confirmation: <span class="var">{{confirmation_code}}</span>&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;a href="<span class="var">{{booking_url}}</span>"&gt;View Booking&lt;/a&gt;</code></pre>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--secondary)">Push Template (ja)</h4>
+      <pre><code><span class="cm">// booking_confirmed.push.ja.json</span>
+{
+  <span class="str">"title"</span>: <span class="str">"予約が確定しました"</span>,
+  <span class="str">"body"</span>: <span class="str">"{{listing_title}} - {{formatDate check_in 'ja'}}から{{nights}}泊"</span>,
+  <span class="str">"data"</span>: {
+    <span class="str">"type"</span>: <span class="str">"booking_confirmed"</span>,
+    <span class="str">"booking_id"</span>: <span class="str">"{{booking_id}}"</span>,
+    <span class="str">"deeplink"</span>: <span class="str">"airbnb://trips/{{booking_id}}"</span>
+  }
+}
+
+<span class="cm">// Payload must be &lt; 4KB (APNS &amp; FCM limit)</span>
+<span class="cm">// Title: max ~50 chars (display truncation)</span>
+<span class="cm">// Body: max ~150 chars</span></code></pre>
+    </div>
+  </div>
+
+  <h3>Template Features</h3>
+  <div class="grid-3">
+    <div class="card">
+      <h4 style="color:var(--blue)">i18n &amp; Locale</h4>
+      <ul>
+        <li>60+ language support</li>
+        <li>Fallback chain: <code class="inline">ja-JP</code> -&gt; <code class="inline">ja</code> -&gt; <code class="inline">en</code></li>
+        <li>Date/currency formatting per locale</li>
+        <li>RTL support for Arabic, Hebrew</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--purple)">Versioning</h4>
+      <ul>
+        <li>Immutable versions (v1, v2, ...)</li>
+        <li>Active version pointer per template</li>
+        <li>Rollback by switching active version</li>
+        <li>Migration period with dual sends</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent)">A/B Testing</h4>
+      <ul>
+        <li>Template variants (A/B groups)</li>
+        <li>User hash-based group assignment</li>
+        <li>Track open/click rates per variant</li>
+        <li>Auto-promote winner after threshold</li>
+      </ul>
+    </div>
+  </div>
+
+  <pre><code><span class="cm">// Template rendering pipeline</span>
+<span class="kw">async function</span> <span class="fn">renderNotification</span>(templateName, channel, userLocale, params) {
+    <span class="cm">// 1. Resolve locale with fallback chain</span>
+    <span class="kw">const</span> <span class="var">locale</span> = <span class="kw">await</span> <span class="fn">resolveLocale</span>(templateName, channel, userLocale);
+    <span class="cm">// e.g., "pt-BR" -> "pt-BR" (found) or "pt" -> "en" (fallback)</span>
+
+    <span class="cm">// 2. Fetch template (from LRU cache, 5-min TTL)</span>
+    <span class="kw">const</span> <span class="var">template</span> = <span class="kw">await</span> templateCache.<span class="fn">get</span>(templateName, channel, locale);
+
+    <span class="cm">// 3. A/B test variant selection</span>
+    <span class="kw">if</span> (template.ab_test_group) {
+        <span class="kw">const</span> <span class="var">group</span> = <span class="fn">hashUserId</span>(params.user_id) % <span class="num">2</span> === <span class="num">0</span> ? <span class="str">'A'</span> : <span class="str">'B'</span>;
+        template = template.variants[group];
+    }
+
+    <span class="cm">// 4. Register Handlebars helpers</span>
+    Handlebars.<span class="fn">registerHelper</span>(<span class="str">'formatDate'</span>, (date, loc) =&gt; <span class="fn">formatDateForLocale</span>(date, loc));
+    Handlebars.<span class="fn">registerHelper</span>(<span class="str">'formatCurrency'</span>, (amount, cur) =&gt; <span class="fn">formatCurrencyForLocale</span>(amount, cur, locale));
+
+    <span class="cm">// 5. Compile and render</span>
+    <span class="kw">const</span> <span class="var">compiled</span> = Handlebars.<span class="fn">compile</span>(template.body_template);
+    <span class="kw">return</span> {
+        subject: Handlebars.<span class="fn">compile</span>(template.subject_template)(params),
+        body: <span class="fn">compiled</span>(params),
+        templateVersion: template.version,
+        abGroup: template.ab_test_group
+    };
+}</code></pre>
+</section>
+
+<!-- ============================================================ -->
+<!--  S11 - TRADE-OFFS                                             -->
+<!-- ============================================================ -->
+<section class="section" id="tradeoffs">
+  <span class="section-label">Section 11</span>
+  <h2>Trade-offs</h2>
+
+  <div class="tradeoff">
+    <h4>1. Push vs Pull Notification Delivery</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Push Model (chosen)</h5>
+        <ul>
+          <li>Real-time delivery, lower latency</li>
+          <li>Server controls delivery timing</li>
+          <li>No unnecessary polling traffic</li>
+          <li>Better for transactional notifications</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Pull Model</h5>
+        <ul>
+          <li>Client controls pace, less overwhelming</li>
+          <li>Simpler server (no connection management)</li>
+          <li>Polling wastes bandwidth when no notifications</li>
+          <li>Higher latency, poor for urgent messages</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Decision:</strong> Push for all channels. In-app uses WebSocket with pull fallback (long-polling) for clients that cannot maintain persistent connections. Hybrid approach ensures both real-time and reliability.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>2. Fan-Out-on-Write vs Fan-Out-on-Read (In-App Notifications)</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Fan-Out-on-Write (chosen)</h5>
+        <ul>
+          <li>Reading inbox is O(1) -- just fetch user's pre-built list</li>
+          <li>Low read latency, critical for notification feed UX</li>
+          <li>Scales read path independently</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Fan-Out-on-Read</h5>
+        <ul>
+          <li>Lower write amplification for broadcast notifications</li>
+          <li>Storage efficient for shared notifications</li>
+          <li>High read latency (must compute inbox on the fly)</li>
+          <li>Cold start problem for inactive users</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Decision:</strong> Fan-out-on-write for individual notifications (booking, payment). For broadcast campaigns (millions of recipients), use a hybrid: store the campaign once, and materialize into user inboxes lazily on first read.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>3. Single Provider vs Multi-Provider per Channel</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Multi-Provider (chosen)</h5>
+        <ul>
+          <li>Failover capability: if one provider goes down, switch</li>
+          <li>Leverage pricing: negotiate better rates</li>
+          <li>Geographic optimization (route to local provider)</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Single Provider</h5>
+        <ul>
+          <li>Simpler integration and maintenance</li>
+          <li>Unified analytics and deliverability metrics</li>
+          <li>Lower engineering cost</li>
+          <li>Single point of failure</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Decision:</strong> Multi-provider for Email (SendGrid primary, SES fallback) and SMS (Twilio primary, regional providers for international). Push is inherently multi-provider (APNS for iOS, FCM for Android). Keep both providers warmed up with traffic split.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>4. Template Service vs Embedded Templates</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Centralized Template Service (chosen)</h5>
+        <ul>
+          <li>Single source of truth for all notification content</li>
+          <li>Non-engineers can update templates via CMS</li>
+          <li>A/B testing and versioning built-in</li>
+          <li>Consistent branding across channels</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Embedded Templates</h5>
+        <ul>
+          <li>No network hop for template fetch</li>
+          <li>Templates version-controlled with code</li>
+          <li>No additional service dependency</li>
+          <li>Template updates require code deploys</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Decision:</strong> Centralized Template Service with aggressive caching (LRU cache, 5-min TTL). Templates are fetched from cache 99.5% of the time. The service provides a CMS UI for content teams to create/edit templates without engineering involvement.</div>
+  </div>
+
+  <div class="tradeoff">
+    <h4>5. Immediate vs Batched Sending</h4>
+    <div class="tradeoff-row">
+      <div class="tradeoff-col pros">
+        <h5>Immediate (for P0/P1)</h5>
+        <ul>
+          <li>Lowest latency for time-critical notifications</li>
+          <li>Users expect instant booking/payment confirmations</li>
+          <li>Higher per-unit cost due to individual API calls</li>
+        </ul>
+      </div>
+      <div class="tradeoff-col cons">
+        <h5>Batched (for P2/P3)</h5>
+        <ul>
+          <li>Lower cost (bulk API pricing, fewer API calls)</li>
+          <li>Better provider rate limit utilization</li>
+          <li>Can optimize send time per user</li>
+          <li>Higher latency, not suitable for urgent messages</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict"><strong>Decision:</strong> Dual-mode. P0/P1 are immediate (individual sends). P2/P3 are batched into micro-batches of 100-1000 messages, sent at provider-optimal intervals. Marketing campaigns use mega-batches with scheduled send-time optimization.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  S12 - DEEP DIVES                                             -->
+<!-- ============================================================ -->
+<section class="section" id="deep-dives">
+  <span class="section-label">Section 12</span>
+  <h2>Deep Dives</h2>
+
+  <h3>1. Email Deliverability</h3>
+  <div class="card">
+    <h4 style="color:var(--primary)">Authentication: SPF / DKIM / DMARC</h4>
+    <p>Email authentication is critical for inbox placement vs. spam folder.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>What It Does</th>
+            <th>DNS Record</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>SPF</strong></td>
+            <td>Declares which IP addresses can send email for your domain</td>
+            <td><code class="inline">v=spf1 include:sendgrid.net include:amazonses.com ~all</code></td>
+          </tr>
+          <tr>
+            <td><strong>DKIM</strong></td>
+            <td>Cryptographic signature proving email wasn't tampered with</td>
+            <td><code class="inline">selector._domainkey.airbnb.com</code> with RSA public key</td>
+          </tr>
+          <tr>
+            <td><strong>DMARC</strong></td>
+            <td>Policy telling receivers what to do with unauthenticated emails</td>
+            <td><code class="inline">v=DMARC1; p=quarantine; rua=mailto:dmarc@airbnb.com</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 style="color:var(--accent); margin-top:20px">IP Warm-up Strategy</h4>
+    <ul>
+      <li><strong>Week 1:</strong> Send 5K emails/day from new IP pool, only to most engaged users</li>
+      <li><strong>Week 2:</strong> Ramp to 25K/day, expanding to medium-engagement users</li>
+      <li><strong>Week 3-4:</strong> Ramp to 100K/day, monitoring bounce rates closely</li>
+      <li><strong>Week 5+:</strong> Full volume; maintain sending reputation by keeping bounce rate &lt;2%</li>
+    </ul>
+
+    <h4 style="color:var(--secondary); margin-top:20px">Bounce Handling</h4>
+    <ul>
+      <li><strong>Hard bounce</strong> (invalid address): Immediately suppress email, mark address as invalid. After 3 hard bounces, auto-disable email channel for user.</li>
+      <li><strong>Soft bounce</strong> (mailbox full, temp issue): Retry 3x over 48 hours. If persistent, reduce send frequency.</li>
+      <li><strong>Complaint/spam report:</strong> Immediately unsubscribe. Feed back into reputation scoring.</li>
+    </ul>
+  </div>
+
+  <h3>2. Push Notification Payload Limits</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--blue)">Apple APNS</h4>
+      <ul>
+        <li>Max payload: <strong>4,096 bytes</strong> (4KB)</li>
+        <li>HTTP/2 persistent connections</li>
+        <li>Token-based auth (JWT) preferred over certificate</li>
+        <li>Silent notifications for background updates</li>
+        <li>Must handle invalid/expired device tokens</li>
+        <li>Feedback service reports uninstalled apps</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--success)">Google FCM</h4>
+      <ul>
+        <li>Max payload: <strong>4,096 bytes</strong> (4KB)</li>
+        <li>Supports topic-based messaging (broadcast)</li>
+        <li>Data messages vs. notification messages</li>
+        <li>Collapsible (replace older notification) option</li>
+        <li>TTL control (how long to retry if device offline)</li>
+        <li>Must handle <code class="inline">NotRegistered</code> token errors</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warning">
+    <p><strong>Payload optimization:</strong> With a 4KB limit, keep push payloads lean. Store detailed content server-side and include only a <code class="inline">notification_id</code> in the push payload. The app fetches full content from the API on tap. This also enables dynamic content updates after the push is sent.</p>
+  </div>
+
+  <h3>3. SMS Country-Specific Regulations</h3>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Regulation</th>
+            <th>Requirements</th>
+            <th>Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>US</strong></td>
+            <td>TCPA / 10DLC</td>
+            <td>Prior express consent, opt-out in every message</td>
+            <td>Must register brand + campaigns with carriers</td>
+          </tr>
+          <tr>
+            <td><strong>EU</strong></td>
+            <td>GDPR + ePrivacy</td>
+            <td>Explicit consent, right to erasure, data portability</td>
+            <td>Double opt-in for marketing SMS</td>
+          </tr>
+          <tr>
+            <td><strong>India</strong></td>
+            <td>TRAI DND Registry</td>
+            <td>Check Do-Not-Disturb registry before sending</td>
+            <td>Transactional OK, promotional restricted to 9am-9pm</td>
+          </tr>
+          <tr>
+            <td><strong>China</strong></td>
+            <td>MIIT Regulations</td>
+            <td>Must use registered sender ID, template pre-approval</td>
+            <td>Use local SMS aggregators (e.g., Alibaba Cloud SMS)</td>
+          </tr>
+          <tr>
+            <td><strong>Australia</strong></td>
+            <td>Spam Act 2003</td>
+            <td>Consent, sender identification, unsubscribe mechanism</td>
+            <td>Penalties up to AUD $2.1M/day for violations</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>4. Unsubscribe Compliance</h3>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="color:var(--danger)">CAN-SPAM (US)</h4>
+      <ul>
+        <li>Every commercial email must include unsubscribe link</li>
+        <li>Process unsubscribe within <strong>10 business days</strong></li>
+        <li>Must include physical postal address</li>
+        <li>Subject line must not be misleading</li>
+        <li>Penalties: up to $50,120 per email violation</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--purple)">GDPR (EU)</h4>
+      <ul>
+        <li>Explicit opt-in consent required (no pre-checked boxes)</li>
+        <li>Right to withdraw consent at any time</li>
+        <li>Right to erasure -- delete all notification data on request</li>
+        <li>Data minimization -- only collect what's necessary</li>
+        <li>Penalties: up to 4% of annual global revenue</li>
+      </ul>
+    </div>
+  </div>
+
+  <pre><code><span class="cm">// One-click unsubscribe header (RFC 8058) -- required by Gmail/Yahoo since Feb 2024</span>
+<span class="kw">List-Unsubscribe:</span> <span class="str">&lt;https://airbnb.com/unsubscribe?token=abc123&gt;</span>,
+                   <span class="str">&lt;mailto:unsubscribe@airbnb.com?subject=unsubscribe-abc123&gt;</span>
+<span class="kw">List-Unsubscribe-Post:</span> <span class="str">List-Unsubscribe=One-Click</span>
+
+<span class="cm">// Unsubscribe endpoint</span>
+<span class="kw">POST</span> <span class="str">/api/v1/unsubscribe</span>
+{
+  <span class="str">"token"</span>: <span class="str">"abc123"</span>,                <span class="cm">// signed JWT containing user_id + category</span>
+  <span class="str">"category"</span>: <span class="str">"marketing"</span>,       <span class="cm">// category to unsubscribe from</span>
+  <span class="str">"channel"</span>: <span class="str">"email"</span>              <span class="cm">// or "all"</span>
+}
+<span class="cm">// Must process immediately (not queued)</span></code></pre>
+</section>
+
+<!-- ============================================================ -->
+<!--  S13 - INTERVIEW TIPS                                         -->
+<!-- ============================================================ -->
+<section class="section" id="interview-tips">
+  <span class="section-label">Section 13</span>
+  <h2>Interview Tips</h2>
+
+  <h3>Calibration: What Interviewers Look For</h3>
+  <div class="grid-3">
+    <div class="tip-card">
+      <h4>Junior / Mid-Level</h4>
+      <ul>
+        <li>Can identify the basic components (queue, dispatcher, template)</li>
+        <li>Understands multi-channel concept</li>
+        <li>Designs a working but simplistic flow</li>
+        <li>Mentions retry but lacks detail</li>
+      </ul>
+    </div>
+    <div class="tip-card">
+      <h4>Senior</h4>
+      <ul>
+        <li>Priority-based routing with separate queues</li>
+        <li>User preferences and quiet hours</li>
+        <li>Idempotency to prevent duplicates</li>
+        <li>Provider rate limiting and circuit breakers</li>
+        <li>Template management with i18n</li>
+      </ul>
+    </div>
+    <div class="tip-card">
+      <h4>Principal / Staff</h4>
+      <ul>
+        <li>Multi-provider failover with warm standby</li>
+        <li>Cost optimization across channels</li>
+        <li>Email deliverability (SPF/DKIM/DMARC, IP warm-up)</li>
+        <li>Regulatory compliance (CAN-SPAM, GDPR, TCPA)</li>
+        <li>Fan-out strategies for campaigns vs transactional</li>
+        <li>Observability and SLA monitoring</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Key Signals That Differentiate Top Candidates</h3>
+  <div class="card">
+    <ol>
+      <li><strong>Cost awareness:</strong> Proactively discusses SMS vs push vs email cost differences and designs the system to optimize routing. This shows business acumen, not just technical depth.</li>
+      <li><strong>Preference management depth:</strong> Doesn't just mention "user preferences" -- designs the preference model, explains how it interacts with regulatory requirements, handles quiet hours with timezone conversions.</li>
+      <li><strong>Delivery tracking end-to-end:</strong> Explains webhook callbacks, bounce handling, open/click tracking, and how these feed back into the system (suppression lists, reputation management).</li>
+      <li><strong>Priority architecture:</strong> Designs separate queue paths for different priorities, explains why security alerts need dedicated capacity, and describes how marketing traffic can be shed under load.</li>
+      <li><strong>Failure modes:</strong> Discusses what happens when a provider goes down, how the circuit breaker triggers, what the fallback chain looks like, and how the DLQ is monitored.</li>
+    </ol>
+  </div>
+
+  <h3>Common Follow-Up Questions</h3>
+  <div class="grid-2">
+    <div class="tip-card">
+      <h4>Architecture Follow-Ups</h4>
+      <ul>
+        <li>"How would you handle sending 10M marketing emails without affecting transactional latency?"</li>
+        <li>"What happens if Twilio goes down for 2 hours during peak booking?"</li>
+        <li>"How do you ensure a booking confirmation email arrives in inbox, not spam?"</li>
+        <li>"How would you add a new channel (e.g., WhatsApp) to this system?"</li>
+      </ul>
+    </div>
+    <div class="tip-card">
+      <h4>Operational Follow-Ups</h4>
+      <ul>
+        <li>"A bug caused 5M duplicate push notifications. How do you prevent this? How do you recover?"</li>
+        <li>"Users in Japan report delayed notifications during US daytime. Why? How do you fix it?"</li>
+        <li>"Marketing team needs to send a flash campaign to 5M users in 1 hour. Walk me through the system under this load."</li>
+        <li>"How do you monitor notification health? What dashboards and alerts exist?"</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Structuring Your Answer (45-minute Interview)</h3>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Time</th>
+            <th>Focus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Requirements</strong></td>
+            <td>5 min</td>
+            <td>Clarify scope: which channels? Scale? Transactional + marketing? Compliance?</td>
+          </tr>
+          <tr>
+            <td><strong>High-Level Design</strong></td>
+            <td>10 min</td>
+            <td>Event source -> Notification Service -> Priority Router -> Channel Dispatchers -> Providers. Draw the architecture.</td>
+          </tr>
+          <tr>
+            <td><strong>Data Model + API</strong></td>
+            <td>8 min</td>
+            <td>Core tables, key indexes. Send/batch/preferences/status APIs.</td>
+          </tr>
+          <tr>
+            <td><strong>Notification Flow</strong></td>
+            <td>7 min</td>
+            <td>Walk through a booking confirmation end-to-end: Kafka -> preferences -> template -> rate limit -> queue -> dispatch -> webhook.</td>
+          </tr>
+          <tr>
+            <td><strong>Deep Dive</strong></td>
+            <td>10 min</td>
+            <td>Interviewer picks: reliability (retry, DLQ, circuit breaker), deliverability, or rate limiting. Go deep.</td>
+          </tr>
+          <tr>
+            <td><strong>Trade-offs</strong></td>
+            <td>5 min</td>
+            <td>Discuss 2-3 key trade-offs. Show you considered alternatives.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Pro tip:</strong> Start by asking: "Should I focus on the transactional notification path (booking confirmations) or the batch campaign path (marketing)?" This shows you understand these are fundamentally different engineering challenges. Most interviewers will say transactional first, campaigns as a follow-up. This lets you demonstrate depth before breadth.</p>
+  </div>
+
+  <div class="callout">
+    <p><strong>Principal-level signal:</strong> Bring up cost optimization unprompted. Calculate that SMS costs 75x more than email per unit. Propose intelligent channel routing: attempt push first (free), then email ($0.0001), only escalate to SMS ($0.0075) for P0 or when other channels are unreachable. This single decision at Airbnb scale saves millions annually.</p>
+  </div>
+</section>
+
+</div>
+
+<!-- ============================================================ -->
+<!--  FOOTER                                                       -->
+<!-- ============================================================ -->
+<div class="footer">
+  <p><a href="index.html">&#8592; Back to All Topics</a> &nbsp;|&nbsp; Topic 14 of 18</p>
+  <p style="margin-top: 8px;">Airbnb System Design Interview Preparation -- Multi-Channel Notification System</p>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

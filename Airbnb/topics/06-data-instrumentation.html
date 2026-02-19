@@ -1,0 +1,2523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airbnb Data Instrumentation System - Principal Engineer System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 70px 40px 60px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero h1 {
+    font-size: 2.8em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .hero .subtitle {
+    font-size: 1.25em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .hero .topic-number-hero {
+    position: relative;
+    display: inline-block;
+    font-size: 1.1em;
+    font-weight: 800;
+    color: #ffffff;
+    background: rgba(0,166,153,0.12);
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 4px 18px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-top: 10px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 2em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin: 3px 2px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-hard { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+  /* NAV */
+  .toc {
+    background: #f8fafc;
+    padding: 24px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .toc h2 {
+    color: var(--secondary);
+    margin-bottom: 14px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .toc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 7px 18px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.82em;
+    transition: all 0.3s;
+  }
+  .toc a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* CONTAINER */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+
+  /* SECTION */
+  .section {
+    padding: 50px 0 30px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .section:last-of-type { border-bottom: none; }
+  .section-label {
+    display: inline-block;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--secondary);
+    background: rgba(0,166,153,0.1);
+    border: 1px solid rgba(0,166,153,0.25);
+    padding: 4px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .section h2 {
+    font-size: 1.9em;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.3;
+  }
+  .section h3 {
+    font-size: 1.3em;
+    color: var(--primary);
+    margin: 28px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,90,95,0.15);
+  }
+  .section h4 {
+    font-size: 1.05em;
+    color: var(--blue);
+    margin: 20px 0 10px;
+  }
+  .section p {
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    font-size: 0.95em;
+  }
+  .section ul, .section ol {
+    color: var(--text-muted);
+    margin: 10px 0 18px 24px;
+    font-size: 0.93em;
+  }
+  .section li { margin-bottom: 6px; }
+  .section li strong { color: var(--text); }
+
+  /* CARDS */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 26px;
+    margin: 18px 0;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(255,90,95,0.3); }
+  .card h4 {
+    color: var(--accent);
+    font-size: 1.05em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card p { font-size: 0.9em; color: var(--text-muted); margin-bottom: 10px; }
+
+  /* GRID LAYOUTS */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 18px 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin: 18px 0;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 16px 0;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.84em;
+    line-height: 1.7;
+    color: #6e7781;
+    position: relative;
+  }
+  .code-block .code-label {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-size: 0.7em;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .code-block pre { margin: 0; white-space: pre; }
+  .kw { color: #cf222e; }
+  .fn { color: #8250df; }
+  .str { color: #0a3069; }
+  .cm { color: #6e7781; }
+  .num { color: #0550ae; }
+  .type { color: #953800; }
+  .op { color: #cf222e; }
+  .var { color: #953800; }
+
+  /* TABLES */
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 18px 0;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  thead th {
+    background: rgba(255,90,95,0.1);
+    color: var(--primary);
+    font-weight: 700;
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 2px solid var(--primary);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody tr:last-child td { border-bottom: none; }
+  td strong { color: var(--text); }
+  td code {
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--accent);
+  }
+  .tag-yes { color: var(--success); font-weight: 600; }
+  .tag-no { color: var(--danger); font-weight: 600; }
+  .tag-partial { color: var(--warning); font-weight: 600; }
+
+  /* CALLOUT */
+  .callout {
+    border-left: 4px solid var(--secondary);
+    background: rgba(0,166,153,0.06);
+    padding: 18px 22px;
+    border-radius: 0 10px 10px 0;
+    margin: 18px 0;
+    font-size: 0.92em;
+    color: var(--text-muted);
+  }
+  .callout strong { color: var(--text); }
+  .callout-warn {
+    border-left-color: var(--warning);
+    background: rgba(245,158,11,0.06);
+  }
+  .callout-warn strong { color: var(--warning); }
+  .callout-danger {
+    border-left-color: var(--danger);
+    background: rgba(239,68,68,0.06);
+  }
+  .callout-danger strong { color: var(--danger); }
+  .callout-info {
+    border-left-color: var(--blue);
+    background: rgba(66,139,249,0.06);
+  }
+  .callout-info strong { color: var(--blue); }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-diagram {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    padding: 30px;
+    margin: 22px 0;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.78em;
+    line-height: 1.5;
+    color: #6e7781;
+  }
+  .arch-diagram pre { margin: 0; white-space: pre; }
+  .arch-diagram .layer-label { color: var(--primary); font-weight: 700; }
+  .arch-diagram .component { color: var(--text); }
+  .arch-diagram .arrow { color: var(--accent); }
+  .arch-diagram .storage { color: var(--purple); }
+  .arch-diagram .note { color: #6e7781; }
+
+  /* METRIC HIGHLIGHT */
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .metric-box {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+  .metric-box:hover { border-color: rgba(255,90,95,0.4); }
+  .metric-box .metric-val {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-box .metric-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-top: 4px;
+  }
+
+  /* INTERVIEW TIP BOX */
+  .tip-box {
+    background: linear-gradient(135deg, rgba(123,47,247,0.08), rgba(66,139,249,0.08));
+    border: 1px solid rgba(123,47,247,0.25);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 18px 0;
+  }
+  .tip-box h4 {
+    color: var(--purple);
+    margin-bottom: 10px;
+    font-size: 1em;
+  }
+  .tip-box p, .tip-box li {
+    color: var(--text-muted);
+    font-size: 0.9em;
+  }
+
+  /* LEVEL CALIBRATION */
+  .level-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .level-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 22px 26px;
+    border-left: 4px solid var(--card-border);
+  }
+  .level-card.l4 { border-left-color: var(--success); }
+  .level-card.l5 { border-left-color: var(--blue); }
+  .level-card.l6 { border-left-color: var(--purple); }
+  .level-card.l6plus { border-left-color: var(--primary); }
+  .level-card h4 {
+    margin-bottom: 8px;
+    font-size: 1em;
+  }
+  .level-card.l4 h4 { color: var(--success); }
+  .level-card.l5 h4 { color: var(--blue); }
+  .level-card.l6 h4 { color: var(--purple); }
+  .level-card.l6plus h4 { color: var(--primary); }
+  .level-card p, .level-card li { font-size: 0.88em; color: var(--text-muted); }
+
+  /* STRONG YES BOX */
+  .strong-yes {
+    background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(0,166,153,0.15));
+    border: 2px solid var(--success);
+    border-radius: 14px;
+    padding: 26px 28px;
+    margin: 22px 0;
+  }
+  .strong-yes h4 {
+    color: var(--success);
+    font-size: 1.15em;
+    margin-bottom: 12px;
+  }
+  .strong-yes li {
+    color: var(--text-muted);
+    font-size: 0.92em;
+    margin-bottom: 6px;
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 40px 30px;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid #e5e7eb;
+  }
+  .footer a { color: var(--secondary); text-decoration: none; }
+  .footer a:hover { color: var(--primary); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero { padding: 50px 20px 40px; }
+    .hero h1 { font-size: 1.8em; }
+    .hero .subtitle { font-size: 1em; }
+    .hero .stats-row { gap: 20px; }
+    .hero .stat-value { font-size: 1.5em; }
+    .toc { padding: 16px 20px; }
+    .container { padding: 0 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .metric-row { grid-template-columns: 1fr 1fr; }
+    .section h2 { font-size: 1.5em; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.4em; }
+    .metric-row { grid-template-columns: 1fr; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--  HERO                                                         -->
+<!-- ============================================================ -->
+<div class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <div class="topic-number-hero">Topic 06</div>
+  <h1>Airbnb Data Instrumentation System</h1>
+  <p class="subtitle">Collect user activities from web, iOS, and Android. Serve periodic aggregate metrics for internal dashboards.</p>
+  <div style="position:relative; margin-top:12px;">
+    <span class="badge badge-hard">Hard</span>
+    <span class="badge badge-red">Time-Series</span>
+    <span class="badge badge-green">Stream Processing</span>
+    <span class="badge badge-blue">Lambda Architecture</span>
+    <span class="badge badge-purple">TSDB</span>
+    <span class="badge badge-orange">High Write Throughput</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">10K</div>
+      <div class="stat-label">Writes / sec</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">864M</div>
+      <div class="stat-label">Events / day</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">3.15PB</div>
+      <div class="stat-label">10-Year Storage</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">1K</div>
+      <div class="stat-label">Reads / day</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  NAV                                                          -->
+<!-- ============================================================ -->
+<nav class="toc">
+  <h2>Sections</h2>
+  <div class="toc-grid">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements &amp; Capacity</a>
+    <a href="#data-model">Data Model</a>
+    <a href="#ingestion">Ingestion Framework</a>
+    <a href="#storage">Storage Solutions</a>
+    <a href="#aggregation">Aggregation Pipeline</a>
+    <a href="#query-api">Query API</a>
+    <a href="#architecture">Architecture Diagram</a>
+    <a href="#retention">Retention &amp; Rollups</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#followup">Follow-up Questions</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!--  SECTION 1: OVERVIEW                                          -->
+<!-- ============================================================ -->
+<section class="section" id="overview">
+  <span class="section-label">Section 1</span>
+  <h2>System Overview</h2>
+
+  <p>The Airbnb Data Instrumentation System is a <strong style="color:var(--text);">time-series metrics platform</strong> that collects user activities -- searches, bookings, clicks, page views -- from all client platforms (web, iOS, Android) and serves periodic aggregate metrics for internal consumption by product, engineering, and business intelligence teams.</p>
+
+  <div class="callout">
+    <strong>Core Interview Prompt:</strong> "How many iOS bookings in Europe yesterday between 9:05 and 9:08 AM?" or "How many web searches in the US over the past 2 days?" -- Design a system that can answer these questions efficiently at scale.
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>&#9889; The Write-Heavy Challenge</h4>
+      <p>10,000 events per second steady state, bursting to 100K during peak. Every user interaction across every platform generates an event. The system must ingest without blocking the client and without losing data.</p>
+    </div>
+    <div class="card">
+      <h4>&#128269; The Read Pattern</h4>
+      <p>Only ~1,000 queries per day -- internal dashboards, ad-hoc analysis, weekly reports. Reads are infrequent but require scanning large time ranges with flexible filtering by event type, device, region, and time granularity.</p>
+    </div>
+  </div>
+
+  <p>This asymmetry -- <strong style="color:var(--text);">high write rate, low read rate</strong> -- fundamentally shapes every architectural decision. We optimize the write path for throughput and the read path for flexibility, accepting that reads may be slightly slower in exchange for vastly simpler write-side engineering.</p>
+
+  <h3>Key Characteristics</h3>
+  <ul>
+    <li><strong>Time-series data</strong> -- events are immutable, append-only, naturally ordered by timestamp</li>
+    <li><strong>Multi-dimensional filtering</strong> -- queries filter by event_type, device, region, locale, and arbitrary time ranges</li>
+    <li><strong>Aggregation-first reads</strong> -- almost all queries request counts, sums, averages over time windows (not individual events)</li>
+    <li><strong>Eventual consistency is acceptable</strong> -- a few seconds of lag between event emission and query availability is fine for analytics</li>
+    <li><strong>Long retention</strong> -- raw events stored for 10 years for compliance, auditing, and reprocessing</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 2: REQUIREMENTS & CAPACITY                           -->
+<!-- ============================================================ -->
+<section class="section" id="requirements">
+  <span class="section-label">Section 2</span>
+  <h2>Requirements &amp; Capacity Estimation</h2>
+
+  <h3>Functional Requirements</h3>
+  <ol>
+    <li><strong>Event Ingestion</strong> -- Collect user activity events (search, booking, click, impression, page_view) from web, iOS, and Android clients</li>
+    <li><strong>Flexible Querying</strong> -- Answer aggregate queries filtered by event_type, device, region, and arbitrary time ranges with minute-level granularity</li>
+    <li><strong>Dashboard Serving</strong> -- Serve pre-computed dashboards showing key metrics (bookings/hour, searches/day by region)</li>
+    <li><strong>Data Retention</strong> -- Store raw events for 10 years; serve aggregated metrics at varying granularities</li>
+  </ol>
+
+  <h3>Non-Functional Requirements</h3>
+  <ul>
+    <li><strong>Availability &gt; Consistency</strong> -- ingestion must never block clients; analytics lag of seconds-to-minutes is acceptable</li>
+    <li><strong>Durability</strong> -- no event loss for billing/booking events; best-effort acceptable for impressions/clicks</li>
+    <li><strong>Scalability</strong> -- handle 10x traffic spikes without data loss</li>
+    <li><strong>Query Latency</strong> -- sub-second for recent data (last 24h), seconds-to-minutes for historical ranges</li>
+  </ul>
+
+  <h3>Capacity Estimation</h3>
+
+  <div class="metric-row">
+    <div class="metric-box">
+      <div class="metric-val">10K/s</div>
+      <div class="metric-label">Steady-State Writes</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">100K/s</div>
+      <div class="metric-label">Peak Writes (10x)</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">864M</div>
+      <div class="metric-label">Events per Day</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">~0.012/s</div>
+      <div class="metric-label">Read QPS</div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Calculation</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Events/day</strong></td>
+          <td>10,000 events/s x 86,400 s/day</td>
+          <td><strong style="color:var(--primary);">864 million</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Daily storage (raw)</strong></td>
+          <td>864M events x 1 KB/event</td>
+          <td><strong style="color:var(--primary);">864 GB/day</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Annual storage</strong></td>
+          <td>864 GB/day x 365 days</td>
+          <td><strong style="color:var(--primary);">~315 TB/year</strong></td>
+        </tr>
+        <tr>
+          <td><strong>10-year storage</strong></td>
+          <td>315 TB/year x 10</td>
+          <td><strong style="color:var(--primary);">~3.15 PB</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Kafka throughput</strong></td>
+          <td>10K events/s x 1KB + overhead</td>
+          <td><strong style="color:var(--primary);">~12 MB/s steady, ~120 MB/s peak</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Read QPS</strong></td>
+          <td>1,000 queries / 86,400 sec</td>
+          <td><strong style="color:var(--primary);">~0.012 QPS (trivial)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Aggregation rows (minute)</strong></td>
+          <td>1,440 min/day x ~50 dimension combos</td>
+          <td><strong style="color:var(--primary);">~72K rows/day</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Key Insight:</strong> The read rate is so low (~0.012 QPS) that virtually any storage system can handle it. The entire design is dominated by the write path -- how to ingest 864M events/day reliably, store 3.15 PB over 10 years cheaply, and pre-aggregate data so that even complex queries complete fast.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 3: RAW EVENT DATA MODEL                              -->
+<!-- ============================================================ -->
+<section class="section" id="data-model">
+  <span class="section-label">Section 3</span>
+  <h2>Raw Event Data Model</h2>
+
+  <p>Every user activity generates an event with these core fields:</p>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Example</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>event_id</code></td>
+          <td>UUID</td>
+          <td>550e8400-e29b...</td>
+          <td>Deduplication key</td>
+        </tr>
+        <tr>
+          <td><code>event_type</code></td>
+          <td>ENUM</td>
+          <td>booking, search, click</td>
+          <td>Primary query dimension</td>
+        </tr>
+        <tr>
+          <td><code>timestamp</code></td>
+          <td>INT64 (epoch ms)</td>
+          <td>1706745600000</td>
+          <td>Event time (client-side)</td>
+        </tr>
+        <tr>
+          <td><code>server_ts</code></td>
+          <td>INT64 (epoch ms)</td>
+          <td>1706745600123</td>
+          <td>Server receive time</td>
+        </tr>
+        <tr>
+          <td><code>device</code></td>
+          <td>ENUM</td>
+          <td>web, ios, android</td>
+          <td>Client platform filter</td>
+        </tr>
+        <tr>
+          <td><code>region</code></td>
+          <td>STRING</td>
+          <td>europe, us, apac</td>
+          <td>Geographic dimension</td>
+        </tr>
+        <tr>
+          <td><code>locale</code></td>
+          <td>STRING</td>
+          <td>en-US, fr-FR</td>
+          <td>Language/locale filter</td>
+        </tr>
+        <tr>
+          <td><code>user_id</code></td>
+          <td>STRING</td>
+          <td>usr_abc123</td>
+          <td>User attribution</td>
+        </tr>
+        <tr>
+          <td><code>metadata</code></td>
+          <td>JSON</td>
+          <td>{"listing_id": "L42", "price": 150}</td>
+          <td>Event-specific payload</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Schema Option 1: Relational SQL</h3>
+
+  <div class="code-block">
+    <span class="code-label">SQL</span>
+    <pre><span class="kw">CREATE TABLE</span> <span class="fn">events</span> (
+    <span class="var">event_id</span>     <span class="type">UUID</span>         <span class="kw">PRIMARY KEY</span>,
+    <span class="var">event_type</span>   <span class="type">VARCHAR(32)</span>  <span class="kw">NOT NULL</span>,
+    <span class="var">timestamp</span>    <span class="type">BIGINT</span>       <span class="kw">NOT NULL</span>,
+    <span class="var">device</span>       <span class="type">VARCHAR(16)</span>  <span class="kw">NOT NULL</span>,
+    <span class="var">region</span>       <span class="type">VARCHAR(32)</span>  <span class="kw">NOT NULL</span>,
+    <span class="var">locale</span>       <span class="type">VARCHAR(10)</span>,
+    <span class="var">user_id</span>      <span class="type">VARCHAR(64)</span>,
+    <span class="var">metadata</span>     <span class="type">JSONB</span>
+);
+
+<span class="cm">-- Index for time-range + dimension queries</span>
+<span class="kw">CREATE INDEX</span> <span class="fn">idx_events_type_ts</span>
+    <span class="kw">ON</span> events(event_type, timestamp);
+<span class="kw">CREATE INDEX</span> <span class="fn">idx_events_device_region_ts</span>
+    <span class="kw">ON</span> events(device, region, timestamp);
+
+<span class="cm">-- Example query: iOS bookings in Europe, yesterday 9:05-9:08 AM</span>
+<span class="kw">SELECT COUNT</span>(*) <span class="kw">FROM</span> events
+<span class="kw">WHERE</span> event_type = <span class="str">'booking'</span>
+  <span class="kw">AND</span> device = <span class="str">'ios'</span>
+  <span class="kw">AND</span> region = <span class="str">'europe'</span>
+  <span class="kw">AND</span> timestamp <span class="kw">BETWEEN</span> <span class="num">1706767500000</span> <span class="kw">AND</span> <span class="num">1706767680000</span>;</pre>
+  </div>
+
+  <div class="callout callout-danger">
+    <strong>Why SQL fails at scale:</strong> With 864M inserts/day, a single Postgres instance maxes out at ~50K inserts/sec with indexes. Range scans over billions of rows become prohibitively slow. Sharding by time helps but complicates cross-shard queries. Index maintenance at this volume creates massive write amplification.
+  </div>
+
+  <h3>Schema Option 2: NoSQL (BigTable / Cassandra)</h3>
+
+  <div class="code-block">
+    <span class="code-label">BigTable-style</span>
+    <pre><span class="cm">// RowKey design: EventType:ReverseTimestamp:Salt</span>
+<span class="cm">// Reverse timestamp = MAX_LONG - timestamp (for recency ordering)</span>
+<span class="cm">// Salt = hash(user_id) % 16 (to avoid hotspotting)</span>
+
+<span class="var">RowKey</span>: <span class="str">"booking:9999999998293232400:07"</span>
+
+<span class="var">Column Family</span>: <span class="type">"tags"</span>
+  <span class="var">tags:device</span>    = <span class="str">"ios"</span>
+  <span class="var">tags:region</span>    = <span class="str">"europe"</span>
+  <span class="var">tags:locale</span>    = <span class="str">"en-GB"</span>
+  <span class="var">tags:user_id</span>   = <span class="str">"usr_abc123"</span>
+
+<span class="var">Column Family</span>: <span class="type">"data"</span>
+  <span class="var">data:metadata</span>  = <span class="str">'{"listing_id":"L42","price":150}'</span>
+  <span class="var">data:event_id</span>  = <span class="str">"550e8400-e29b..."</span>
+
+<span class="cm">// Scan for bookings in a time range:</span>
+<span class="cm">// StartRow = "booking:{reverse_end_ts}:00"</span>
+<span class="cm">// StopRow  = "booking:{reverse_start_ts}:FF"</span>
+<span class="cm">// Filter   = SingleColumnValueFilter("tags","device","=","ios")</span>
+<span class="cm">//           AND SingleColumnValueFilter("tags","region","=","europe")</span></pre>
+  </div>
+
+  <h3>Schema Option 3: Time-Series DB (InfluxDB / TimescaleDB)</h3>
+
+  <div class="code-block">
+    <span class="code-label">TSDB (InfluxDB Line Protocol)</span>
+    <pre><span class="cm"># Measurement + Tags + Fields + Timestamp</span>
+<span class="cm"># Tags are indexed; Fields are not</span>
+
+<span class="fn">user_event</span>,<span class="var">event_type</span>=<span class="str">booking</span>,<span class="var">device</span>=<span class="str">ios</span>,<span class="var">region</span>=<span class="str">europe</span>,<span class="var">locale</span>=<span class="str">en-GB</span> <span class="var">count</span>=<span class="num">1</span>i,<span class="var">user_id</span>=<span class="str">"usr_abc123"</span>,<span class="var">listing_id</span>=<span class="str">"L42"</span> <span class="num">1706767500000000000</span>
+
+<span class="cm"># Query: iOS bookings in Europe, 9:05-9:08 AM yesterday</span>
+<span class="kw">SELECT</span> <span class="fn">COUNT</span>(<span class="var">count</span>) <span class="kw">FROM</span> <span class="fn">user_event</span>
+<span class="kw">WHERE</span> <span class="var">event_type</span> = <span class="str">'booking'</span>
+  <span class="kw">AND</span> <span class="var">device</span> = <span class="str">'ios'</span>
+  <span class="kw">AND</span> <span class="var">region</span> = <span class="str">'europe'</span>
+  <span class="kw">AND</span> <span class="var">time</span> &gt;= <span class="str">'2024-02-01T09:05:00Z'</span>
+  <span class="kw">AND</span> <span class="var">time</span> &lt;  <span class="str">'2024-02-01T09:08:00Z'</span>
+
+<span class="cm"># Continuous query for auto-rollup:</span>
+<span class="kw">CREATE CONTINUOUS QUERY</span> <span class="fn">cq_1h</span> <span class="kw">ON</span> <span class="str">airbnb_metrics</span>
+<span class="kw">BEGIN</span>
+  <span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">INTO</span> <span class="fn">user_event_1h</span>
+  <span class="kw">FROM</span> <span class="fn">user_event</span>
+  <span class="kw">GROUP BY</span> <span class="fn">time</span>(<span class="num">1h</span>), <span class="var">event_type</span>, <span class="var">device</span>, <span class="var">region</span>
+<span class="kw">END</span></pre>
+  </div>
+
+  <h3>Schema Comparison</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>SQL (Postgres)</th>
+          <th>NoSQL (BigTable/Cassandra)</th>
+          <th>TSDB (InfluxDB/TimescaleDB)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Write throughput</strong></td>
+          <td class="tag-no">~50K/s (with tuning)</td>
+          <td class="tag-yes">Millions/s (distributed)</td>
+          <td class="tag-yes">Hundreds of K/s</td>
+        </tr>
+        <tr>
+          <td><strong>Time-range scans</strong></td>
+          <td class="tag-partial">Slow on billions of rows</td>
+          <td class="tag-partial">Efficient with RowKey prefix</td>
+          <td class="tag-yes">Purpose-built, extremely fast</td>
+        </tr>
+        <tr>
+          <td><strong>Tag-based filtering</strong></td>
+          <td class="tag-yes">Standard WHERE clauses</td>
+          <td class="tag-partial">Column value filters (slower)</td>
+          <td class="tag-yes">Native tag indexing</td>
+        </tr>
+        <tr>
+          <td><strong>Built-in rollups</strong></td>
+          <td class="tag-no">Manual via cron/ETL</td>
+          <td class="tag-no">Manual via batch jobs</td>
+          <td class="tag-yes">Continuous queries / retention policies</td>
+        </tr>
+        <tr>
+          <td><strong>Ad-hoc queries</strong></td>
+          <td class="tag-yes">Full SQL power</td>
+          <td class="tag-no">Limited to RowKey patterns</td>
+          <td class="tag-partial">InfluxQL / Flux (limited joins)</td>
+        </tr>
+        <tr>
+          <td><strong>Cost at 3.15 PB</strong></td>
+          <td class="tag-no">Extremely expensive</td>
+          <td class="tag-partial">Moderate (HDD tiers)</td>
+          <td class="tag-partial">Hot tier expensive; needs cold offload</td>
+        </tr>
+        <tr>
+          <td><strong>Operational complexity</strong></td>
+          <td class="tag-yes">Well-known, mature tooling</td>
+          <td class="tag-partial">Complex tuning, compaction</td>
+          <td class="tag-partial">Newer ecosystem, less mature</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>PE Decision:</strong> Use a hybrid approach. TSDB (InfluxDB/TimescaleDB) for hot data (last 30 days) with minute granularity. Cold storage (S3/HDFS in Parquet format) for historical data with hourly/daily rollups. This balances query speed for recent data against cost efficiency for archival storage.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 4: INGESTION FRAMEWORK                               -->
+<!-- ============================================================ -->
+<section class="section" id="ingestion">
+  <span class="section-label">Section 4</span>
+  <h2>Ingestion Framework</h2>
+
+  <p>The ingestion pipeline must handle 10K-100K events/sec from heterogeneous clients without blocking user interactions or losing critical events.</p>
+
+  <h3>End-to-End Flow</h3>
+  <div class="code-block">
+    <pre><span class="cm">Client SDK (Web/iOS/Android)</span>
+       <span class="op">|</span>
+       <span class="op">|</span> <span class="cm">HTTP POST / UDP (batch of events)</span>
+       <span class="op">v</span>
+<span class="fn">[Ingestion Service]</span> <span class="cm">(stateless, auto-scaling fleet)</span>
+       <span class="op">|</span>
+       <span class="op">|</span> <span class="cm">validate, enrich (server_ts, geo lookup), serialize to Avro/Protobuf</span>
+       <span class="op">v</span>
+<span class="fn">[Apache Kafka]</span> <span class="cm">(partitioned by event_type, buffered)</span>
+       <span class="op">|</span>
+       <span class="op">+--------+---------+</span>
+       <span class="op">|</span>        <span class="op">|</span>         <span class="op">|</span>
+       <span class="op">v</span>        <span class="op">v</span>         <span class="op">v</span>
+<span class="fn">[Flink]</span>   <span class="fn">[S3 Sink]</span>  <span class="fn">[Spark Batch]</span>
+<span class="cm">(real-time) (archive)  (daily ETL)</span></pre>
+  </div>
+
+  <h3>Client SDK Design</h3>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>&#128230; Batching &amp; Compression</h4>
+      <p>SDKs buffer events locally and flush in batches (every 5 seconds or 50 events, whichever comes first). Events are gzip-compressed before transmission. Reduces network calls from 10K/s to ~200 batch requests/s across all clients.</p>
+      <ul>
+        <li>Local queue with configurable flush interval</li>
+        <li>Persistent buffer (SQLite on mobile) for offline resilience</li>
+        <li>Automatic retry with exponential backoff</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>&#128274; Event Envelope</h4>
+      <p>Each batch request wraps events in a standard envelope with SDK version, device fingerprint, and batch sequence number for deduplication.</p>
+      <ul>
+        <li><code>sdk_version</code> for backward compatibility</li>
+        <li><code>batch_id</code> for server-side deduplication</li>
+        <li><code>client_ts</code> vs <code>server_ts</code> for clock skew handling</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Transport: Sync vs Async</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Approach</th>
+          <th>Mechanism</th>
+          <th>Pros</th>
+          <th>Cons</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Synchronous HTTP POST</strong></td>
+          <td>Client waits for 200 OK</td>
+          <td>Delivery confirmation; client can retry on failure</td>
+          <td>Blocks UI thread (mitigated by background thread); higher latency</td>
+          <td>Critical events (bookings, payments)</td>
+        </tr>
+        <tr>
+          <td><strong>Async Fire-and-Forget</strong></td>
+          <td>UDP or HTTP POST without waiting</td>
+          <td>No client blocking; minimal latency; higher throughput</td>
+          <td>No delivery guarantee; events may be lost on network failure</td>
+          <td>High-volume counters (impressions, clicks)</td>
+        </tr>
+        <tr>
+          <td><strong>Beacon API (Web)</strong></td>
+          <td>navigator.sendBeacon()</td>
+          <td>Survives page unload; non-blocking; browser-managed</td>
+          <td>No response; limited payload size (64KB)</td>
+          <td>Page view / session end events on web</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ingestion Service</h3>
+
+  <div class="code-block">
+    <span class="code-label">Ingestion Service</span>
+    <pre><span class="kw">POST</span> <span class="str">/v1/events/batch</span>
+<span class="cm">Headers:</span>
+  <span class="var">Content-Type</span>: <span class="str">application/protobuf</span>
+  <span class="var">X-SDK-Version</span>: <span class="str">3.2.1</span>
+  <span class="var">X-Batch-ID</span>:   <span class="str">b_7f3a2c...</span>
+
+<span class="cm">Body: EventBatch {</span>
+  <span class="var">events</span>: [
+    { <span class="var">event_type</span>: <span class="str">"booking"</span>, <span class="var">timestamp</span>: <span class="num">1706767500000</span>, <span class="var">device</span>: <span class="str">"ios"</span>, ... },
+    { <span class="var">event_type</span>: <span class="str">"search"</span>,  <span class="var">timestamp</span>: <span class="num">1706767500123</span>, <span class="var">device</span>: <span class="str">"ios"</span>, ... },
+    ...
+  ]
+<span class="cm">}</span>
+
+<span class="cm">// Service responsibilities:</span>
+<span class="cm">// 1. Schema validation (reject malformed events)</span>
+<span class="cm">// 2. Enrich: attach server_ts, resolve IP -> region via GeoIP</span>
+<span class="cm">// 3. Normalize: map device strings to enums</span>
+<span class="cm">// 4. Serialize to Avro (compact, schema-evolved)</span>
+<span class="cm">// 5. Produce to Kafka topic partitioned by event_type</span>
+<span class="cm">// 6. Return 202 Accepted (async acknowledgment)</span></pre>
+  </div>
+
+  <h3>Kafka as the Central Buffer</h3>
+
+  <div class="card">
+    <h4>&#128640; Why Kafka?</h4>
+    <p>Kafka decouples ingestion speed from downstream processing speed. If Flink or the TSDB falls behind, Kafka absorbs the backpressure. Events are replayed from any offset for reprocessing.</p>
+    <ul>
+      <li><strong>Topic design:</strong> <code>events.booking</code>, <code>events.search</code>, <code>events.click</code> -- partitioned by <code>hash(region + device) % N</code></li>
+      <li><strong>Partition count:</strong> 64 partitions per topic for parallelism</li>
+      <li><strong>Retention:</strong> 7 days in Kafka (sufficient for replay scenarios)</li>
+      <li><strong>Replication factor:</strong> 3 (standard durability)</li>
+      <li><strong>Throughput:</strong> 12 MB/s steady, Kafka cluster handles 100+ MB/s easily</li>
+    </ul>
+  </div>
+
+  <h3>Delivery Guarantees</h3>
+
+  <div class="callout">
+    <strong>At-least-once delivery is sufficient for analytics.</strong> Duplicate events inflate counts marginally (acceptable for dashboards). If exact-once is needed (e.g., billing), use Kafka Transactions + idempotent consumer with event_id deduplication window. For general analytics, at-least-once with approximate counting is the standard industry practice.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 5: STORAGE SOLUTIONS                                 -->
+<!-- ============================================================ -->
+<section class="section" id="storage">
+  <span class="section-label">Section 5</span>
+  <h2>Storage Solutions Deep Dive</h2>
+
+  <p>Storage is the most critical decision in this system. We need to balance write throughput, query flexibility, cost, and a 10-year retention requirement across 3.15 PB of data.</p>
+
+  <h3>Option 1: Relational SQL (PostgreSQL / MySQL)</h3>
+
+  <div class="card">
+    <h4>&#128451; SQL Database</h4>
+    <p><strong>Architecture:</strong> Time-partitioned tables (one partition per day), composite indexes on (event_type, device, region, timestamp).</p>
+    <ul>
+      <li class="tag-yes">Easy to understand, standard SQL queries, strong consistency</li>
+      <li class="tag-yes">Excellent ad-hoc query flexibility with JOINs</li>
+      <li class="tag-no">Write throughput caps at ~50K/s per node even with batch inserts</li>
+      <li class="tag-no">Index maintenance at 864M rows/day creates massive write amplification</li>
+      <li class="tag-no">Full table scans over large time ranges (e.g., "past 2 days" = 1.7B rows) are prohibitively slow</li>
+      <li class="tag-no">Storage cost at PB scale is extreme (SSD-backed for any reasonable query speed)</li>
+    </ul>
+    <p><strong>Verdict:</strong> Only viable for small-scale prototypes or as a metadata/config store. Not suitable as the primary event store.</p>
+  </div>
+
+  <h3>Option 2: NoSQL (BigTable / Cassandra)</h3>
+
+  <div class="card">
+    <h4>&#9889; Wide-Column Store</h4>
+    <p><strong>Architecture:</strong> RowKey = <code>EventType:ReverseTimestamp:Salt</code>. Reverse timestamp ensures newest data is co-located for efficient range scans. Salt (hash % 16) distributes writes to avoid hotspotting on a single tablet.</p>
+    <ul>
+      <li class="tag-yes">Excellent write throughput (millions of writes/sec across cluster)</li>
+      <li class="tag-yes">Linear horizontal scalability</li>
+      <li class="tag-yes">Reverse timestamp ordering for efficient recency queries</li>
+      <li class="tag-yes">Tunable consistency (write to quorum for durability)</li>
+      <li class="tag-partial">Range scans efficient only along RowKey prefix; cross-dimension queries require full scan + filter</li>
+      <li class="tag-no">No native aggregation -- all counting done client-side or via MapReduce</li>
+      <li class="tag-no">Salt makes exact time-range scans require N parallel scans (one per salt bucket)</li>
+      <li class="tag-no">Compaction storms under sustained high write load</li>
+    </ul>
+    <p><strong>Verdict:</strong> Strong choice for raw event storage. Pair with a pre-aggregation layer for query efficiency.</p>
+  </div>
+
+  <h3>Option 3: TSDB (InfluxDB / TimescaleDB)</h3>
+
+  <div class="card">
+    <h4>&#128200; Time-Series Database</h4>
+    <p><strong>Architecture:</strong> Measurement = <code>user_event</code>, Tags = [event_type, device, region], Fields = [count, user_id, metadata]. Automatic time-bucketed storage with compression.</p>
+    <ul>
+      <li class="tag-yes">Purpose-built for time-series: compresses timestamps, delta-encodes values</li>
+      <li class="tag-yes">Native tag indexing makes multi-dimensional queries fast</li>
+      <li class="tag-yes">Built-in continuous queries for automatic rollups</li>
+      <li class="tag-yes">Retention policies auto-delete expired data</li>
+      <li class="tag-yes">10:1 compression on time-series data (864 GB/day compresses to ~86 GB)</li>
+      <li class="tag-partial">High-cardinality tags (e.g., user_id as tag) cause performance degradation</li>
+      <li class="tag-partial">Limited JOIN support -- not a general-purpose query engine</li>
+      <li class="tag-no">Storing 3.15 PB in TSDB alone is cost-prohibitive</li>
+    </ul>
+    <p><strong>Verdict:</strong> Ideal for the hot/warm tier (last 30 days). Pre-aggregated data makes queries instantaneous. Must offload cold data to cheaper storage.</p>
+  </div>
+
+  <h3>Option 4: Offline Analytics (S3/HDFS + Presto/Spark SQL)</h3>
+
+  <div class="card">
+    <h4>&#128451; Data Lake</h4>
+    <p><strong>Architecture:</strong> Raw events stored as Parquet files in S3, partitioned by <code>date/event_type/region</code>. Query via Presto/Athena for ad-hoc analysis. Pre-computed rollups loaded into a fast serving layer.</p>
+    <ul>
+      <li class="tag-yes">Cheapest storage option by far (~$23/TB/month on S3 Standard, ~$4/TB on Glacier)</li>
+      <li class="tag-yes">3.15 PB on S3 Glacier = ~$12,600/month (vs millions for TSDB or Cassandra)</li>
+      <li class="tag-yes">Parquet columnar format enables efficient scans and compression</li>
+      <li class="tag-yes">Unlimited ad-hoc query flexibility via Presto/SparkSQL</li>
+      <li class="tag-yes">Decoupled storage and compute (pay only when querying)</li>
+      <li class="tag-partial">Query latency: seconds to minutes depending on data volume scanned</li>
+      <li class="tag-no">Not suitable for real-time or sub-second queries without pre-computation</li>
+      <li class="tag-no">Requires a separate orchestration layer (Airflow) for ETL jobs</li>
+    </ul>
+    <p><strong>Verdict:</strong> The cold storage tier. All raw events end up here. Batch jobs read from here to compute daily/hourly aggregates.</p>
+  </div>
+
+  <h3>Storage Comparison Matrix</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Criteria</th>
+          <th>SQL</th>
+          <th>NoSQL</th>
+          <th>TSDB</th>
+          <th>S3 + Presto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Write throughput</strong></td>
+          <td class="tag-no">Low</td>
+          <td class="tag-yes">Very High</td>
+          <td class="tag-yes">High</td>
+          <td class="tag-yes">Append-only</td>
+        </tr>
+        <tr>
+          <td><strong>Query latency (recent)</strong></td>
+          <td class="tag-partial">Medium</td>
+          <td class="tag-partial">Medium</td>
+          <td class="tag-yes">Sub-second</td>
+          <td class="tag-no">Seconds-minutes</td>
+        </tr>
+        <tr>
+          <td><strong>Query latency (historical)</strong></td>
+          <td class="tag-no">Very slow</td>
+          <td class="tag-partial">Slow</td>
+          <td class="tag-partial">Moderate</td>
+          <td class="tag-partial">Seconds-minutes</td>
+        </tr>
+        <tr>
+          <td><strong>Cost at PB scale</strong></td>
+          <td class="tag-no">$$$$$</td>
+          <td class="tag-partial">$$$</td>
+          <td class="tag-partial">$$$</td>
+          <td class="tag-yes">$</td>
+        </tr>
+        <tr>
+          <td><strong>Auto rollups</strong></td>
+          <td class="tag-no">No</td>
+          <td class="tag-no">No</td>
+          <td class="tag-yes">Yes</td>
+          <td class="tag-no">No (Spark jobs)</td>
+        </tr>
+        <tr>
+          <td><strong>Ad-hoc flexibility</strong></td>
+          <td class="tag-yes">Full SQL</td>
+          <td class="tag-no">RowKey only</td>
+          <td class="tag-partial">InfluxQL</td>
+          <td class="tag-yes">Full SQL</td>
+        </tr>
+        <tr>
+          <td><strong>Operational maturity</strong></td>
+          <td class="tag-yes">Excellent</td>
+          <td class="tag-partial">Complex</td>
+          <td class="tag-partial">Growing</td>
+          <td class="tag-yes">Mature (AWS)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Recommended Architecture (Tiered Storage):</strong><br>
+    <strong>Hot (0-30 days):</strong> TSDB (InfluxDB/TimescaleDB) -- minute granularity, sub-second queries<br>
+    <strong>Warm (30 days - 1 year):</strong> TSDB or Cassandra with hourly rollups<br>
+    <strong>Cold (1-10 years):</strong> S3 Parquet + Presto -- daily rollups, cents per TB<br>
+    <strong>Archive (raw events, 10 years):</strong> S3 Glacier -- for compliance and reprocessing
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 6: AGGREGATION PIPELINE                              -->
+<!-- ============================================================ -->
+<section class="section" id="aggregation">
+  <span class="section-label">Section 6</span>
+  <h2>Aggregation Pipeline</h2>
+
+  <p>Raw events are too voluminous to query directly at scale. Pre-aggregation converts 864M daily events into ~72K aggregate rows, making queries 10,000x faster.</p>
+
+  <h3>Real-Time Path: Apache Flink</h3>
+
+  <div class="card">
+    <h4>&#9889; Stream Processing</h4>
+    <p>Flink consumes from Kafka topics in real-time, computes per-minute window aggregates, and writes results to the TSDB. This provides near-real-time metrics (seconds of latency).</p>
+  </div>
+
+  <div class="code-block">
+    <span class="code-label">Flink Streaming Job (Pseudo-code)</span>
+    <pre><span class="cm">// Flink job: real-time minute-level aggregation</span>
+
+<span class="var">kafkaSource</span>
+  .keyBy(<span class="str">"event_type"</span>, <span class="str">"device"</span>, <span class="str">"region"</span>)   <span class="cm">// Group by dimensions</span>
+  .window(TumblingEventTimeWindows.of(Time.minutes(<span class="num">1</span>)))
+  .allowedLateness(Time.minutes(<span class="num">5</span>))            <span class="cm">// Handle late events</span>
+  .trigger(EventTimeTrigger.create())
+  .aggregate(<span class="kw">new</span> <span class="fn">CountAggregator</span>())              <span class="cm">// COUNT per window</span>
+  .addSink(<span class="fn">tsdbSink</span>)                              <span class="cm">// Write to InfluxDB/TimescaleDB</span>
+
+<span class="cm">// Output per window:</span>
+<span class="cm">// {</span>
+<span class="cm">//   window_start: "2024-02-01T09:05:00Z",</span>
+<span class="cm">//   window_end:   "2024-02-01T09:06:00Z",</span>
+<span class="cm">//   event_type:   "booking",</span>
+<span class="cm">//   device:       "ios",</span>
+<span class="cm">//   region:       "europe",</span>
+<span class="cm">//   count:        47</span>
+<span class="cm">// }</span></pre>
+  </div>
+
+  <h3>Batch Path: Apache Spark</h3>
+
+  <div class="card">
+    <h4>&#128451; Daily Batch Recomputation</h4>
+    <p>A daily Spark job reads the full day's raw events from S3 (Parquet), computes accurate aggregates at minute/hourly/daily granularity, and overwrites the TSDB and serving tables. This corrects for any late-arriving events or Flink processing errors.</p>
+  </div>
+
+  <div class="code-block">
+    <span class="code-label">Spark Batch Job</span>
+    <pre><span class="cm"># Daily Spark job: authoritative aggregation from S3</span>
+
+<span class="var">raw_events</span> = spark.read.parquet(<span class="str">"s3://airbnb-events/date=2024-02-01/"</span>)
+
+<span class="cm"># Minute-level aggregates</span>
+<span class="var">minute_agg</span> = raw_events \
+  .withColumn(<span class="str">"minute"</span>, date_trunc(<span class="str">"minute"</span>, col(<span class="str">"timestamp"</span>))) \
+  .groupBy(<span class="str">"event_type"</span>, <span class="str">"device"</span>, <span class="str">"region"</span>, <span class="str">"minute"</span>) \
+  .agg(count(<span class="str">"*"</span>).alias(<span class="str">"event_count"</span>))
+
+<span class="cm"># Hourly rollup</span>
+<span class="var">hourly_agg</span> = minute_agg \
+  .withColumn(<span class="str">"hour"</span>, date_trunc(<span class="str">"hour"</span>, col(<span class="str">"minute"</span>))) \
+  .groupBy(<span class="str">"event_type"</span>, <span class="str">"device"</span>, <span class="str">"region"</span>, <span class="str">"hour"</span>) \
+  .agg(sum(<span class="str">"event_count"</span>).alias(<span class="str">"event_count"</span>))
+
+<span class="cm"># Daily rollup</span>
+<span class="var">daily_agg</span> = hourly_agg \
+  .groupBy(<span class="str">"event_type"</span>, <span class="str">"device"</span>, <span class="str">"region"</span>) \
+  .agg(sum(<span class="str">"event_count"</span>).alias(<span class="str">"event_count"</span>))
+
+<span class="cm"># Write results</span>
+minute_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class="str">"s3://airbnb-agg/granularity=minute/date=2024-02-01/"</span>)
+hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class="str">"s3://airbnb-agg/granularity=hourly/date=2024-02-01/"</span>)
+<span class="cm"># Also upsert into TSDB for the serving layer</span></pre>
+  </div>
+
+  <h3>Lambda Architecture</h3>
+
+  <div class="diagram-box" style="background:rgba(0,0,0,0.05);border-radius:12px;padding:20px;overflow-x:auto;margin:20px 0;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 480" font-family="'Segoe UI', system-ui, sans-serif" style="min-width:700px;width:100%;">
+      <defs>
+        <marker id="arr-l" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+        <marker id="arr-l-o" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#FC642D"/></marker>
+        <marker id="arr-l-b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#428BF9"/></marker>
+        <marker id="arr-l-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#00A699"/></marker>
+        <marker id="arr-l-p" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7B2FF7"/></marker>
+        <linearGradient id="lg5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#D04E20"/></linearGradient>
+        <linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D0"/></linearGradient>
+        <linearGradient id="lg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6020C0"/></linearGradient>
+        <filter id="shadow-l"><feDropShadow dx="2" dy="3" stdDeviation="4" flood-opacity="0.12"/></filter>
+      </defs>
+
+      <!-- Title -->
+      <text x="410" y="24" text-anchor="middle" fill="#1e293b" font-size="15" font-weight="700">Lambda Architecture Pattern</text>
+
+      <!-- Speed layer band (top) -->
+      <rect x="210" y="82" width="395" height="155" rx="12" fill="rgba(252,100,45,0.05)" stroke="rgba(252,100,45,0.2)" stroke-width="1"/>
+      <text x="225" y="100" fill="#FC642D" font-size="9" font-weight="700" letter-spacing="1.5">SPEED LAYER (Real-time)</text>
+
+      <!-- Batch layer band (bottom) -->
+      <rect x="210" y="247" width="395" height="155" rx="12" fill="rgba(66,139,249,0.05)" stroke="rgba(66,139,249,0.2)" stroke-width="1"/>
+      <text x="225" y="265" fill="#428BF9" font-size="9" font-weight="700" letter-spacing="1.5">BATCH LAYER (Authoritative)</text>
+
+      <!-- Raw Events source -->
+      <g filter="url(#shadow-l)">
+        <rect x="20" y="45" width="110" height="50" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="75" y="68" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="700">Raw Events</text>
+        <text x="75" y="82" text-anchor="middle" fill="#94a3b8" font-size="8">from SDKs</text>
+      </g>
+
+      <!-- Kafka -->
+      <g filter="url(#shadow-l)" transform="translate(50,130)">
+        <rect x="0" y="0" width="100" height="60" rx="8" fill="#f8fafc" stroke="#ef4444" stroke-width="2"/>
+        <circle cx="22" cy="20" r="5" fill="#ef4444"/>
+        <circle cx="42" cy="14" r="5" fill="#ef4444"/>
+        <circle cx="42" cy="30" r="5" fill="#ef4444"/>
+        <line x1="27" y1="18" x2="37" y2="16" stroke="#ef4444" stroke-width="1.5"/>
+        <line x1="27" y1="22" x2="37" y2="28" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="70" y="20" fill="#fff" font-size="9" font-weight="700">KAFKA</text>
+        <text x="50" y="50" text-anchor="middle" fill="#94a3b8" font-size="7">Event Buffer</text>
+      </g>
+
+      <!-- Arrow: Raw Events -> Kafka -->
+      <line x1="75" y1="95" x2="95" y2="126" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr-l)"/>
+
+      <!-- S3 archive (side) -->
+      <g filter="url(#shadow-l)" transform="translate(15,230)">
+        <rect x="0" y="0" width="100" height="50" rx="8" fill="#f8fafc" stroke="#4caf50" stroke-width="1.5"/>
+        <polygon points="25,8 75,8 80,30 20,30" fill="#4caf50" opacity="0.3" stroke="#4caf50" stroke-width="1"/>
+        <text x="50" y="22" text-anchor="middle" fill="#4caf50" font-size="8" font-weight="700">S3</text>
+        <text x="50" y="43" text-anchor="middle" fill="#94a3b8" font-size="7">Raw archive</text>
+      </g>
+
+      <!-- Arrow: Kafka -> S3 archive -->
+      <line x1="85" y1="190" x2="70" y2="226" stroke="#4caf50" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-l)"/>
+
+      <!-- ===== SPEED: Apache Flink ===== -->
+      <g filter="url(#shadow-l)">
+        <rect x="240" y="108" width="155" height="60" rx="10" fill="url(#lg5)" opacity="0.95"/>
+        <text x="318" y="132" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Apache Flink</text>
+        <text x="318" y="148" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">1-min windows, ~seconds</text>
+        <text x="318" y="160" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Approximate (may miss late events)</text>
+      </g>
+
+      <!-- Arrow: Kafka -> Flink -->
+      <line x1="150" y1="155" x2="234" y2="140" stroke="#FC642D" stroke-width="2" marker-end="url(#arr-l-o)"/>
+
+      <!-- TSDB Real-time view -->
+      <g filter="url(#shadow-l)" transform="translate(440,105)">
+        <ellipse cx="45" cy="10" rx="42" ry="10" fill="#00A699"/>
+        <rect x="3" y="10" width="84" height="38" fill="#008B80"/>
+        <ellipse cx="45" cy="48" rx="42" ry="10" fill="#008B80"/>
+        <ellipse cx="45" cy="10" rx="42" ry="10" fill="#00A699" opacity="0.7"/>
+        <text x="45" y="28" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">TSDB</text>
+        <text x="45" y="40" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Real-time View</text>
+      </g>
+      <text x="485" y="175" text-anchor="middle" fill="#94a3b8" font-size="7">Last 24h, minute granularity</text>
+
+      <!-- Arrow: Flink -> TSDB Real-time -->
+      <line x1="395" y1="138" x2="440" y2="132" stroke="#FC642D" stroke-width="2" marker-end="url(#arr-l-o)"/>
+
+      <!-- ===== BATCH: Apache Spark ===== -->
+      <g filter="url(#shadow-l)">
+        <rect x="240" y="272" width="155" height="60" rx="10" fill="url(#lg3)" opacity="0.95"/>
+        <text x="318" y="296" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Apache Spark</text>
+        <text x="318" y="312" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Daily full recompute</text>
+        <text x="318" y="324" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Exact counts, incl. late events</text>
+      </g>
+
+      <!-- Arrow: Kafka -> Spark -->
+      <line x1="130" y1="190" x2="260" y2="268" stroke="#428BF9" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-l-b)"/>
+      <text x="180" y="240" fill="#428BF9" font-size="7" transform="rotate(30,180,240)">S3 Parquet source</text>
+
+      <!-- TSDB Batch view -->
+      <g filter="url(#shadow-l)" transform="translate(440,270)">
+        <ellipse cx="45" cy="10" rx="42" ry="10" fill="#7B2FF7"/>
+        <rect x="3" y="10" width="84" height="38" fill="#6020C0"/>
+        <ellipse cx="45" cy="48" rx="42" ry="10" fill="#6020C0"/>
+        <ellipse cx="45" cy="10" rx="42" ry="10" fill="#7B2FF7" opacity="0.7"/>
+        <text x="45" y="28" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">TSDB</text>
+        <text x="45" y="40" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Batch View</text>
+      </g>
+      <text x="485" y="340" text-anchor="middle" fill="#94a3b8" font-size="7">Overwrites speed layer at T+6h</text>
+
+      <!-- Arrow: Spark -> TSDB Batch -->
+      <line x1="395" y1="302" x2="440" y2="298" stroke="#428BF9" stroke-width="2" marker-end="url(#arr-l-b)"/>
+
+      <!-- ===== SERVING LAYER ===== -->
+      <rect x="620" y="175" width="180" height="140" rx="12" fill="rgba(123,47,247,0.05)" stroke="rgba(123,47,247,0.2)" stroke-width="1"/>
+      <text x="710" y="195" text-anchor="middle" fill="#7B2FF7" font-size="9" font-weight="700" letter-spacing="1.5">SERVING LAYER</text>
+
+      <g filter="url(#shadow-l)">
+        <rect x="640" y="205" width="140" height="65" rx="10" fill="url(#lg4)" opacity="0.95"/>
+        <text x="710" y="230" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Query Service</text>
+        <text x="710" y="246" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Merges speed + batch</text>
+        <text x="710" y="258" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Returns most accurate data</text>
+      </g>
+
+      <!-- Merging arrows from both TSDB views to Query Service -->
+      <line x1="530" y1="145" x2="634" y2="220" stroke="#00A699" stroke-width="1.5" marker-end="url(#arr-l-g)"/>
+      <text x="565" y="168" fill="#00A699" font-size="7" transform="rotate(27,565,168)">recent data</text>
+
+      <line x1="530" y1="310" x2="634" y2="255" stroke="#7B2FF7" stroke-width="1.5" marker-end="url(#arr-l-p)"/>
+      <text x="565" y="298" fill="#7B2FF7" font-size="7" transform="rotate(-22,565,298)">historical data</text>
+
+      <!-- Annotations for the merge -->
+      <g transform="translate(640,280)">
+        <text x="0" y="10" fill="#94a3b8" font-size="7">Recent: speed layer</text>
+        <text x="0" y="22" fill="#94a3b8" font-size="7">Historical: batch layer</text>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(20,420)">
+        <text x="0" y="0" fill="#1e293b" font-size="10" font-weight="700">Legend</text>
+        <line x1="0" y1="16" x2="28" y2="16" stroke="#FC642D" stroke-width="2"/>
+        <text x="34" y="20" fill="#94a3b8" font-size="8">Speed layer (real-time)</text>
+        <line x1="170" y1="16" x2="198" y2="16" stroke="#428BF9" stroke-width="2"/>
+        <text x="204" y="20" fill="#94a3b8" font-size="8">Batch layer (daily)</text>
+        <line x1="330" y1="16" x2="358" y2="16" stroke="#7B2FF7" stroke-width="2"/>
+        <text x="364" y="20" fill="#94a3b8" font-size="8">Serving layer</text>
+        <line x1="450" y1="16" x2="478" y2="16" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="484" y="20" fill="#94a3b8" font-size="8">Async / archive</text>
+      </g>
+    </svg>
+  </div>
+
+  <h3>Late-Arriving Events</h3>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>&#9200; Watermark Strategy</h4>
+      <p>Flink uses event-time watermarks with 5-minute allowed lateness. Events arriving within the watermark update the aggregate in-place. Events arriving after the watermark trigger a side-output for late event reprocessing.</p>
+      <ul>
+        <li>Watermark = max event timestamp - 5 minutes</li>
+        <li>Late events within 5 min: merged into window aggregate</li>
+        <li>Late events beyond 5 min: written to dead-letter Kafka topic</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>&#128260; Batch Correction</h4>
+      <p>The daily Spark batch job is the authoritative source. It runs at T+6 hours (to capture most late events) and overwrites the speed layer's aggregates for that day. This means yesterday's data is always accurate by noon today.</p>
+      <ul>
+        <li>Batch runs daily at 06:00 UTC for previous day</li>
+        <li>Overwrites minute/hourly aggregates in TSDB</li>
+        <li>Reconciles any discrepancies from the speed layer</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 7: QUERY API                                         -->
+<!-- ============================================================ -->
+<section class="section" id="query-api">
+  <span class="section-label">Section 7</span>
+  <h2>Query API</h2>
+
+  <p>The Query Service exposes a RESTful API that routes queries to the appropriate storage tier based on the requested time range.</p>
+
+  <h3>API Endpoint</h3>
+
+  <div class="code-block">
+    <span class="code-label">REST API</span>
+    <pre><span class="kw">GET</span> <span class="str">/api/v1/metrics</span>
+  ?<span class="var">event_type</span>=<span class="str">booking</span>
+  &amp;<span class="var">device</span>=<span class="str">ios</span>
+  &amp;<span class="var">region</span>=<span class="str">europe</span>
+  &amp;<span class="var">start</span>=<span class="str">2024-02-01T09:05:00Z</span>
+  &amp;<span class="var">end</span>=<span class="str">2024-02-01T09:08:00Z</span>
+  &amp;<span class="var">granularity</span>=<span class="str">minute</span>
+
+<span class="cm">// Response:</span>
+{
+  <span class="str">"event_type"</span>: <span class="str">"booking"</span>,
+  <span class="str">"device"</span>: <span class="str">"ios"</span>,
+  <span class="str">"region"</span>: <span class="str">"europe"</span>,
+  <span class="str">"granularity"</span>: <span class="str">"minute"</span>,
+  <span class="str">"data"</span>: [
+    { <span class="str">"timestamp"</span>: <span class="str">"2024-02-01T09:05:00Z"</span>, <span class="str">"count"</span>: <span class="num">47</span> },
+    { <span class="str">"timestamp"</span>: <span class="str">"2024-02-01T09:06:00Z"</span>, <span class="str">"count"</span>: <span class="num">52</span> },
+    { <span class="str">"timestamp"</span>: <span class="str">"2024-02-01T09:07:00Z"</span>, <span class="str">"count"</span>: <span class="num">39</span> }
+  ],
+  <span class="str">"total"</span>: <span class="num">138</span>,
+  <span class="str">"source"</span>: <span class="str">"speed_layer"</span>  <span class="cm">// or "batch_layer"</span>
+}
+
+<span class="cm">// Example 2: Web searches in US, past 2 days</span>
+<span class="kw">GET</span> <span class="str">/api/v1/metrics</span>
+  ?<span class="var">event_type</span>=<span class="str">search</span>
+  &amp;<span class="var">device</span>=<span class="str">web</span>
+  &amp;<span class="var">region</span>=<span class="str">us</span>
+  &amp;<span class="var">start</span>=<span class="str">2024-01-30T00:00:00Z</span>
+  &amp;<span class="var">end</span>=<span class="str">2024-02-01T23:59:59Z</span>
+  &amp;<span class="var">granularity</span>=<span class="str">hourly</span></pre>
+  </div>
+
+  <h3>Query Routing Logic</h3>
+
+  <div class="code-block">
+    <span class="code-label">Query Router</span>
+    <pre><span class="kw">function</span> <span class="fn">routeQuery</span>(query) {
+  <span class="kw">const</span> <span class="var">age</span> = now() - query.start;
+
+  <span class="kw">if</span> (age &lt;= <span class="num">30</span> * DAY) {
+    <span class="cm">// Hot tier: query TSDB directly</span>
+    <span class="cm">// Sub-second response, minute granularity available</span>
+    <span class="kw">return</span> <span class="fn">queryTSDB</span>(query);
+  }
+  <span class="kw">else if</span> (age &lt;= <span class="num">365</span> * DAY) {
+    <span class="cm">// Warm tier: query hourly rollup tables in TSDB or Cassandra</span>
+    <span class="cm">// Force granularity >= hourly (minute data already rolled up)</span>
+    query.granularity = <span class="fn">max</span>(query.granularity, <span class="str">"hourly"</span>);
+    <span class="kw">return</span> <span class="fn">queryWarmStore</span>(query);
+  }
+  <span class="kw">else</span> {
+    <span class="cm">// Cold tier: query S3 via Presto/Athena</span>
+    <span class="cm">// Force granularity >= daily (only daily rollups available)</span>
+    query.granularity = <span class="fn">max</span>(query.granularity, <span class="str">"daily"</span>);
+    <span class="kw">return</span> <span class="fn">queryPrestoOnS3</span>(query);
+  }
+}</pre>
+  </div>
+
+  <h3>Caching Strategy</h3>
+
+  <div class="card">
+    <h4>&#128203; Redis Cache for Dashboards</h4>
+    <p>With only ~1K reads/day, caching is almost unnecessary from a load perspective. However, caching improves dashboard UX by providing instant responses.</p>
+    <ul>
+      <li><strong>Cache key:</strong> <code>metrics:{event_type}:{device}:{region}:{granularity}:{time_bucket}</code></li>
+      <li><strong>TTL for recent data:</strong> 60 seconds (data still arriving from speed layer)</li>
+      <li><strong>TTL for historical data:</strong> 24 hours (batch layer data is stable after recomputation)</li>
+      <li><strong>Cache invalidation:</strong> Batch job completion triggers cache purge for recomputed date ranges</li>
+      <li><strong>Pre-warm:</strong> Proactively cache the top 20 dashboard queries after each batch run</li>
+    </ul>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Query Type</th>
+          <th>Storage Tier</th>
+          <th>Granularity</th>
+          <th>Expected Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Last 3 minutes (real-time dashboard)</td>
+          <td>TSDB (speed layer)</td>
+          <td>minute</td>
+          <td>&lt; 100ms</td>
+        </tr>
+        <tr>
+          <td>Yesterday 9:05-9:08 AM</td>
+          <td>TSDB (batch layer)</td>
+          <td>minute</td>
+          <td>&lt; 200ms</td>
+        </tr>
+        <tr>
+          <td>Past 2 days</td>
+          <td>TSDB</td>
+          <td>hourly</td>
+          <td>&lt; 500ms</td>
+        </tr>
+        <tr>
+          <td>Past 3 months</td>
+          <td>Warm (TSDB hourly rollups)</td>
+          <td>hourly/daily</td>
+          <td>1-3 seconds</td>
+        </tr>
+        <tr>
+          <td>Past 2 years</td>
+          <td>Cold (S3 + Presto)</td>
+          <td>daily</td>
+          <td>10-60 seconds</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 8: HIGH-LEVEL ARCHITECTURE DIAGRAM                   -->
+<!-- ============================================================ -->
+<section class="section" id="architecture">
+  <span class="section-label">Section 8</span>
+  <h2>High-Level Architecture Diagram</h2>
+
+  <div class="diagram-box" style="background:rgba(0,0,0,0.05);border-radius:12px;padding:20px;overflow-x:auto;margin:20px 0;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" font-family="'Segoe UI', system-ui, sans-serif" style="min-width:950px;width:100%;">
+      <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+        <marker id="arr2-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#FF5A5F"/></marker>
+        <marker id="arr2-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#00A699"/></marker>
+        <marker id="arr2-b" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#428BF9"/></marker>
+        <marker id="arr2-p" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7B2FF7"/></marker>
+        <marker id="arr2-o" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#FC642D"/></marker>
+        <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+        <linearGradient id="hg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008B80"/></linearGradient>
+        <linearGradient id="hg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D0"/></linearGradient>
+        <linearGradient id="hg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6020C0"/></linearGradient>
+        <linearGradient id="hg5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#D04E20"/></linearGradient>
+        <filter id="shadow2"><feDropShadow dx="2" dy="3" stdDeviation="4" flood-opacity="0.12"/></filter>
+      </defs>
+
+      <!-- ===== TITLE ===== -->
+      <text x="550" y="28" text-anchor="middle" fill="#1e293b" font-size="17" font-weight="700">Data Instrumentation - Lambda Architecture (High-Level Diagram)</text>
+
+      <!-- ===== TIER LABELS (background bands) ===== -->
+      <!-- Speed layer band (top) -->
+      <rect x="370" y="200" width="720" height="160" rx="12" fill="rgba(252,100,45,0.04)" stroke="rgba(252,100,45,0.15)" stroke-width="1"/>
+      <text x="385" y="218" fill="#FC642D" font-size="10" font-weight="700" letter-spacing="1.5">SPEED LAYER</text>
+      <!-- Batch layer band (bottom) -->
+      <rect x="370" y="370" width="720" height="175" rx="12" fill="rgba(66,139,249,0.04)" stroke="rgba(66,139,249,0.08)" stroke-width="1"/>
+      <text x="385" y="388" fill="#428BF9" font-size="10" font-weight="700" letter-spacing="1.5">BATCH LAYER</text>
+
+      <!-- ===== CLIENTS (left column) ===== -->
+      <text x="70" y="56" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">CLIENTS</text>
+      <!-- Web SDK -->
+      <g filter="url(#shadow2)">
+        <rect x="15" y="68" width="110" height="55" rx="10" fill="url(#hg1)" opacity="0.95"/>
+        <text x="70" y="90" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Web SDK</text>
+        <text x="70" y="106" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">JavaScript / TS</text>
+      </g>
+      <!-- iOS SDK -->
+      <g filter="url(#shadow2)">
+        <rect x="15" y="135" width="110" height="55" rx="10" fill="url(#hg1)" opacity="0.95"/>
+        <text x="70" y="157" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">iOS SDK</text>
+        <text x="70" y="173" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Swift / ObjC</text>
+      </g>
+      <!-- Android SDK -->
+      <g filter="url(#shadow2)">
+        <rect x="15" y="202" width="110" height="55" rx="10" fill="url(#hg1)" opacity="0.95"/>
+        <text x="70" y="224" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Android SDK</text>
+        <text x="70" y="240" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Kotlin / Java</text>
+      </g>
+
+      <!-- ===== INGESTION API (API Gateway + Service) ===== -->
+      <text x="230" y="56" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">INGESTION</text>
+      <!-- API Gateway shield -->
+      <g filter="url(#shadow2)">
+        <rect x="170" y="110" width="120" height="75" rx="10" fill="url(#hg1)" opacity="0.95"/>
+        <path d="M205,135 L205,125 C205,120 215,115 215,115 C215,115 225,120 225,125 L225,135 C225,142 215,148 215,148 C215,148 205,142 205,135 Z" fill="none" stroke="#fff" stroke-width="1.5"/>
+        <polyline points="210,133 214,137 222,128" fill="none" stroke="#fff" stroke-width="1.3"/>
+        <text x="250" y="138" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Ingestion</text>
+        <text x="250" y="152" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">API</text>
+        <text x="230" y="172" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">stateless x N</text>
+      </g>
+
+      <!-- Arrows: Clients -> Ingestion -->
+      <line x1="125" y1="95" x2="165" y2="130" stroke="#FF5A5F" stroke-width="1.5" marker-end="url(#arr2-r)"/>
+      <line x1="125" y1="162" x2="165" y2="150" stroke="#FF5A5F" stroke-width="1.5" marker-end="url(#arr2-r)"/>
+      <line x1="125" y1="230" x2="165" y2="170" stroke="#FF5A5F" stroke-width="1.5" marker-end="url(#arr2-r)"/>
+      <text x="148" y="122" fill="#FF5A5F" font-size="7" transform="rotate(-25,148,122)">HTTP batch</text>
+
+      <!-- ===== KAFKA (center buffer) ===== -->
+      <text x="400" y="90" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">BUFFER</text>
+      <g filter="url(#shadow2)" transform="translate(340,100)">
+        <rect x="0" y="0" width="120" height="75" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="2.5"/>
+        <!-- Kafka icon: 3 filled circles + connecting lines -->
+        <circle cx="28" cy="22" r="7" fill="#ef4444"/>
+        <circle cx="55" cy="14" r="7" fill="#ef4444"/>
+        <circle cx="55" cy="38" r="7" fill="#ef4444"/>
+        <line x1="35" y1="20" x2="48" y2="16" stroke="#ef4444" stroke-width="2"/>
+        <line x1="35" y1="24" x2="48" y2="36" stroke="#ef4444" stroke-width="2"/>
+        <!-- streaming arrows outward -->
+        <line x1="62" y1="14" x2="75" y2="10" stroke="#ef4444" stroke-width="1" marker-end="url(#arr2-r)"/>
+        <line x1="62" y1="38" x2="75" y2="42" stroke="#ef4444" stroke-width="1" marker-end="url(#arr2-r)"/>
+        <text x="92" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">KAFKA</text>
+        <text x="60" y="62" text-anchor="middle" fill="#94a3b8" font-size="8">64 partitions</text>
+      </g>
+
+      <!-- Arrow: Ingestion -> Kafka -->
+      <line x1="290" y1="148" x2="334" y2="140" stroke="#ef4444" stroke-width="2" marker-end="url(#arr2-r)"/>
+      <text x="312" y="136" fill="#ef4444" font-size="7">Avro</text>
+
+      <!-- ===== SPEED LAYER: Flink ===== -->
+      <g filter="url(#shadow2)">
+        <rect x="410" y="225" width="155" height="65" rx="10" fill="url(#hg5)" opacity="0.95"/>
+        <text x="488" y="252" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Apache Flink</text>
+        <text x="488" y="268" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Stream processing</text>
+        <text x="488" y="280" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">1-min tumbling windows</text>
+      </g>
+
+      <!-- Arrow: Kafka -> Flink -->
+      <line x1="400" y1="180" x2="450" y2="220" stroke="#FC642D" stroke-width="2" marker-end="url(#arr2-o)"/>
+      <text x="415" y="198" fill="#FC642D" font-size="8">real-time</text>
+
+      <!-- ===== SPEED LAYER STORAGE: TSDB (InfluxDB) ===== -->
+      <g filter="url(#shadow2)" transform="translate(640,220)">
+        <!-- DB Cylinder - blue for InfluxDB/TimescaleDB -->
+        <ellipse cx="55" cy="12" rx="50" ry="12" fill="#00A699"/>
+        <rect x="5" y="12" width="100" height="45" fill="#008B80"/>
+        <ellipse cx="55" cy="57" rx="50" ry="12" fill="#008B80"/>
+        <ellipse cx="55" cy="12" rx="50" ry="12" fill="#00A699" opacity="0.7"/>
+        <text x="55" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">TSDB</text>
+        <text x="55" y="48" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">InfluxDB (HOT)</text>
+      </g>
+      <text x="695" y="295" text-anchor="middle" fill="#94a3b8" font-size="8">30 days, minute granularity</text>
+
+      <!-- Arrow: Flink -> TSDB -->
+      <line x1="565" y1="258" x2="636" y2="252" stroke="#FC642D" stroke-width="2" marker-end="url(#arr2-o)"/>
+      <text x="600" y="248" fill="#FC642D" font-size="8">1-min agg</text>
+
+      <!-- ===== BATCH LAYER: S3/HDFS (cold store bucket) ===== -->
+      <g filter="url(#shadow2)" transform="translate(400,395)">
+        <rect x="0" y="0" width="140" height="70" rx="10" fill="#f8fafc" stroke="#4caf50" stroke-width="2"/>
+        <!-- S3 Bucket/trapezoid shape -->
+        <polygon points="40,15 100,15 105,45 35,45" fill="#4caf50" opacity="0.3" stroke="#4caf50" stroke-width="1.5"/>
+        <text x="70" y="34" text-anchor="middle" fill="#4caf50" font-size="9" font-weight="700">S3</text>
+        <text x="70" y="60" text-anchor="middle" fill="#94a3b8" font-size="8">Parquet / Cold Store</text>
+      </g>
+
+      <!-- Arrow: Kafka -> S3 -->
+      <line x1="420" y1="180" x2="460" y2="390" stroke="#428BF9" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr2-b)"/>
+      <text x="425" y="290" fill="#428BF9" font-size="8" transform="rotate(80,425,290)">daily partition</text>
+
+      <!-- ===== BATCH LAYER: Spark Batch Jobs ===== -->
+      <g filter="url(#shadow2)">
+        <rect x="600" y="395" width="155" height="65" rx="10" fill="url(#hg3)" opacity="0.95"/>
+        <text x="678" y="422" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Spark Batch Jobs</text>
+        <text x="678" y="438" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Daily full recompute</text>
+        <text x="678" y="450" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Runs at T+6h (authoritative)</text>
+      </g>
+
+      <!-- Arrow: S3 -> Spark Batch -->
+      <line x1="540" y1="430" x2="594" y2="430" stroke="#428BF9" stroke-width="2" marker-end="url(#arr2-b)"/>
+
+      <!-- ===== AGGREGATED STORE (batch output) ===== -->
+      <g filter="url(#shadow2)" transform="translate(820,395)">
+        <!-- DB Cylinder - purple for aggregated store -->
+        <ellipse cx="50" cy="12" rx="45" ry="12" fill="#7B2FF7"/>
+        <rect x="5" y="12" width="90" height="40" fill="#6020C0"/>
+        <ellipse cx="50" cy="52" rx="45" ry="12" fill="#6020C0"/>
+        <ellipse cx="50" cy="12" rx="45" ry="12" fill="#7B2FF7" opacity="0.7"/>
+        <text x="50" y="32" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Aggregated</text>
+        <text x="50" y="44" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Store</text>
+      </g>
+
+      <!-- Arrow: Spark -> Aggregated Store -->
+      <line x1="755" y1="428" x2="818" y2="428" stroke="#428BF9" stroke-width="2" marker-end="url(#arr2-b)"/>
+
+      <!-- Arrow: Spark batch -> TSDB (batch load / overwrite) -->
+      <line x1="715" y1="395" x2="715" y2="295" stroke="#428BF9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2-b)"/>
+      <text x="725" y="348" fill="#428BF9" font-size="8">batch overwrite</text>
+
+      <!-- ===== SERVING: Query Service ===== -->
+      <text x="945" y="210" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">SERVING LAYER</text>
+      <g filter="url(#shadow2)">
+        <rect x="880" y="225" width="140" height="70" rx="10" fill="url(#hg4)" opacity="0.95"/>
+        <text x="950" y="252" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Query Service</text>
+        <text x="950" y="268" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Routes by time range</text>
+        <text x="950" y="280" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Recent: TSDB | Historical: S3</text>
+      </g>
+
+      <!-- Arrow: TSDB -> Query Service -->
+      <line x1="745" y1="255" x2="874" y2="255" stroke="#00A699" stroke-width="2" marker-end="url(#arr2-g)"/>
+      <text x="808" y="248" text-anchor="middle" fill="#00A699" font-size="8">recent queries</text>
+
+      <!-- Arrow: Aggregated Store -> Query Service -->
+      <line x1="870" y1="420" x2="940" y2="300" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2-p)"/>
+      <text x="915" y="370" fill="#7B2FF7" font-size="8" transform="rotate(-55,915,370)">historical</text>
+
+      <!-- ===== Redis Cache ===== -->
+      <g filter="url(#shadow2)" transform="translate(920,320)">
+        <rect x="0" y="0" width="80" height="60" rx="8" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <!-- Redis diamond icon -->
+        <polygon points="40,8 58,26 40,44 22,26" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <polygon points="40,14 52,26 40,38 28,26" fill="#ef4444" opacity="0.4"/>
+        <text x="40" y="56" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="700">REDIS</text>
+      </g>
+
+      <!-- Arrow: Query Service -> Redis (cache) -->
+      <line x1="950" y1="295" x2="958" y2="315" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr2-r)"/>
+      <text x="968" y="308" fill="#94a3b8" font-size="7">dashboard TTL</text>
+
+      <!-- ===== DASHBOARD / API output ===== -->
+      <g filter="url(#shadow2)">
+        <rect x="920" y="120" width="130" height="65" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5"/>
+        <!-- Monitor + chart icon -->
+        <rect x="945" y="132" width="40" height="26" rx="3" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
+        <polyline points="952,150 958,143 963,148 970,138 977,145" fill="none" stroke="#7B2FF7" stroke-width="1.2"/>
+        <line x1="965" y1="158" x2="965" y2="165" stroke="#7B2FF7" stroke-width="1.5"/>
+        <line x1="955" y1="165" x2="975" y2="165" stroke="#7B2FF7" stroke-width="1.5"/>
+        <text x="1010" y="148" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Dashboard</text>
+        <text x="1010" y="162" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Grafana / API</text>
+      </g>
+
+      <!-- Arrow: Query Service -> Dashboard -->
+      <line x1="950" y1="225" x2="970" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+      <!-- ===== PRESTO / ATHENA (ad-hoc) ===== -->
+      <g filter="url(#shadow2)">
+        <rect x="600" y="490" width="155" height="55" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <!-- External/cloud dashed -->
+        <text x="678" y="515" text-anchor="middle" fill="#428BF9" font-size="10" font-weight="700">Presto / Athena</text>
+        <text x="678" y="530" text-anchor="middle" fill="#94a3b8" font-size="8">Ad-hoc SQL queries</text>
+      </g>
+
+      <!-- Arrow: Aggregated Store -> Presto -->
+      <line x1="870" y1="460" x2="760" y2="495" stroke="#428BF9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2-b)"/>
+
+      <!-- Arrow: Presto -> Query Service (cold queries) -->
+      <line x1="755" y1="510" x2="930" y2="290" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr2)"/>
+      <text x="850" y="410" fill="#94a3b8" font-size="7" transform="rotate(-40,850,410)">cold queries</text>
+
+      <!-- ===== S3 raw archive side branch ===== -->
+      <g filter="url(#shadow2)" transform="translate(185,395)">
+        <rect x="0" y="0" width="130" height="55" rx="8" fill="#f8fafc" stroke="#4caf50" stroke-width="1.5"/>
+        <polygon points="35,10 95,10 100,35 30,35" fill="#4caf50" opacity="0.25" stroke="#4caf50" stroke-width="1"/>
+        <text x="65" y="26" text-anchor="middle" fill="#4caf50" font-size="8" font-weight="700">S3</text>
+        <text x="65" y="48" text-anchor="middle" fill="#94a3b8" font-size="8">Raw archive (Parquet)</text>
+      </g>
+
+      <!-- Arrow: Kafka -> S3 raw archive -->
+      <line x1="380" y1="175" x2="318" y2="392" stroke="#4caf50" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2)"/>
+      <text x="338" y="280" fill="#4caf50" font-size="7" transform="rotate(72,338,280)">raw archive</text>
+
+      <!-- ===== LEGEND ===== -->
+      <g transform="translate(20,580)">
+        <text x="0" y="0" fill="#1e293b" font-size="11" font-weight="700">Legend</text>
+        <line x1="0" y1="18" x2="30" y2="18" stroke="#FC642D" stroke-width="2"/>
+        <text x="36" y="22" fill="#94a3b8" font-size="9">Speed layer (real-time)</text>
+        <line x1="180" y1="18" x2="210" y2="18" stroke="#428BF9" stroke-width="2"/>
+        <text x="216" y="22" fill="#94a3b8" font-size="9">Batch layer (daily)</text>
+        <line x1="340" y1="18" x2="370" y2="18" stroke="#00A699" stroke-width="2"/>
+        <text x="376" y="22" fill="#94a3b8" font-size="9">Serving (query)</text>
+        <line x1="480" y1="18" x2="510" y2="18" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="516" y="22" fill="#94a3b8" font-size="9">Async / archive</text>
+        <!-- Icons legend -->
+        <g transform="translate(0,35)">
+          <rect x="0" y="0" width="14" height="14" rx="3" fill="#ef4444" opacity="0.5"/>
+          <text x="20" y="12" fill="#94a3b8" font-size="9">Kafka / Redis</text>
+          <rect x="130" y="2" width="12" height="10" rx="0" fill="#428BF9" opacity="0.5"/>
+          <ellipse cx="136" cy="2" rx="6" ry="3" fill="#428BF9" opacity="0.7"/>
+          <text x="150" y="12" fill="#94a3b8" font-size="9">Database (cylinder)</text>
+          <polygon points="295,2 305,2 308,12 292,12" fill="#4caf50" opacity="0.4" stroke="#4caf50" stroke-width="0.8"/>
+          <text x="315" y="12" fill="#94a3b8" font-size="9">S3 / Blob storage</text>
+        </g>
+      </g>
+
+      <!-- ===== FLOW ANNOTATIONS ===== -->
+      <rect x="20" y="495" width="160" height="68" rx="8" fill="rgba(252,100,45,0.06)" stroke="rgba(252,100,45,0.25)" stroke-width="1"/>
+      <text x="100" y="514" text-anchor="middle" fill="#FC642D" font-size="9" font-weight="700">Speed Layer Path</text>
+      <text x="100" y="528" text-anchor="middle" fill="#94a3b8" font-size="8">Kafka -> Flink -> TSDB</text>
+      <text x="100" y="542" text-anchor="middle" fill="#94a3b8" font-size="8">Latency: ~seconds</text>
+      <text x="100" y="554" text-anchor="middle" fill="#94a3b8" font-size="8">Approximate, last 30d</text>
+
+      <rect x="20" y="300" width="160" height="68" rx="8" fill="rgba(66,139,249,0.06)" stroke="rgba(66,139,249,0.25)" stroke-width="1"/>
+      <text x="100" y="319" text-anchor="middle" fill="#428BF9" font-size="9" font-weight="700">Batch Layer Path</text>
+      <text x="100" y="333" text-anchor="middle" fill="#94a3b8" font-size="8">Kafka -> S3 -> Spark -> Agg</text>
+      <text x="100" y="347" text-anchor="middle" fill="#94a3b8" font-size="8">Latency: T+6 hours</text>
+      <text x="100" y="361" text-anchor="middle" fill="#94a3b8" font-size="8">Authoritative, 10yr archive</text>
+
+      <!-- ===== NUMBERED STEP CIRCLES ===== -->
+      <!-- Step 1: Client SDKs -> Ingestion API -->
+      <circle cx="148" cy="125" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="148" y="129" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Step 2: Ingestion API -> Kafka -->
+      <circle cx="314" cy="130" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="314" y="134" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+      <!-- Step 3: Kafka -> S3/HDFS Raw Archive -->
+      <circle cx="355" cy="290" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="355" y="294" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+      <!-- Step 4: Kafka -> Flink Streaming (speed layer) -->
+      <circle cx="428" cy="198" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="428" y="202" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+      <!-- Step 5: Flink -> TSDB/InfluxDB -->
+      <circle cx="602" cy="242" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="602" y="246" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+      <!-- Step 6: S3 -> Spark Batch Jobs -->
+      <circle cx="568" cy="418" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="568" y="422" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+      <!-- Step 7: Spark -> Aggregated Store -->
+      <circle cx="788" cy="416" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="788" y="420" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+      <!-- Step 8: Dashboard -> Query Service -->
+      <circle cx="962" cy="205" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="962" y="209" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+      <!-- Step 9: Query Service -> TSDB + Aggregated Store (merged response) -->
+      <circle cx="820" cy="260" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="820" y="264" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+      <!-- Step 10: Query Service -> Redis (cache) -->
+      <circle cx="940" cy="308" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="940" y="312" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+
+    </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3 style="color:var(--blue); border-left:3px solid var(--blue); padding-left:12px;">Request Flow Reference</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Step</th><th>From</th><th>To</th><th>Protocol / Mechanism</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong style="color:var(--primary);">1</strong></td><td>Client SDKs (Web/iOS/Android)</td><td>Ingestion API</td><td>HTTP / beacon (fire-and-forget)</td><td>Batched events from client-side SDK; no response body needed</td></tr>
+        <tr><td><strong style="color:var(--primary);">2</strong></td><td>Ingestion API</td><td>Kafka</td><td>Async produce (at-least-once)</td><td>Avro-serialized; stateless API fleet validates, enriches, then produces</td></tr>
+        <tr><td><strong style="color:var(--primary);">3</strong></td><td>Kafka</td><td>S3 / HDFS Raw Archive</td><td>Sink connector (Parquet)</td><td>Persist all raw events; 10-year retention; immutable archive</td></tr>
+        <tr><td><strong style="color:var(--primary);">4</strong></td><td>Kafka</td><td>Flink Streaming</td><td>Streaming consume (speed layer)</td><td>1-minute tumbling windows; real-time approximate aggregates</td></tr>
+        <tr><td><strong style="color:var(--primary);">5</strong></td><td>Flink</td><td>TSDB / InfluxDB</td><td>Write (hot store)</td><td>Minute-granularity aggregates; 30-day retention at minute level</td></tr>
+        <tr><td><strong style="color:var(--primary);">6</strong></td><td>S3</td><td>Spark Batch Jobs</td><td>Scheduled job (batch layer)</td><td>Daily full recompute from raw archive; runs at T+6h; authoritative</td></tr>
+        <tr><td><strong style="color:var(--primary);">7</strong></td><td>Spark Batch</td><td>Aggregated Store</td><td>Bulk write (batch view)</td><td>Hourly/daily rollups; overwrites speed layer data once available</td></tr>
+        <tr><td><strong style="color:var(--primary);">8</strong></td><td>Dashboard</td><td>Query Service</td><td>HTTPS GET</td><td>Dashboard or Grafana requests metrics for a time range</td></tr>
+        <tr><td><strong style="color:var(--primary);">9</strong></td><td>Query Service</td><td>TSDB + Aggregated Store</td><td>Parallel read + merge</td><td>Recent data from TSDB (speed layer) + historical from Aggregated Store (batch layer)</td></tr>
+        <tr><td><strong style="color:var(--primary);">10</strong></td><td>Query Service</td><td>Redis</td><td>Cache read/write (TTL-based)</td><td>Caches frequent dashboard queries; reduces TSDB/store load</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3 style="color:var(--success); border-left:3px solid var(--success); padding-left:12px;">Happy Path</h3>
+  <div class="callout" style="border-left-color:var(--success); background:rgba(16,185,129,0.06);">
+    <strong style="color:var(--success);">End-to-End Sunny Day Flow</strong><br>
+    <strong>1.</strong> A user taps a listing on the Airbnb iOS app. The client SDK batches the <code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;font-size:0.9em;color:var(--accent);">listing_view</code> event and fires it to the Ingestion API via HTTP beacon.
+    <strong>2.</strong> The Ingestion API validates the schema, enriches the event with server timestamp and geo-IP data, and produces an Avro message to Kafka. The client receives a 202 Accepted (fire-and-forget).
+    <strong>3.</strong> From Kafka, the event flows down two parallel paths: the <em>speed layer</em> (Flink consumes the event, aggregates it into a 1-minute tumbling window, and writes the result to TSDB) and the <em>batch layer</em> (the Kafka S3 sink connector appends the raw event to a Parquet partition in S3 for the daily archive).
+    <strong>4.</strong> Six hours later, the nightly Spark batch job reads all raw events from S3, recomputes authoritative hourly/daily rollups, and writes them to the Aggregated Store. TSDB data for overlapping periods is overwritten with the batch-authoritative values.
+    <strong>5.</strong> A product manager opens the analytics dashboard. The Query Service routes the request: recent data (last 30 minutes) from TSDB, historical data from the Aggregated Store. The merged response is cached in Redis and returned to the dashboard.
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3 style="color:var(--danger); border-left:3px solid var(--danger); padding-left:12px;">Failure Paths</h3>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Failure Scenario</th><th>Impact</th><th>Detection</th><th>Mitigation / Recovery</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Client SDK Failure</strong></td>
+          <td>Events from one user session are lost; acceptable data loss for analytics (fire-and-forget model)</td>
+          <td>Client-side error rate monitoring; SDK health metric reporting on next successful batch</td>
+          <td>SDK retries with local queue (IndexedDB / SQLite); accept ~0.1% data loss as tolerable for analytics</td>
+        </tr>
+        <tr>
+          <td><strong>Kafka Broker Down</strong></td>
+          <td>Ingestion API cannot produce; events buffer in-memory briefly, then drop under sustained outage</td>
+          <td>Broker health checks; producer error rate spikes; consumer lag monitoring</td>
+          <td>Multi-broker replication (RF=3); Ingestion API retries with exponential backoff; local disk spill queue as last resort</td>
+        </tr>
+        <tr>
+          <td><strong>Flink Checkpoint Failure</strong></td>
+          <td>Speed layer windows may double-count or lose events during recovery; temporary inaccuracy in TSDB</td>
+          <td>Flink checkpoint metrics; TSDB anomaly detection (sudden count spikes or drops)</td>
+          <td>Restart from last successful checkpoint; reprocess from Kafka consumer offset; batch layer eventually corrects TSDB</td>
+        </tr>
+        <tr>
+          <td><strong>Late-Arriving Events</strong></td>
+          <td>Events arrive after their tumbling window has closed; excluded from speed layer aggregation</td>
+          <td>Watermark lag monitoring in Flink; late-event counters per source</td>
+          <td>Configure allowed lateness window (e.g., 5 min); side-output late events for separate processing; batch layer handles all events regardless of arrival time</td>
+        </tr>
+        <tr>
+          <td><strong>TSDB Disk Full</strong></td>
+          <td>Speed layer writes fail; dashboard shows stale or missing recent data</td>
+          <td>Disk usage alerts at 80% threshold; write error rate monitoring</td>
+          <td>Automatic rollup of minute-level data to hourly after 7 days; retention policy auto-deletes data older than 30 days; horizontal scaling of TSDB nodes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Data Flow Summary:</strong>
+    Clients emit events via SDK batches to the Ingestion Service fleet. After validation and enrichment, events are produced to Kafka. From Kafka, three parallel consumers operate: (1) Flink for real-time minute aggregation into the TSDB, (2) S3 Sink for raw event archival, and (3) nightly Spark jobs that recompute authoritative aggregates from S3 and backfill the TSDB. The Query Service routes requests to the appropriate tier based on time range.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 9: RETENTION & ROLLUPS                               -->
+<!-- ============================================================ -->
+<section class="section" id="retention">
+  <span class="section-label">Section 9</span>
+  <h2>Retention &amp; Rollup Strategy</h2>
+
+  <p>The key insight: as data ages, we need less granularity. Trading precision for storage efficiency dramatically reduces the 3.15 PB requirement.</p>
+
+  <h3>Retention Tiers</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Granularity</th>
+          <th>Retention</th>
+          <th>Storage Location</th>
+          <th>Rows/Day</th>
+          <th>Storage/Year</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Raw events</strong></td>
+          <td>10 years</td>
+          <td>S3 Glacier (Parquet)</td>
+          <td>864,000,000</td>
+          <td>~315 TB (compressed ~50 TB)</td>
+        </tr>
+        <tr>
+          <td><strong>Minute aggregates</strong></td>
+          <td>30 days</td>
+          <td>TSDB (InfluxDB)</td>
+          <td>~72,000</td>
+          <td>~65 MB (negligible)</td>
+        </tr>
+        <tr>
+          <td><strong>Hourly aggregates</strong></td>
+          <td>1 year</td>
+          <td>TSDB / Cassandra</td>
+          <td>~1,200</td>
+          <td>~1 MB</td>
+        </tr>
+        <tr>
+          <td><strong>Daily aggregates</strong></td>
+          <td>10 years</td>
+          <td>TSDB / S3 Parquet</td>
+          <td>~50</td>
+          <td>&lt; 1 MB</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Rollup Pipeline</h3>
+
+  <div class="code-block">
+    <span class="code-label">Rollup Schedule</span>
+    <pre><span class="cm"># Automated rollup jobs (managed by Airflow)</span>
+
+<span class="fn">Job 1: Minute-to-Hourly Rollup</span>
+  <span class="var">Schedule</span>: Every hour at :05
+  <span class="var">Action</span>:   <span class="kw">SELECT</span> event_type, device, region,
+                  date_trunc(<span class="str">'hour'</span>, minute_ts) <span class="kw">AS</span> hour_ts,
+                  <span class="fn">SUM</span>(event_count) <span class="kw">AS</span> event_count
+           <span class="kw">FROM</span> minute_aggregates
+           <span class="kw">WHERE</span> minute_ts <span class="kw">BETWEEN</span> prev_hour <span class="kw">AND</span> current_hour
+           <span class="kw">GROUP BY</span> event_type, device, region, hour_ts
+  <span class="var">Write to</span>: hourly_aggregates table in TSDB
+
+<span class="fn">Job 2: Hourly-to-Daily Rollup</span>
+  <span class="var">Schedule</span>: Daily at 07:00 UTC
+  <span class="var">Action</span>:   <span class="kw">SELECT</span> event_type, device, region,
+                  date_trunc(<span class="str">'day'</span>, hour_ts) <span class="kw">AS</span> day_ts,
+                  <span class="fn">SUM</span>(event_count) <span class="kw">AS</span> event_count
+           <span class="kw">FROM</span> hourly_aggregates
+           <span class="kw">WHERE</span> hour_ts = yesterday
+           <span class="kw">GROUP BY</span> event_type, device, region, day_ts
+  <span class="var">Write to</span>: daily_aggregates table in TSDB + S3
+
+<span class="fn">Job 3: Minute Data Expiry</span>
+  <span class="var">Schedule</span>: Daily at 08:00 UTC
+  <span class="var">Action</span>:   Delete minute_aggregates older than 30 days
+  <span class="var">Method</span>:   TSDB retention policy (auto-managed)
+
+<span class="fn">Job 4: Hourly Data Expiry</span>
+  <span class="var">Schedule</span>: Weekly
+  <span class="var">Action</span>:   Delete hourly_aggregates older than 1 year
+  <span class="var">Method</span>:   TSDB retention policy</pre>
+  </div>
+
+  <h3>Cost Analysis</h3>
+
+  <div class="metric-row">
+    <div class="metric-box">
+      <div class="metric-val">~$2K</div>
+      <div class="metric-label">TSDB / month (hot)</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">~$12K</div>
+      <div class="metric-label">S3 Glacier / month (10yr)</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">~$5K</div>
+      <div class="metric-label">Kafka Cluster / month</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-val">~$3K</div>
+      <div class="metric-label">Flink + Spark / month</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Cost Insight:</strong> The entire system costs roughly $22K/month. The dominant cost is S3 Glacier for 10-year raw event retention. If raw events can be deleted after 1 year (keeping only aggregates), cost drops to ~$10K/month. This is a key trade-off to discuss with stakeholders.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 10: TRADE-OFFS                                       -->
+<!-- ============================================================ -->
+<section class="section" id="tradeoffs">
+  <span class="section-label">Section 10</span>
+  <h2>Trade-offs &amp; Design Decisions</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Trade-off</th>
+          <th>Option A</th>
+          <th>Option B</th>
+          <th>Our Choice &amp; Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Real-time vs Batch aggregation</strong></td>
+          <td><strong>Real-time only (Flink)</strong><br>Low latency, but approximate counts; may miss late events; complex state management</td>
+          <td><strong>Batch only (Spark)</strong><br>Accurate counts, simpler pipeline; but hours of delay before data is queryable</td>
+          <td><strong style="color:var(--success);">Lambda (both)</strong><br>Speed layer for freshness, batch layer for accuracy. Batch overwrites speed layer daily. Best of both worlds at the cost of maintaining two pipelines.</td>
+        </tr>
+        <tr>
+          <td><strong>TSDB vs NoSQL vs SQL</strong></td>
+          <td><strong>TSDB</strong><br>Purpose-built for time-series; great for hot queries; expensive at scale</td>
+          <td><strong>NoSQL (Cassandra)</strong><br>Great write throughput; flexible schema; no native aggregation</td>
+          <td><strong style="color:var(--success);">TSDB for hot + S3 for cold</strong><br>TSDB handles the 30-day hot window where 95% of queries land. S3 Parquet for the long tail at 1/100th the cost.</td>
+        </tr>
+        <tr>
+          <td><strong>Lossy vs Lossless ingestion</strong></td>
+          <td><strong>Lossless (sync ack)</strong><br>Every event confirmed delivered; higher latency; client blocks</td>
+          <td><strong>Lossy (fire-and-forget)</strong><br>Non-blocking; some events may be lost; simpler client</td>
+          <td><strong style="color:var(--success);">At-least-once with async</strong><br>SDK buffers locally, retries with exponential backoff. Critical events (bookings) use sync path; impressions/clicks use async. Acceptable 0.01% loss rate on non-critical events.</td>
+        </tr>
+        <tr>
+          <td><strong>Pre-aggregate vs Query-time aggregate</strong></td>
+          <td><strong>Pre-aggregate</strong><br>Fixed dimension set; fast reads; inflexible to new dimensions</td>
+          <td><strong>Query-time aggregate</strong><br>Maximum flexibility; slow on large datasets; expensive compute</td>
+          <td><strong style="color:var(--success);">Pre-aggregate known dimensions + raw data for ad-hoc</strong><br>Pre-compute the top 5-10 dimension combinations. Keep raw events in S3 for arbitrary queries via Presto when needed (rare, acceptable latency).</td>
+        </tr>
+        <tr>
+          <td><strong>Event-time vs Server-time</strong></td>
+          <td><strong>Event-time</strong><br>Reflects when user acted; requires watermarks; complex late event handling</td>
+          <td><strong>Server-time</strong><br>Simple; deterministic; but doesn't reflect actual user experience time</td>
+          <td><strong style="color:var(--success);">Event-time with server-time fallback</strong><br>Use client timestamp as primary; if clock skew exceeds 5 minutes, fall back to server_ts. Watermarks at 5 min handle normal late arrivals.</td>
+        </tr>
+        <tr>
+          <td><strong>Single vs Multi data center</strong></td>
+          <td><strong>Single DC</strong><br>Simpler; no cross-DC replication; single point of failure</td>
+          <td><strong>Multi DC</strong><br>Regional ingestion reduces latency; complex aggregation across DCs</td>
+          <td><strong style="color:var(--success);">Regional ingestion, centralized aggregation</strong><br>Ingestion services and Kafka clusters in each region. Events forwarded to a central Kafka cluster for unified Flink/Spark processing. Avoids cross-DC aggregation complexity.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Lambda vs Kappa Architecture:</strong> In a Kappa architecture, you eliminate the batch layer entirely and use only stream processing (Flink) with replay from Kafka for corrections. This is simpler to maintain but requires Kafka retention equal to your reprocessing window (potentially weeks). For this system, Lambda is preferred because the 10-year retention requirement means we already need S3, and batch reprocessing from S3 is both cheaper and more reliable than replaying years of Kafka data.
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 11: FOLLOW-UP QUESTIONS                              -->
+<!-- ============================================================ -->
+<section class="section" id="followup">
+  <span class="section-label">Section 11</span>
+  <h2>Follow-up Questions &amp; Deep Dives</h2>
+
+  <h3>Q1: What if read QPS jumps to real-time (e.g., listing impressions on PDP)?</h3>
+
+  <div class="card">
+    <h4>&#9889; High-QPS Real-Time Counters</h4>
+    <p>If every Product Detail Page (PDP) view needs a live impression count, we shift from periodic queries to real-time counter updates.</p>
+    <ul>
+      <li><strong>Redis counter:</strong> <code>INCR listing:{listing_id}:impressions:today</code> on every event</li>
+      <li>Flink job updates Redis on each incoming impression event (not windowed)</li>
+      <li>TTL on Redis keys = 48 hours (auto-cleanup)</li>
+      <li>Reads go directly to Redis -- O(1) latency, handles 100K+ QPS</li>
+      <li>Batch job reconciles Redis counts with authoritative S3 data daily</li>
+    </ul>
+    <p>This is a fundamentally different pattern: instead of periodic aggregation and query, it is continuous aggregation and real-time serving.</p>
+  </div>
+
+  <h3>Q2: How do you handle late-arriving events?</h3>
+
+  <div class="card">
+    <h4>&#128260; Late Event Strategy</h4>
+    <ul>
+      <li><strong>Within 5 min:</strong> Flink watermark handles automatically -- event is included in the correct window aggregate</li>
+      <li><strong>5 min to 6 hours:</strong> Event is written to a "late events" Kafka topic. A secondary Flink job reads this topic and issues delta updates to the TSDB (<code>UPDATE agg SET count = count + 1</code>)</li>
+      <li><strong>Beyond 6 hours:</strong> Event is captured in raw S3 data. The daily batch job (running at T+6h) includes it in the authoritative recomputation</li>
+      <li><strong>Beyond 24 hours:</strong> Extremely rare. Handled by a weekly full-recompute batch job that reprocesses the past 7 days from S3</li>
+    </ul>
+  </div>
+
+  <h3>Q3: Multi-dimension ad-hoc queries?</h3>
+
+  <div class="card">
+    <h4>&#128202; OLAP Cube / Druid / ClickHouse</h4>
+    <p>If analysts need arbitrary GROUP BY queries across any combination of dimensions (event_type x device x region x locale x hour), pre-aggregation for all combinations is infeasible (combinatorial explosion). Solutions:</p>
+    <ul>
+      <li><strong>Apache Druid:</strong> Columnar OLAP database purpose-built for sub-second slice-and-dice queries on event data. Ingests from Kafka directly. Excellent for dashboard-style queries.</li>
+      <li><strong>ClickHouse:</strong> Open-source columnar DB with excellent compression and query speed. Can replace both TSDB and OLAP layers.</li>
+      <li><strong>OLAP Cube (pre-computed):</strong> Materialize all dimension combinations as a data cube. Storage = O(2^n) where n = number of dimensions. Only viable for a small number of dimensions (less than 8).</li>
+      <li><strong>Presto on S3:</strong> For truly ad-hoc exploration, Presto scans raw Parquet data. Slower (seconds-minutes) but infinitely flexible.</li>
+    </ul>
+  </div>
+
+  <h3>Q4: Aggregation granularity trade-offs?</h3>
+
+  <div class="card">
+    <h4>&#9200; Granularity Spectrum</h4>
+    <div class="table-wrapper" style="margin-top:12px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Granularity</th>
+            <th>Rows/Day</th>
+            <th>Query Precision</th>
+            <th>Storage</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Second</strong></td>
+            <td>~4.3M</td>
+            <td>Highest</td>
+            <td>High</td>
+            <td>Real-time monitoring, alerting</td>
+          </tr>
+          <tr>
+            <td><strong>Minute</strong></td>
+            <td>~72K</td>
+            <td>High</td>
+            <td>Low</td>
+            <td>Operational dashboards (our default)</td>
+          </tr>
+          <tr>
+            <td><strong>5-Minute</strong></td>
+            <td>~14.4K</td>
+            <td>Moderate</td>
+            <td>Very Low</td>
+            <td>Trend analysis</td>
+          </tr>
+          <tr>
+            <td><strong>Hourly</strong></td>
+            <td>~1.2K</td>
+            <td>Moderate</td>
+            <td>Minimal</td>
+            <td>Business reports</td>
+          </tr>
+          <tr>
+            <td><strong>Daily</strong></td>
+            <td>~50</td>
+            <td>Low</td>
+            <td>Negligible</td>
+            <td>Long-term trends, YoY comparison</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;">The interview question "9:05-9:08 AM" implies minute-level granularity is required. This is the sweet spot: 60x fewer rows than second-level, but precise enough for most operational queries.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!--  SECTION 12: INTERVIEW TIPS                                   -->
+<!-- ============================================================ -->
+<section class="section" id="interview-tips">
+  <span class="section-label">Section 12</span>
+  <h2>Interview Tips &amp; Level Calibration</h2>
+
+  <h3>Calibration by Engineering Level</h3>
+
+  <div class="level-grid">
+    <div class="level-card l4">
+      <h4>L4 (Junior) -- Basic Components</h4>
+      <ul>
+        <li>Identifies the need for event collection and storage</li>
+        <li>Proposes a simple API + database architecture</li>
+        <li>Mentions the write-heavy nature of the problem</li>
+        <li>May suggest a single SQL database with time-based partitioning</li>
+        <li>Does not address scalability beyond a single node</li>
+      </ul>
+    </div>
+
+    <div class="level-card l5">
+      <h4>L5 (Mid-Senior) -- Pub/Sub + TSDB + Consistency Model</h4>
+      <ul>
+        <li>Introduces Kafka as a buffer between ingestion and processing</li>
+        <li>Proposes a TSDB for time-series queries</li>
+        <li>Discusses consistency model (eventual consistency is acceptable for analytics)</li>
+        <li>Differentiates stateless ingestion service from stateful stream processing</li>
+        <li>Mentions basic rollup/aggregation strategy</li>
+        <li>Considers at-least-once vs exactly-once delivery semantics</li>
+      </ul>
+    </div>
+
+    <div class="level-card l6">
+      <h4>L6 (Senior/Staff) -- Deep Storage + Query Patterns + Rollups</h4>
+      <ul>
+        <li>Designs tiered storage: hot (TSDB) + cold (S3) with query routing</li>
+        <li>Implements Lambda architecture with speed + batch layers</li>
+        <li>Designs the rollup pipeline: minute -> hourly -> daily with retention policies</li>
+        <li>Handles late-arriving events with watermarks and batch correction</li>
+        <li>Compares storage options (SQL vs NoSQL vs TSDB) with clear trade-offs</li>
+        <li>Designs the Query API with time-range-based routing</li>
+      </ul>
+    </div>
+
+    <div class="level-card l6plus">
+      <h4>L6+ (Staff/Principal) -- Generic Query Patterns, Cost Optimization, Extensibility</h4>
+      <ul>
+        <li>Designs a generic dimension model that supports arbitrary tag-based queries without schema changes</li>
+        <li>Discusses OLAP cube / Druid / ClickHouse for ad-hoc multi-dimensional analysis</li>
+        <li>Optimizes cost: S3 Glacier tiers, compute-storage separation, reserved capacity</li>
+        <li>Addresses multi-region ingestion with centralized aggregation</li>
+        <li>Discusses schema evolution (adding new event types / dimensions without downtime)</li>
+        <li>Proposes monitoring/alerting on the pipeline itself (lag detection, data quality checks)</li>
+        <li>Considers Kappa vs Lambda trade-offs with concrete reasoning</li>
+        <li>Estimates concrete cost numbers for the full system</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Common Interview Mistakes</h3>
+
+  <div class="grid-2">
+    <div class="card" style="border-left: 3px solid var(--danger);">
+      <h4 style="color:var(--danger);">Mistakes to Avoid</h4>
+      <ul>
+        <li>Jumping to SQL without addressing write throughput</li>
+        <li>Ignoring the 10-year retention cost implications</li>
+        <li>Proposing query-time aggregation over raw events (too slow at 864M/day)</li>
+        <li>Not distinguishing hot vs cold data access patterns</li>
+        <li>Over-engineering the read path (it is only 1K queries/day)</li>
+        <li>Forgetting late-arriving events handling</li>
+        <li>Not mentioning client SDK batching (naive per-event HTTP calls = 10K API calls/sec)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--success);">
+      <h4 style="color:var(--success);">What Impresses Interviewers</h4>
+      <ul>
+        <li>Starting with capacity estimation (shows systematic thinking)</li>
+        <li>Identifying the write-heavy / read-light asymmetry early</li>
+        <li>Proposing pre-aggregation as the key optimization</li>
+        <li>Discussing Lambda vs Kappa with clear trade-off reasoning</li>
+        <li>Concrete cost estimation for storage tiers</li>
+        <li>Handling late events, clock skew, deduplication</li>
+        <li>Designing for extensibility (new event types, new dimensions)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Suggested Interview Flow (45 minutes)</h3>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Activity</th>
+          <th>Key Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>0-5 min</strong></td>
+          <td>Clarify requirements</td>
+          <td>Write vs read ratio, retention, granularity, client platforms, consistency needs</td>
+        </tr>
+        <tr>
+          <td><strong>5-10 min</strong></td>
+          <td>Capacity estimation</td>
+          <td>10K/s = 864M/day = 315TB/yr = 3.15PB/10yr. Read QPS is negligible.</td>
+        </tr>
+        <tr>
+          <td><strong>10-15 min</strong></td>
+          <td>Data model + API</td>
+          <td>Event schema, query API design, example queries</td>
+        </tr>
+        <tr>
+          <td><strong>15-25 min</strong></td>
+          <td>High-level architecture</td>
+          <td>Client SDK -> Ingestion -> Kafka -> Flink/Spark -> TSDB/S3 -> Query Service</td>
+        </tr>
+        <tr>
+          <td><strong>25-35 min</strong></td>
+          <td>Storage deep dive</td>
+          <td>Tiered storage, TSDB vs NoSQL vs S3, rollup pipeline, retention policies</td>
+        </tr>
+        <tr>
+          <td><strong>35-45 min</strong></td>
+          <td>Deep dives + trade-offs</td>
+          <td>Lambda vs Kappa, late events, cost optimization, follow-up questions</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="strong-yes">
+    <h4>STRONG YES Signal Checklist</h4>
+    <ul>
+      <li><strong>Near real-time aggregation</strong> -- Flink streaming from Kafka with minute-level windows for fresh data</li>
+      <li><strong>Periodic batch correction</strong> -- Spark daily recompute from S3 as authoritative source, overwriting speed layer</li>
+      <li><strong>Efficient tiered storage</strong> -- TSDB for hot data, S3 Parquet for cold, automatic rollups at decreasing granularity</li>
+      <li><strong>Ad-hoc query support</strong> -- Raw events in S3 queryable via Presto for arbitrary analysis beyond pre-computed dimensions</li>
+      <li><strong>Cost awareness</strong> -- Concrete storage cost estimates, S3 Glacier for archival, compute-storage separation</li>
+      <li><strong>Client SDK design</strong> -- Batching, compression, local persistence, retry with backoff, sync vs async transport</li>
+      <li><strong>Late event handling</strong> -- Watermarks + batch correction + dead-letter queue for extreme outliers</li>
+      <li><strong>Extensibility</strong> -- Tag-based schema supports new event types and dimensions without migration</li>
+    </ul>
+  </div>
+
+  <div class="tip-box">
+    <h4>Principal Engineer Differentiator</h4>
+    <p>At the PE level, the interviewer expects you to reason about the <strong style="color:var(--text);">system's operational lifecycle</strong>, not just its initial design. How do you monitor pipeline lag? How do you detect data quality regressions? How do you handle schema evolution when a new team wants to add a "currency" dimension? How do you manage the cost trajectory as data grows year over year? How do you run A/B tests on the instrumentation pipeline itself? These operational concerns separate a PE-level answer from a Staff-level one.</p>
+  </div>
+</section>
+
+</div>
+
+<!-- ============================================================ -->
+<!--  FOOTER                                                       -->
+<!-- ============================================================ -->
+<div class="footer">
+  <p><a href="index.html">&#8592; Back to All Topics</a> &nbsp;|&nbsp; <a href="../index.html">Airbnb System Design Home</a></p>
+  <p style="margin-top: 8px;">Topic 06: Data Instrumentation System &nbsp;|&nbsp; Principal Engineer Level</p>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

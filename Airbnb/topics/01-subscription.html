@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airbnb Subscription Model - Principal Engineer System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 60px 40px 50px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .hero .subtitle {
+    font-size: 1.15em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .hero .topic-badges { position: relative; margin-top: 15px; }
+  .hero .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    padding: 10px 24px;
+    border-radius: 10px;
+    transition: all 0.3s;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.78em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.78em;
+    font-weight: 600;
+    margin: 3px 2px;
+    white-space: nowrap;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+
+  /* ===== STICKY NAV ===== */
+  .toc {
+    background: #f8fafc;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .toc h2 {
+    color: var(--secondary);
+    margin-bottom: 10px;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .toc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.82em;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background: var(--card-bg);
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .toc a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* ===== CONTAINER ===== */
+  .container { max-width: 1200px; margin: 0 auto; padding: 30px 40px; }
+  section { margin-bottom: 55px; }
+  section > h2 {
+    font-size: 1.7em;
+    margin-bottom: 25px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    font-size: 1.2em;
+    flex-shrink: 0;
+  }
+  h3 {
+    font-size: 1.25em;
+    color: var(--blue);
+    margin: 25px 0 14px;
+  }
+  h4 {
+    font-size: 1.05em;
+    color: #ffffff;
+    margin: 18px 0 10px;
+  }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 10px 0 16px 24px; }
+  li { margin-bottom: 6px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(255,90,95,0.3); }
+  .card h4 {
+    font-size: 1.1em;
+    margin-bottom: 12px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .card-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ===== TABLES ===== */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  th {
+    background: #f8fafc;
+    padding: 13px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #1e293b;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--card-border);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(66,139,249,0.04); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ===== CODE BLOCKS ===== */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    font-size: 0.85em;
+    line-height: 1.6;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    color: #24292f;
+  }
+  :not(pre) > code {
+    background: rgba(66,139,249,0.1);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: var(--blue);
+  }
+  .keyword { color: #cf222e; }
+  .string { color: #0a3069; }
+  .comment { color: #6e7781; font-style: italic; }
+  .type { color: #8250df; }
+  .number { color: #0550ae; }
+  .func { color: #953800; }
+
+  /* ===== TIP / WARNING / INFO BOXES ===== */
+  .tip-box {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0 20px;
+    font-size: 0.92em;
+    border-left: 4px solid;
+  }
+  .tip-box.tip {
+    background: rgba(255,255,255,0.15);
+    border-color: #e5e7eb;
+  }
+  .tip-box.warning {
+    background: rgba(245,158,11,0.06);
+    border-color: var(--warning);
+  }
+  .tip-box.danger {
+    background: rgba(239,68,68,0.06);
+    border-color: var(--danger);
+  }
+  .tip-box.info {
+    background: rgba(66,139,249,0.08);
+    border-color: var(--blue);
+  }
+  .tip-box.purple {
+    background: rgba(123,47,247,0.08);
+    border-color: var(--purple);
+  }
+  .tip-box strong { display: block; margin-bottom: 6px; }
+
+  /* ===== STATE MACHINE ===== */
+  .state-machine {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 16px 0 20px;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .state-machine .states {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    align-items: center;
+  }
+  .state-node {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.88em;
+    letter-spacing: 0.5px;
+  }
+  .state-node.trial { background: rgba(123,47,247,0.2); border: 2px solid var(--purple); color: var(--purple); }
+  .state-node.active { background: rgba(16,185,129,0.2); border: 2px solid var(--success); color: var(--success); }
+  .state-node.past-due { background: rgba(245,158,11,0.2); border: 2px solid var(--warning); color: var(--warning); }
+  .state-node.cancelled { background: rgba(239,68,68,0.2); border: 2px solid var(--danger); color: var(--danger); }
+  .state-node.expired { background: rgba(148,163,184,0.2); border: 2px solid var(--text-muted); color: var(--text-muted); }
+  .state-node.paused { background: rgba(66,139,249,0.2); border: 2px solid var(--blue); color: var(--blue); }
+  .arrow {
+    font-size: 1.4em;
+    color: var(--text-muted);
+    padding: 0 4px;
+  }
+
+  /* ===== PRICING CARDS ===== */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .pricing-card {
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 16px;
+    padding: 30px 25px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .pricing-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+  .pricing-card.featured {
+    border-color: var(--primary);
+    background: linear-gradient(180deg, rgba(255,90,95,0.15) 0%, var(--card-bg) 100%);
+  }
+  .pricing-card.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary);
+    color: white;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .pricing-card .tier-name {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .pricing-card .price {
+    font-size: 2.4em;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 12px 0;
+  }
+  .pricing-card .price span {
+    font-size: 0.4em;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .pricing-card ul {
+    list-style: none;
+    margin: 16px 0;
+    padding: 0;
+    text-align: left;
+  }
+  .pricing-card ul li {
+    padding: 6px 0;
+    font-size: 0.9em;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(51,65,85,0.5);
+  }
+  .pricing-card ul li::before {
+    content: '\2713 ';
+    color: var(--success);
+    font-weight: 700;
+    margin-right: 6px;
+  }
+
+  /* ===== FLOW DIAGRAM ===== */
+  .flow-diagram {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 16px 0 20px;
+    overflow-x: auto;
+  }
+  .flow-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin: 10px 0;
+  }
+  .flow-box {
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-align: center;
+    min-width: 130px;
+  }
+  .flow-box.client { background: rgba(66,139,249,0.08); border: 2px solid var(--blue); color: var(--blue); }
+  .flow-box.service { background: rgba(0,166,153,0.06); border: 2px solid var(--secondary); color: var(--secondary); }
+  .flow-box.db { background: rgba(123,47,247,0.15); border: 2px solid var(--purple); color: var(--purple); }
+  .flow-box.external { background: rgba(252,100,45,0.15); border: 2px solid var(--accent); color: var(--accent); }
+  .flow-box.queue { background: rgba(245,158,11,0.15); border: 2px solid var(--warning); color: var(--warning); }
+  .flow-box.cache { background: rgba(255,90,95,0.15); border: 2px solid var(--primary); color: var(--primary); }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 40px;
+    border-top: 1px solid #e5e7eb;
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 40px 20px 35px; }
+    .hero h1 { font-size: 1.8em; }
+    .toc { padding: 15px 20px; }
+    .container { padding: 20px; }
+    .card-grid, .card-grid-3, .pricing-grid { grid-template-columns: 1fr; }
+    .hero .stats-row { gap: 20px; }
+    section > h2 { font-size: 1.3em; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ============================= HERO ============================= -->
+<div class="hero">
+  <h1>Airbnb Subscription Model</h1>
+  <p class="subtitle">Principal Engineer System Design -- Monthly Subscription for Premium Listing Access</p>
+  <div class="topic-badges">
+    <span class="badge badge-red">Payments</span>
+    <span class="badge badge-green">Billing</span>
+    <span class="badge badge-blue">Entitlements</span>
+    <span class="badge badge-purple">State Machines</span>
+    <span class="badge badge-orange">Stripe Integration</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">150M</div>
+      <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">7.5M</div>
+      <div class="stat-label">Target Subscribers</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">3 TPS</div>
+      <div class="stat-label">Avg Billing</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">99.99%</div>
+      <div class="stat-label">Billing SLA</div>
+    </div>
+  </div>
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+</div>
+
+<!-- ============================= STICKY NAV ============================= -->
+<nav class="toc">
+  <h2>Navigation</h2>
+  <div class="toc-grid">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#capacity">Capacity</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#api-design">API Design</a>
+    <a href="#data-model">Data Model</a>
+    <a href="#state-machine">State Machine</a>
+    <a href="#billing">Billing Deep Dive</a>
+    <a href="#entitlements">Entitlements</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<!-- ============================= MAIN CONTENT ============================= -->
+<div class="container">
+
+<!-- ============================= 1. OVERVIEW ============================= -->
+<section id="overview">
+  <h2>
+    <span class="section-icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">1</span>
+    Overview
+  </h2>
+  <p>
+    Design a subscription service for Airbnb that allows guests and hosts to subscribe to monthly or annual plans with tiered pricing. Subscribers gain access to premium listings, booking discounts, priority customer support, and exclusive concierge experiences. The system must handle billing lifecycle management, entitlement gating, multi-currency support, and integrate with third-party payment processors like Stripe.
+  </p>
+
+  <div class="tip-box info">
+    <strong>Why This Problem Matters at PE Level</strong>
+    A subscription system cuts across payments, identity, entitlements, and user experience. At principal engineer scope, you must reason about distributed state machines, payment webhook reliability, eventual consistency in entitlement propagation, and cross-team API contracts. This is not a CRUD problem -- it is a financial-grade distributed system.
+  </div>
+
+  <h3>Subscription Tiers</h3>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="tier-name" style="color:var(--blue);">Explorer</div>
+      <div class="price">$29.99<span>/month</span></div>
+      <ul>
+        <li>Access to premium-tagged listings</li>
+        <li>5% discount on all bookings</li>
+        <li>Priority search placement</li>
+        <li>Early access to new listings</li>
+        <li>Basic travel insurance included</li>
+      </ul>
+    </div>
+    <div class="pricing-card featured">
+      <div class="tier-name" style="color:var(--primary);">Adventurer</div>
+      <div class="price">$49.99<span>/month</span></div>
+      <ul>
+        <li>Everything in Explorer</li>
+        <li>12% discount on all bookings</li>
+        <li>Free cancellation (48h window)</li>
+        <li>Concierge chat support</li>
+        <li>Premium travel insurance</li>
+        <li>Family plan: add 2 members</li>
+      </ul>
+    </div>
+    <div class="pricing-card">
+      <div class="tier-name" style="color:var(--secondary);">Nomad</div>
+      <div class="price">$99.99<span>/month</span></div>
+      <ul>
+        <li>Everything in Adventurer</li>
+        <li>20% discount on all bookings</li>
+        <li>Dedicated concierge agent</li>
+        <li>Airport lounge access</li>
+        <li>Family plan: add 5 members</li>
+        <li>Exclusive luxury listings</li>
+        <li>Complimentary upgrades</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= 2. REQUIREMENTS ============================= -->
+<section id="requirements">
+  <h2>
+    <span class="section-icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">2</span>
+    Requirements
+  </h2>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--success);">Functional Requirements</h4>
+      <ul>
+        <li><strong>Subscribe/Unsubscribe:</strong> Users can subscribe to any tier, upgrade, downgrade, or cancel at any time with prorated billing.</li>
+        <li><strong>Tier Management:</strong> Admin CRUD for plans with versioning. Existing subscribers grandfathered on price changes.</li>
+        <li><strong>Premium Access Control:</strong> Gate premium listings, discounts, and features by active entitlement.</li>
+        <li><strong>Billing Cycles:</strong> Monthly and annual billing with auto-renewal. Support for coupons and promotional pricing.</li>
+        <li><strong>Free Trials:</strong> 14-day trial with no payment upfront. Convert to paid or cancel at trial end.</li>
+        <li><strong>Family Plans:</strong> Primary subscriber can invite family members who inherit tier benefits.</li>
+        <li><strong>Invoice and Receipts:</strong> Generate PDF invoices, email receipts, and expose billing history via API.</li>
+        <li><strong>Pause Subscription:</strong> Allow up to 3-month pause without losing subscriber status.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--warning);">Non-Functional Requirements</h4>
+      <ul>
+        <li><strong>Payment Reliability:</strong> 99.99% success rate on billing operations. Zero double-charges via idempotency.</li>
+        <li><strong>State Consistency:</strong> Subscription state must never diverge between our DB and Stripe. Reconciliation jobs run hourly.</li>
+        <li><strong>Grace Periods:</strong> 7-day grace on failed payments before entitlement revocation. Dunning emails at day 1, 3, 5, 7.</li>
+        <li><strong>GDPR Compliance:</strong> Right to deletion, data portability for billing history, consent management for marketing.</li>
+        <li><strong>Low Latency Entitlements:</strong> Entitlement checks must resolve in &lt;10ms (p99) for every page load and API call.</li>
+        <li><strong>Auditability:</strong> Every state transition, payment event, and entitlement change must be immutably logged.</li>
+        <li><strong>Multi-Currency:</strong> Support 40+ currencies with daily exchange rate updates. Display local pricing.</li>
+        <li><strong>Scalability:</strong> Handle 10x billing spikes on month-start renewal dates without degradation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box warning">
+    <strong>PE Signal: Requirement Prioritization</strong>
+    In an interview, explicitly state which requirements you would build in V1 vs V2. For V1: subscribe, cancel, billing, entitlement checks. For V2: family plans, pause, coupons, annual billing. This shows you can scope incrementally while keeping the architecture extensible.
+  </div>
+</section>
+
+<!-- ============================= 3. CAPACITY ============================= -->
+<section id="capacity">
+  <h2>
+    <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">3</span>
+    Capacity Estimation
+  </h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Estimate</th>
+          <th>Derivation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Total Airbnb Users</td>
+          <td><strong>150M</strong></td>
+          <td>Based on public data for registered accounts</td>
+        </tr>
+        <tr>
+          <td>Subscription Conversion Rate</td>
+          <td><strong>5%</strong></td>
+          <td>Industry benchmark for freemium-to-paid in travel</td>
+        </tr>
+        <tr>
+          <td>Total Subscribers</td>
+          <td><strong>7.5M</strong></td>
+          <td>150M x 5%</td>
+        </tr>
+        <tr>
+          <td>Monthly Billing Events</td>
+          <td><strong>~7.5M</strong></td>
+          <td>Each subscriber billed once/month (simplified)</td>
+        </tr>
+        <tr>
+          <td>Average Billing TPS</td>
+          <td><strong>~2.9 TPS</strong></td>
+          <td>7.5M / 30 days / 86,400 sec</td>
+        </tr>
+        <tr>
+          <td>Peak Billing TPS (Renewal Day)</td>
+          <td><strong>~30 TPS</strong></td>
+          <td>10x spike; many users started on same day</td>
+        </tr>
+        <tr>
+          <td>Entitlement Checks QPS</td>
+          <td><strong>~50,000 QPS</strong></td>
+          <td>Every search/listing page checks entitlement. 150M DAU / 86,400 x avg 30 pages</td>
+        </tr>
+        <tr>
+          <td>Subscription Record Size</td>
+          <td><strong>~2 KB</strong></td>
+          <td>JSON metadata, plan info, billing refs</td>
+        </tr>
+        <tr>
+          <td>Total Storage (Subscriptions)</td>
+          <td><strong>~15 GB</strong></td>
+          <td>7.5M x 2KB</td>
+        </tr>
+        <tr>
+          <td>Billing Events Storage (1 yr)</td>
+          <td><strong>~180 GB</strong></td>
+          <td>90M events/yr x 2KB per event</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h4 style="color:var(--accent);">Key Capacity Insights</h4>
+    <ul>
+      <li><strong>Billing is low-throughput, high-correctness:</strong> At ~3 TPS average, the challenge is not scale but reliability. Every missed charge is lost revenue; every double charge is a chargeback.</li>
+      <li><strong>Entitlement checks are high-throughput:</strong> At 50K QPS, we must cache aggressively in Redis. Cannot hit the DB for every page load.</li>
+      <li><strong>Renewal day spikes:</strong> If many subscribers sign up on the 1st of the month, renewal day can see 10x burst. Solution: stagger billing anchors or use a billing queue with rate limiting.</li>
+      <li><strong>Storage is trivial:</strong> Subscription data is small. The real storage concern is the immutable billing event log for audit purposes.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================= 4. ARCHITECTURE ============================= -->
+<section id="architecture">
+  <h2>
+    <span class="section-icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">4</span>
+    High-Level Architecture
+  </h2>
+
+  <div class="diagram-box" style="background: rgba(0,0,0,0.05); border-radius: 12px; padding: 20px; overflow-x: auto;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650" font-family="Segoe UI, sans-serif" style="width:100%; height:auto;">
+      <defs>
+        <!-- Arrow markers -->
+        <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+        </marker>
+        <marker id="arrRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#ef4444"/>
+        </marker>
+        <!-- Shadow filter -->
+        <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+        </filter>
+        <!-- Service gradients -->
+        <linearGradient id="gSub" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7b2ff7"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+        <linearGradient id="gBill" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+        <linearGradient id="gEntitle" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+        <linearGradient id="gNotif" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+        <linearGradient id="gConsumer" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#334155"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+      </defs>
+
+      <!-- Column headers -->
+      <text x="80" y="28" fill="#64748b" font-size="11" font-weight="700" letter-spacing="2" text-anchor="middle">CLIENTS</text>
+      <text x="370" y="28" fill="#64748b" font-size="11" font-weight="700" letter-spacing="2" text-anchor="middle">SERVICES</text>
+      <text x="700" y="28" fill="#64748b" font-size="11" font-weight="700" letter-spacing="2" text-anchor="middle">DATA LAYER</text>
+
+      <!-- ===== CLIENTS ===== -->
+      <!-- Web -->
+      <rect x="20" y="80" width="120" height="50" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5" filter="url(#shadow)"/>
+      <text x="80" y="101" fill="#428BF9" font-size="11" font-weight="700" text-anchor="middle">Web Browser</text>
+      <text x="80" y="117" fill="#64748b" font-size="9" text-anchor="middle">React SPA</text>
+      <!-- Mobile -->
+      <rect x="20" y="150" width="120" height="50" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5" filter="url(#shadow)"/>
+      <text x="80" y="171" fill="#428BF9" font-size="11" font-weight="700" text-anchor="middle">Mobile App</text>
+      <text x="80" y="187" fill="#64748b" font-size="9" text-anchor="middle">iOS / Android</text>
+
+      <!-- ===== API GATEWAY ===== -->
+      <g transform="translate(190, 105)">
+        <rect x="0" y="0" width="140" height="55" rx="10" fill="#f8fafc" stroke="#FF5A5F" stroke-width="1.5" filter="url(#shadow)"/>
+        <!-- Shield icon -->
+        <path d="M14,4 L14,22 Q14,28 24,32 Q34,28 34,22 L34,4 Q24,0 14,4 Z" fill="none" stroke="#FF5A5F" stroke-width="1.2" transform="scale(0.55) translate(8,22)"/>
+        <text x="24" y="30" fill="#FF5A5F" font-size="8" text-anchor="middle" transform="translate(0,0)">&#10003;</text>
+        <text x="82" y="22" fill="#FF5A5F" font-size="11" font-weight="700" text-anchor="middle">API Gateway</text>
+        <text x="82" y="38" fill="#64748b" font-size="9" text-anchor="middle">Auth + Rate Limit</text>
+      </g>
+
+      <!-- Client to API GW -->
+      <line x1="140" y1="105" x2="188" y2="125" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="140" y1="175" x2="188" y2="145" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- ===== SERVICES ===== -->
+      <!-- Subscription Service (star icon) -->
+      <g transform="translate(390, 60)">
+        <rect x="0" y="0" width="170" height="55" rx="10" fill="url(#gSub)" filter="url(#shadow)"/>
+        <text x="20" y="33" fill="rgba(255,255,255,0.9)" font-size="14" text-anchor="middle">&#9733;</text>
+        <text x="100" y="22" fill="white" font-size="12" font-weight="700" text-anchor="middle">Subscription Svc</text>
+        <text x="100" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Lifecycle Orchestrator</text>
+      </g>
+      <!-- Billing Service (dollar icon) -->
+      <g transform="translate(390, 140)">
+        <rect x="0" y="0" width="170" height="55" rx="10" fill="url(#gBill)" filter="url(#shadow)"/>
+        <text x="20" y="33" fill="rgba(255,255,255,0.9)" font-size="14" text-anchor="middle">$</text>
+        <text x="100" y="22" fill="white" font-size="12" font-weight="700" text-anchor="middle">Billing Service</text>
+        <text x="100" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Invoices + Dunning</text>
+      </g>
+      <!-- Entitlement Service (key icon) -->
+      <g transform="translate(390, 220)">
+        <rect x="0" y="0" width="170" height="55" rx="10" fill="url(#gEntitle)" filter="url(#shadow)"/>
+        <text x="20" y="33" fill="rgba(255,255,255,0.9)" font-size="14" text-anchor="middle">&#128273;</text>
+        <text x="100" y="22" fill="white" font-size="12" font-weight="700" text-anchor="middle">Entitlement Svc</text>
+        <text x="100" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Access / Feature Flags</text>
+      </g>
+      <!-- Notification Service (bell icon) -->
+      <g transform="translate(390, 300)">
+        <rect x="0" y="0" width="170" height="55" rx="10" fill="url(#gNotif)" filter="url(#shadow)"/>
+        <text x="20" y="33" fill="rgba(255,255,255,0.9)" font-size="14" text-anchor="middle">&#128276;</text>
+        <text x="100" y="22" fill="white" font-size="12" font-weight="700" text-anchor="middle">Notification Svc</text>
+        <text x="100" y="38" fill="rgba(255,255,255,0.8)" font-size="9" text-anchor="middle">Email / Push / SMS</text>
+      </g>
+
+      <!-- API GW to Subscription Service -->
+      <line x1="330" y1="132" x2="388" y2="95" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- ===== EXTERNAL: STRIPE ===== -->
+      <g transform="translate(190, 220)">
+        <rect x="0" y="0" width="140" height="55" rx="10" fill="#f8fafc" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+        <!-- Cloud + Lock icon -->
+        <path d="M14,30 Q8,30 8,24 Q8,18 16,18 Q16,12 24,12 Q32,12 32,18 Q40,18 40,24 Q40,30 34,30 Z" fill="none" stroke="#f59e0b" stroke-width="1" transform="scale(0.6) translate(8,16)"/>
+        <text x="82" y="22" fill="#f59e0b" font-size="11" font-weight="700" text-anchor="middle">Stripe</text>
+        <text x="82" y="38" fill="#64748b" font-size="9" text-anchor="middle">Billing API + Webhooks</text>
+      </g>
+
+      <!-- Subscription Svc to Stripe (solid - sync call) -->
+      <line x1="390" y1="95" x2="332" y2="235" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="350" y="170" fill="#f59e0b" font-size="8" transform="rotate(-55, 350, 170)">payment</text>
+
+      <!-- ===== DATA LAYER ===== -->
+      <!-- PostgreSQL (Subscriptions DB) -->
+      <g transform="translate(640, 50)">
+        <rect x="0" y="0" width="150" height="55" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5" filter="url(#shadow)"/>
+        <!-- PG cylinder -->
+        <ellipse cx="24" cy="18" rx="10" ry="4" fill="#428BF9" opacity="0.8"/>
+        <rect x="14" y="18" width="20" height="16" fill="#428BF9" opacity="0.3"/>
+        <line x1="14" y1="18" x2="14" y2="34" stroke="#428BF9" stroke-width="1"/>
+        <line x1="34" y1="18" x2="34" y2="34" stroke="#428BF9" stroke-width="1"/>
+        <ellipse cx="24" cy="34" rx="10" ry="4" fill="#428BF9" opacity="0.6"/>
+        <text x="90" y="23" fill="#428BF9" font-size="11" font-weight="700" text-anchor="middle">PostgreSQL</text>
+        <text x="90" y="39" fill="#64748b" font-size="9" text-anchor="middle">Subscriptions DB</text>
+      </g>
+
+      <!-- Redis (Entitlement Cache) -->
+      <g transform="translate(640, 210)">
+        <rect x="0" y="0" width="150" height="55" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)"/>
+        <!-- Redis diamond -->
+        <polygon points="24,10 34,27 24,44 14,27" fill="none" stroke="#ef4444" stroke-width="1.5" transform="scale(0.55) translate(10,8)"/>
+        <polygon points="24,16 30,27 24,38 18,27" fill="#ef4444" opacity="0.3" transform="scale(0.55) translate(10,8)"/>
+        <text x="90" y="23" fill="#ef4444" font-size="11" font-weight="700" text-anchor="middle">Redis</text>
+        <text x="90" y="39" fill="#64748b" font-size="9" text-anchor="middle">Entitlement Cache</text>
+      </g>
+
+      <!-- Subscription Svc to PostgreSQL (dashed) -->
+      <line x1="560" y1="82" x2="638" y2="77" stroke="#428BF9" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="600" y="72" fill="#428BF9" font-size="8">state</text>
+
+      <!-- Entitlement Svc to Redis (dashed) -->
+      <line x1="560" y1="247" x2="638" y2="240" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="600" y="235" fill="#ef4444" font-size="8">cache</text>
+
+      <!-- ===== KAFKA EVENT BUS ===== -->
+      <g transform="translate(80, 420)">
+        <rect x="0" y="0" width="720" height="55" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)"/>
+        <!-- Kafka cluster nodes -->
+        <circle cx="24" cy="18" r="5" fill="#ef4444" opacity="0.9"/>
+        <circle cx="24" cy="38" r="5" fill="#ef4444" opacity="0.7"/>
+        <circle cx="42" cy="28" r="5" fill="#ef4444" opacity="0.8"/>
+        <line x1="29" y1="18" x2="37" y2="24" stroke="#ef4444" stroke-width="1.2" opacity="0.6"/>
+        <line x1="29" y1="38" x2="37" y2="32" stroke="#ef4444" stroke-width="1.2" opacity="0.6"/>
+        <text x="360" y="23" fill="#ef4444" font-size="13" font-weight="700" text-anchor="middle">Apache Kafka Event Bus</text>
+        <text x="360" y="42" fill="#64748b" font-size="10" text-anchor="middle">subscription.created | subscription.renewed | payment.failed | entitlement.changed</text>
+      </g>
+
+      <!-- Subscription Svc to Kafka (dashed red) -->
+      <line x1="475" y1="115" x2="440" y2="418" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrRed)" opacity="0.6"/>
+      <text x="445" y="280" fill="#ef4444" font-size="8" transform="rotate(-80, 445, 280)">events</text>
+
+      <!-- Kafka to Billing (dashed) -->
+      <line x1="350" y1="420" x2="450" y2="197" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+      <!-- Kafka to Entitlement (dashed) -->
+      <line x1="440" y1="420" x2="475" y2="277" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+      <!-- Kafka to Notification (dashed) -->
+      <line x1="520" y1="420" x2="500" y2="357" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- ===== FLOW ANNOTATIONS ===== -->
+      <!-- Stripe webhooks to Kafka -->
+      <path d="M260,275 L260,420" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrRed)" fill="none"/>
+      <text x="266" y="360" fill="#f59e0b" font-size="8">webhooks</text>
+
+      <!-- ===== NUMBERED STEP CIRCLES ===== -->
+      <!-- Step 1: Client -> API Gateway -->
+      <circle cx="165" cy="115" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="165" y="119" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Step 2: API Gateway -> Subscription Service -->
+      <circle cx="358" cy="110" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="358" y="114" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+      <!-- Step 3: Subscription Svc -> PostgreSQL -->
+      <circle cx="600" cy="78" r="10" fill="#428BF9" stroke="#fff" stroke-width="1.5"/>
+      <text x="600" y="82" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+      <!-- Step 4: Subscription Svc -> Stripe -->
+      <circle cx="360" cy="170" r="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="360" y="174" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+      <!-- Step 5: Stripe -> Kafka via Webhook -->
+      <circle cx="260" cy="348" r="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="260" y="352" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+      <!-- Step 6: Kafka -> Billing Service -->
+      <circle cx="395" cy="310" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="395" y="314" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+      <!-- Step 7: Kafka -> Entitlement Service -->
+      <circle cx="458" cy="350" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="458" y="354" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+      <!-- Step 8: Entitlement Svc -> Redis -->
+      <circle cx="600" cy="242" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="600" y="246" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+      <!-- Step 9: Kafka -> Notification Service -->
+      <circle cx="510" cy="388" r="10" fill="#00A699" stroke="#fff" stroke-width="1.5"/>
+      <text x="510" y="392" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+      <!-- ===== LEGEND ===== -->
+      <g transform="translate(640, 420)">
+        <rect x="0" y="0" width="190" height="110" rx="8" fill="#f1f5f9" stroke="#334155" stroke-width="1"/>
+        <text x="95" y="18" fill="rgba(255,255,255,0.7)" font-size="10" font-weight="700" text-anchor="middle">LEGEND</text>
+        <line x1="12" y1="32" x2="42" y2="32" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="52" y="36" fill="#64748b" font-size="9">Sync request</text>
+        <line x1="12" y1="50" x2="42" y2="50" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="52" y="54" fill="#64748b" font-size="9">Async / DB query</text>
+        <line x1="12" y1="68" x2="42" y2="68" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="52" y="72" fill="#64748b" font-size="9">Event stream (Kafka)</text>
+        <line x1="12" y1="86" x2="42" y2="86" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="52" y="90" fill="#64748b" font-size="9">External (Stripe)</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>From &rarr; To</th>
+          <th>Protocol</th>
+          <th>What Happens</th>
+          <th>Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">1</span></td>
+          <td>Client &rarr; API Gateway</td>
+          <td><code>HTTPS</code></td>
+          <td>Authenticate request (JWT/OAuth2), enforce rate limits, route to downstream service</td>
+          <td>~5-15 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">2</span></td>
+          <td>API Gateway &rarr; Subscription Service</td>
+          <td><code>gRPC</code></td>
+          <td>Create or manage subscription: validate plan, check eligibility, initiate subscription lifecycle</td>
+          <td>~10-25 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">3</span></td>
+          <td>Subscription Service &rarr; PostgreSQL</td>
+          <td><code>TCP</code></td>
+          <td>Persist subscription state (INSERT/UPDATE with ACID guarantees), store plan, status, billing cycle</td>
+          <td>~2-8 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">4</span></td>
+          <td>Subscription Service &rarr; Stripe</td>
+          <td><code>HTTPS</code></td>
+          <td>Create payment intent or Stripe subscription, attach payment method, set billing anchor</td>
+          <td>~200-600 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">5</span></td>
+          <td>Stripe &rarr; Kafka (via Webhook)</td>
+          <td><code>HTTPS &rarr; Kafka</code></td>
+          <td>Stripe fires webhook (payment_intent.succeeded / failed), webhook handler publishes to Kafka topic</td>
+          <td>~1-5 s (async)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">6</span></td>
+          <td>Kafka &rarr; Billing Service</td>
+          <td><code>Consumer</code></td>
+          <td>Process billing events: create invoice record, update payment status, trigger dunning if failed</td>
+          <td>~50-200 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">7</span></td>
+          <td>Kafka &rarr; Entitlement Service</td>
+          <td><code>Consumer</code></td>
+          <td>Update access grants: activate feature flags, set entitlement TTL, persist to DB + cache</td>
+          <td>~50-200 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">8</span></td>
+          <td>Entitlement Service &rarr; Redis</td>
+          <td><code>TCP</code></td>
+          <td>Cache entitlement for fast lookups: SET with TTL matching billing cycle, used by all services for authz</td>
+          <td>~1-3 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">9</span></td>
+          <td>Kafka &rarr; Notification Service</td>
+          <td><code>Consumer</code></td>
+          <td>Send confirmation email, push notification, or SMS. Render template, apply user preferences, dispatch</td>
+          <td>~100-500 ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3>Happy Path: Subscription Success Flow</h3>
+  <div class="card" style="border-left: 3px solid var(--success);">
+    <p style="margin-bottom:16px;">The complete success flow when a user subscribes to a plan:</p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">1</span>
+        <span>User clicks "Subscribe" &rarr; Client sends <code>POST /subscriptions</code> to <strong>API Gateway</strong> (JWT auth verified, rate limit checked)</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">2</span>
+        <span>API Gateway routes to <strong>Subscription Service</strong> via gRPC &rarr; validates plan, checks eligibility</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:12px;">3</span>
+        <span>Subscription Service persists subscription in <strong>PostgreSQL</strong> with status = <code>PENDING</code></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">4</span>
+        <span>Subscription Service calls <strong>Stripe API</strong> to create subscription + payment intent &rarr; returns <code>client_secret</code></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">5</span>
+        <span>Stripe confirms payment &rarr; fires <code>payment_intent.succeeded</code> webhook &rarr; handler publishes to <strong>Kafka</strong></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">6</span>
+        <span><strong>Billing Service</strong> consumes event &rarr; creates invoice record, marks payment as <code>PAID</code></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">7</span>
+        <span><strong>Entitlement Service</strong> consumes event &rarr; activates feature flags, grants access to premium features</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">8</span>
+        <span>Entitlement Service caches grants in <strong>Redis</strong> with TTL &rarr; all services can check access in &lt;3ms</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:12px;">9</span>
+        <span><strong>Notification Service</strong> consumes event &rarr; sends welcome email with receipt and subscription details</span>
+      </div>
+    </div>
+    <p style="margin-top:16px; color:var(--success); font-weight:600;">Result: User sees confirmation page, receives email, and immediately has access to premium features.</p>
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fails At</th>
+          <th>Failure Scenario</th>
+          <th>Impact</th>
+          <th>Recovery Strategy</th>
+          <th>User Sees</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">1</span> API Gateway</td>
+          <td>Auth token expired or rate limit exceeded</td>
+          <td>Request rejected before reaching any service</td>
+          <td>Client retries with refreshed token; backoff on 429</td>
+          <td>"Session expired, please log in again" or "Too many requests, try again shortly"</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">2</span> Subscription Svc</td>
+          <td>Service down or gRPC timeout</td>
+          <td>Cannot create subscription, no side effects yet</td>
+          <td>Circuit breaker trips; client retries with exponential backoff; idempotency key prevents duplicates</td>
+          <td>"Something went wrong. Please try again."</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">3</span> PostgreSQL</td>
+          <td>DB connection pool exhausted or write failure</td>
+          <td>Subscription state not persisted; Stripe call not yet made</td>
+          <td>Connection pool auto-recovers; PgBouncer failover; retry at service level</td>
+          <td>"Unable to process subscription. Please try again."</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">4</span> Stripe API</td>
+          <td>Stripe down (503) or payment declined by card network</td>
+          <td>Subscription saved as PENDING, no charge made</td>
+          <td><strong>Stripe down:</strong> retry with exponential backoff (Stripe is idempotent). <strong>Declined:</strong> prompt user to update payment method, enter dunning flow</td>
+          <td>"Payment failed. Please check your card details." or "Payment processing delayed, we'll notify you."</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">5</span> Webhook Delivery</td>
+          <td>Webhook endpoint down or Stripe cannot deliver event</td>
+          <td>Payment succeeded at Stripe but downstream services unaware</td>
+          <td>Stripe retries webhooks for up to 72 hours; reconciliation cron job polls Stripe API every 5 min for missed events</td>
+          <td>User charged but may see delayed activation (minutes). "Your subscription is being activated..."</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">6</span> Kafka &rarr; Billing</td>
+          <td>Consumer lag or Billing Service crash</td>
+          <td>Invoice generation delayed; payment already captured</td>
+          <td>Kafka retains events (7d retention); consumer restarts from last committed offset; dead letter queue for poison messages</td>
+          <td>No immediate user impact; invoice email arrives late</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">7</span> Kafka &rarr; Entitlement</td>
+          <td>Consumer lag or Entitlement Service crash</td>
+          <td>User paid but entitlement not yet granted &mdash; premium features inaccessible</td>
+          <td>Consumer auto-restarts; manual replay from Kafka offset; support can force-grant via admin API</td>
+          <td>"Your payment was received. Access will be activated shortly." (polling UI with spinner)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">8</span> Redis</td>
+          <td>Redis cluster down or cache miss (eviction/TTL expired)</td>
+          <td>Entitlement lookups slower; falls back to DB</td>
+          <td>Automatic fallback to PostgreSQL query; Redis Sentinel triggers failover in &lt;30s; cache re-warmed on recovery</td>
+          <td>Slightly slower page loads (~50ms instead of ~3ms), but no feature loss</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">9</span> Notification Svc</td>
+          <td>Email provider down or template rendering error</td>
+          <td>User does not receive confirmation email</td>
+          <td>Kafka retry with backoff; fallback to secondary email provider (SES &rarr; SendGrid); DLQ for manual review</td>
+          <td>No email received; subscription still active. User can check status in-app.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Service Responsibilities</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--secondary);">Subscription Service</h4>
+      <p>Owns the subscription lifecycle: create, upgrade, downgrade, cancel, pause, resume. Orchestrates calls to Stripe for customer and subscription creation. Publishes domain events to Kafka on every state transition.</p>
+      <p><strong>Tech:</strong> Java/Kotlin, Spring Boot, PostgreSQL</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--accent);">Billing Service</h4>
+      <p>Consumes Kafka events from Stripe webhooks. Manages invoice records, payment status, retry logic, and dunning workflows. Generates PDF invoices and stores in S3. Handles refunds and prorations.</p>
+      <p><strong>Tech:</strong> Java/Kotlin, Spring Boot, PostgreSQL, S3</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue);">Entitlement Service</h4>
+      <p>Maps active subscriptions to feature flags and access rights. Maintains a Redis cache for ultra-low-latency lookups. Listens to subscription state change events and updates entitlements. Exposes a gRPC API for internal services.</p>
+      <p><strong>Tech:</strong> Go, Redis, PostgreSQL, gRPC</p>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--purple);">Notification Service</h4>
+      <p>Sends transactional emails (welcome, receipt, dunning, cancellation) and push notifications. Consumes Kafka events. Manages templates and user communication preferences. Rate limits to prevent spam.</p>
+      <p><strong>Tech:</strong> Python, Kafka, SES, FCM/APNs</p>
+    </div>
+  </div>
+
+  <div class="tip-box tip">
+    <strong>PE Signal: Service Boundaries</strong>
+    A strong answer separates Subscription (lifecycle), Billing (money), and Entitlement (access) into distinct services. This allows independent scaling, separate on-call rotations, and clear ownership. The Subscription Service is the orchestrator; Billing and Entitlement are reactive consumers of its events.
+  </div>
+</section>
+
+<!-- ============================= 5. API DESIGN ============================= -->
+<section id="api-design">
+  <h2>
+    <span class="section-icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">5</span>
+    API Design
+  </h2>
+
+  <h3>Subscription CRUD Endpoints</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Description</th>
+          <th>Auth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/subscriptions</code></td>
+          <td>Create a new subscription (with optional trial)</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/api/v1/subscriptions/{id}</code></td>
+          <td>Get subscription details</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>PATCH</code></td>
+          <td><code>/api/v1/subscriptions/{id}</code></td>
+          <td>Upgrade/downgrade plan, pause, resume</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>DELETE</code></td>
+          <td><code>/api/v1/subscriptions/{id}</code></td>
+          <td>Cancel subscription (end of billing period)</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/api/v1/subscriptions/{id}/invoices</code></td>
+          <td>List all invoices for a subscription</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/subscriptions/{id}/family-members</code></td>
+          <td>Invite a family member to the plan</td>
+          <td>User JWT</td>
+        </tr>
+        <tr>
+          <td><code>GET</code></td>
+          <td><code>/api/v1/entitlements/check</code></td>
+          <td>Check if user has a specific entitlement</td>
+          <td>Internal / User JWT</td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td><code>/api/v1/webhooks/stripe</code></td>
+          <td>Stripe webhook receiver</td>
+          <td>Stripe Signature</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Create Subscription -- Request</h3>
+<pre><code><span class="comment">// POST /api/v1/subscriptions</span>
+<span class="comment">// Headers: Authorization: Bearer &lt;jwt&gt;</span>
+<span class="comment">// Headers: Idempotency-Key: &lt;uuid&gt;</span>
+{
+  <span class="string">"plan_id"</span>: <span class="string">"plan_adventurer_monthly"</span>,
+  <span class="string">"payment_method_id"</span>: <span class="string">"pm_1N2abc3def4ghi"</span>,
+  <span class="string">"trial"</span>: <span class="keyword">true</span>,
+  <span class="string">"coupon_code"</span>: <span class="string">"WELCOME20"</span>,
+  <span class="string">"currency"</span>: <span class="string">"USD"</span>,
+  <span class="string">"billing_cycle"</span>: <span class="string">"monthly"</span>
+}</code></pre>
+
+  <h3>Create Subscription -- Response</h3>
+<pre><code><span class="comment">// 201 Created</span>
+{
+  <span class="string">"id"</span>: <span class="string">"sub_8f3a2b1c"</span>,
+  <span class="string">"user_id"</span>: <span class="string">"usr_7c9e4d2a"</span>,
+  <span class="string">"plan"</span>: {
+    <span class="string">"id"</span>: <span class="string">"plan_adventurer_monthly"</span>,
+    <span class="string">"name"</span>: <span class="string">"Adventurer"</span>,
+    <span class="string">"price_cents"</span>: <span class="number">4999</span>,
+    <span class="string">"currency"</span>: <span class="string">"USD"</span>,
+    <span class="string">"interval"</span>: <span class="string">"month"</span>
+  },
+  <span class="string">"status"</span>: <span class="string">"trialing"</span>,
+  <span class="string">"trial_end"</span>: <span class="string">"2025-02-14T00:00:00Z"</span>,
+  <span class="string">"current_period_start"</span>: <span class="string">"2025-01-31T00:00:00Z"</span>,
+  <span class="string">"current_period_end"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>,
+  <span class="string">"stripe_subscription_id"</span>: <span class="string">"sub_1N5xyz"</span>,
+  <span class="string">"entitlements"</span>: [
+    <span class="string">"premium_listings"</span>,
+    <span class="string">"discount_12_pct"</span>,
+    <span class="string">"free_cancellation_48h"</span>,
+    <span class="string">"concierge_chat"</span>,
+    <span class="string">"premium_insurance"</span>,
+    <span class="string">"family_plan_2"</span>
+  ],
+  <span class="string">"created_at"</span>: <span class="string">"2025-01-31T12:00:00Z"</span>
+}</code></pre>
+
+  <h3>Entitlement Check Endpoint</h3>
+<pre><code><span class="comment">// GET /api/v1/entitlements/check?user_id=usr_7c9e4d2a&amp;entitlement=premium_listings</span>
+<span class="comment">// Response: 200 OK (cached in Redis, &lt;5ms p99)</span>
+{
+  <span class="string">"user_id"</span>: <span class="string">"usr_7c9e4d2a"</span>,
+  <span class="string">"entitlement"</span>: <span class="string">"premium_listings"</span>,
+  <span class="string">"granted"</span>: <span class="keyword">true</span>,
+  <span class="string">"source"</span>: <span class="string">"subscription:sub_8f3a2b1c"</span>,
+  <span class="string">"expires_at"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>,
+  <span class="string">"cached"</span>: <span class="keyword">true</span>,
+  <span class="string">"cache_ttl_seconds"</span>: <span class="number">300</span>
+}</code></pre>
+
+  <h3>Stripe Webhook Handler</h3>
+<pre><code><span class="comment">// POST /api/v1/webhooks/stripe</span>
+<span class="comment">// Stripe sends events like: invoice.paid, invoice.payment_failed,</span>
+<span class="comment">// customer.subscription.updated, customer.subscription.deleted</span>
+
+<span class="comment">// Handler pseudocode:</span>
+<span class="keyword">async function</span> <span class="func">handleStripeWebhook</span>(req) {
+  <span class="keyword">const</span> sig = req.headers[<span class="string">'stripe-signature'</span>];
+  <span class="keyword">const</span> event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+
+  <span class="comment">// Idempotency: check if event.id already processed</span>
+  <span class="keyword">if</span> (<span class="keyword">await</span> eventStore.exists(event.id)) <span class="keyword">return</span> { status: <span class="number">200</span> };
+
+  <span class="keyword">switch</span> (event.type) {
+    <span class="keyword">case</span> <span class="string">'invoice.paid'</span>:
+      <span class="keyword">await</span> billingService.recordPayment(event.data.object);
+      <span class="keyword">await</span> kafka.publish(<span class="string">'subscription.payment.succeeded'</span>, event.data);
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'invoice.payment_failed'</span>:
+      <span class="keyword">await</span> billingService.recordFailure(event.data.object);
+      <span class="keyword">await</span> kafka.publish(<span class="string">'subscription.payment.failed'</span>, event.data);
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'customer.subscription.updated'</span>:
+      <span class="keyword">await</span> subscriptionService.syncState(event.data.object);
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'customer.subscription.deleted'</span>:
+      <span class="keyword">await</span> subscriptionService.handleCancellation(event.data.object);
+      <span class="keyword">break</span>;
+  }
+
+  <span class="keyword">await</span> eventStore.markProcessed(event.id);
+  <span class="keyword">return</span> { status: <span class="number">200</span> };
+}</code></pre>
+
+  <div class="tip-box danger">
+    <strong>Critical: Idempotency-Key Header</strong>
+    All mutation endpoints (POST, PATCH, DELETE) require an <code>Idempotency-Key</code> header. This prevents double-charges on network retries. The server stores the idempotency key and its response in Redis with a 24h TTL. If the same key is received again, the cached response is returned without re-executing the operation.
+  </div>
+</section>
+
+<!-- ============================= 6. DATA MODEL ============================= -->
+<section id="data-model">
+  <h2>
+    <span class="section-icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">6</span>
+    Data Model
+  </h2>
+
+  <h3>plans</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>VARCHAR(64)</td><td>PK</td><td>e.g., plan_adventurer_monthly</td></tr>
+        <tr><td><code>name</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Display name</td></tr>
+        <tr><td><code>tier</code></td><td>ENUM</td><td>NOT NULL</td><td>explorer, adventurer, nomad</td></tr>
+        <tr><td><code>price_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Always store in smallest currency unit</td></tr>
+        <tr><td><code>currency</code></td><td>CHAR(3)</td><td>NOT NULL, DEFAULT 'USD'</td><td>ISO 4217</td></tr>
+        <tr><td><code>interval</code></td><td>ENUM</td><td>NOT NULL</td><td>month, year</td></tr>
+        <tr><td><code>trial_days</code></td><td>INTEGER</td><td>DEFAULT 14</td><td>0 = no trial</td></tr>
+        <tr><td><code>family_member_limit</code></td><td>INTEGER</td><td>DEFAULT 0</td><td>Max additional members</td></tr>
+        <tr><td><code>stripe_price_id</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Stripe Price object reference</td></tr>
+        <tr><td><code>entitlements</code></td><td>JSONB</td><td>NOT NULL</td><td>Array of entitlement keys</td></tr>
+        <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>DEFAULT true</td><td>Soft-deactivate old plans</td></tr>
+        <tr><td><code>version</code></td><td>INTEGER</td><td>NOT NULL</td><td>Plan versioning for grandfathering</td></tr>
+        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable</td></tr>
+        <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Auto-updated</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>subscriptions</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Internal subscription ID</td></tr>
+        <tr><td><code>user_id</code></td><td>UUID</td><td>NOT NULL, INDEX</td><td>FK to users table</td></tr>
+        <tr><td><code>plan_id</code></td><td>VARCHAR(64)</td><td>NOT NULL, FK</td><td>References plans.id</td></tr>
+        <tr><td><code>plan_version</code></td><td>INTEGER</td><td>NOT NULL</td><td>Snapshot of plan version at subscribe time</td></tr>
+        <tr><td><code>status</code></td><td>ENUM</td><td>NOT NULL, INDEX</td><td>trialing, active, past_due, paused, cancelled, expired</td></tr>
+        <tr><td><code>stripe_subscription_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>Stripe reference</td></tr>
+        <tr><td><code>stripe_customer_id</code></td><td>VARCHAR(128)</td><td>NOT NULL, INDEX</td><td>Stripe Customer</td></tr>
+        <tr><td><code>current_period_start</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Billing period start</td></tr>
+        <tr><td><code>current_period_end</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Billing period end</td></tr>
+        <tr><td><code>trial_end</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>NULL if no trial</td></tr>
+        <tr><td><code>cancelled_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When user initiated cancel</td></tr>
+        <tr><td><code>cancel_at_period_end</code></td><td>BOOLEAN</td><td>DEFAULT false</td><td>If true, expires at period end</td></tr>
+        <tr><td><code>paused_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When subscription was paused</td></tr>
+        <tr><td><code>resume_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>Scheduled resume date</td></tr>
+        <tr><td><code>metadata</code></td><td>JSONB</td><td>DEFAULT '{}'</td><td>Coupon, referral source, etc.</td></tr>
+        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable</td></tr>
+        <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Auto-updated</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>billing_events</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Event ID</td></tr>
+        <tr><td><code>subscription_id</code></td><td>UUID</td><td>NOT NULL, FK, INDEX</td><td>References subscriptions.id</td></tr>
+        <tr><td><code>stripe_event_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>For deduplication</td></tr>
+        <tr><td><code>event_type</code></td><td>VARCHAR(64)</td><td>NOT NULL, INDEX</td><td>invoice.paid, invoice.payment_failed, etc.</td></tr>
+        <tr><td><code>amount_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Amount in smallest currency unit</td></tr>
+        <tr><td><code>currency</code></td><td>CHAR(3)</td><td>NOT NULL</td><td>ISO 4217</td></tr>
+        <tr><td><code>stripe_invoice_id</code></td><td>VARCHAR(128)</td><td>NULLABLE</td><td>Stripe Invoice reference</td></tr>
+        <tr><td><code>stripe_payment_intent_id</code></td><td>VARCHAR(128)</td><td>NULLABLE</td><td>Stripe PaymentIntent reference</td></tr>
+        <tr><td><code>failure_reason</code></td><td>TEXT</td><td>NULLABLE</td><td>Decline code, error message</td></tr>
+        <tr><td><code>retry_count</code></td><td>INTEGER</td><td>DEFAULT 0</td><td>Number of retry attempts</td></tr>
+        <tr><td><code>metadata</code></td><td>JSONB</td><td>DEFAULT '{}'</td><td>Raw Stripe event payload</td></tr>
+        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable, append-only</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>entitlements</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Entitlement record ID</td></tr>
+        <tr><td><code>user_id</code></td><td>UUID</td><td>NOT NULL, INDEX</td><td>User who holds the entitlement</td></tr>
+        <tr><td><code>subscription_id</code></td><td>UUID</td><td>NOT NULL, FK</td><td>Source subscription</td></tr>
+        <tr><td><code>entitlement_key</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>e.g., premium_listings, discount_12_pct</td></tr>
+        <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>NOT NULL, INDEX</td><td>Active entitlement flag</td></tr>
+        <tr><td><code>granted_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>When entitlement was granted</td></tr>
+        <tr><td><code>expires_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Mirrors subscription period end + grace</td></tr>
+        <tr><td><code>revoked_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When entitlement was revoked</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Indexes and Constraints</h3>
+<pre><code><span class="comment">-- Critical indexes for performance</span>
+<span class="keyword">CREATE UNIQUE INDEX</span> idx_subscriptions_user_active
+  <span class="keyword">ON</span> subscriptions(user_id) <span class="keyword">WHERE</span> status <span class="keyword">IN</span> (<span class="string">'trialing'</span>, <span class="string">'active'</span>, <span class="string">'past_due'</span>, <span class="string">'paused'</span>);
+  <span class="comment">-- Ensures one active subscription per user</span>
+
+<span class="keyword">CREATE INDEX</span> idx_subscriptions_status_period_end
+  <span class="keyword">ON</span> subscriptions(status, current_period_end);
+  <span class="comment">-- For batch jobs: find subscriptions expiring today</span>
+
+<span class="keyword">CREATE INDEX</span> idx_billing_events_sub_created
+  <span class="keyword">ON</span> billing_events(subscription_id, created_at <span class="keyword">DESC</span>);
+  <span class="comment">-- For billing history queries</span>
+
+<span class="keyword">CREATE UNIQUE INDEX</span> idx_entitlements_user_key_active
+  <span class="keyword">ON</span> entitlements(user_id, entitlement_key) <span class="keyword">WHERE</span> is_active = <span class="keyword">true</span>;
+  <span class="comment">-- Fast entitlement lookups, ensures no duplicate active entitlements</span>
+
+<span class="keyword">CREATE INDEX</span> idx_entitlements_expires
+  <span class="keyword">ON</span> entitlements(expires_at) <span class="keyword">WHERE</span> is_active = <span class="keyword">true</span>;
+  <span class="comment">-- For batch expiration jobs</span></code></pre>
+
+  <div class="tip-box purple">
+    <strong>PE Signal: Why Plan Versioning?</strong>
+    When prices change, existing subscribers should be grandfathered at their original price. The <code>plan_version</code> column in subscriptions captures the exact plan terms at subscription time. The plans table uses soft-deactivation (<code>is_active</code>) so old plans remain queryable for existing subscribers but are hidden from new sign-ups.
+  </div>
+</section>
+
+<!-- ============================= 7. STATE MACHINE ============================= -->
+<section id="state-machine">
+  <h2>
+    <span class="section-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">7</span>
+    Subscription State Machine
+  </h2>
+
+  <div class="state-machine">
+    <div class="states">
+      <div class="state-node trial">TRIALING</div>
+      <div class="arrow">&#8594;</div>
+      <div class="state-node active">ACTIVE</div>
+      <div class="arrow">&#8594;</div>
+      <div class="state-node past-due">PAST_DUE</div>
+      <div class="arrow">&#8594;</div>
+      <div class="state-node cancelled">CANCELLED</div>
+      <div class="arrow">&#8594;</div>
+      <div class="state-node expired">EXPIRED</div>
+    </div>
+    <div style="margin-top:20px;">
+      <div class="state-node paused" style="display:inline-flex;">PAUSED</div>
+    </div>
+  </div>
+
+  <h3>State Transition Rules</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>From</th>
+          <th>To</th>
+          <th>Trigger</th>
+          <th>Side Effects</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>TRIALING</code></td>
+          <td><code>ACTIVE</code></td>
+          <td>Trial ends + first payment succeeds</td>
+          <td>Grant full entitlements, send welcome email, start billing cycle</td>
+        </tr>
+        <tr>
+          <td><code>TRIALING</code></td>
+          <td><code>CANCELLED</code></td>
+          <td>User cancels during trial</td>
+          <td>Revoke entitlements immediately, no charge, send cancellation email</td>
+        </tr>
+        <tr>
+          <td><code>TRIALING</code></td>
+          <td><code>PAST_DUE</code></td>
+          <td>Trial ends + first payment fails</td>
+          <td>Keep entitlements for grace period, start dunning sequence</td>
+        </tr>
+        <tr>
+          <td><code>ACTIVE</code></td>
+          <td><code>ACTIVE</code></td>
+          <td>Renewal payment succeeds</td>
+          <td>Extend period_end, emit billing event, send receipt</td>
+        </tr>
+        <tr>
+          <td><code>ACTIVE</code></td>
+          <td><code>PAST_DUE</code></td>
+          <td>Renewal payment fails</td>
+          <td>Begin grace period (7 days), start dunning emails, keep entitlements</td>
+        </tr>
+        <tr>
+          <td><code>ACTIVE</code></td>
+          <td><code>CANCELLED</code></td>
+          <td>User initiates cancel</td>
+          <td>Set cancel_at_period_end=true, keep entitlements until period end</td>
+        </tr>
+        <tr>
+          <td><code>ACTIVE</code></td>
+          <td><code>PAUSED</code></td>
+          <td>User requests pause</td>
+          <td>Stop billing, keep limited entitlements, schedule resume_at</td>
+        </tr>
+        <tr>
+          <td><code>PAST_DUE</code></td>
+          <td><code>ACTIVE</code></td>
+          <td>Retry payment succeeds</td>
+          <td>Restore full entitlements, send recovery email, reset retry count</td>
+        </tr>
+        <tr>
+          <td><code>PAST_DUE</code></td>
+          <td><code>CANCELLED</code></td>
+          <td>All retries exhausted (day 7)</td>
+          <td>Revoke entitlements, send final dunning email, offer resubscribe link</td>
+        </tr>
+        <tr>
+          <td><code>PAUSED</code></td>
+          <td><code>ACTIVE</code></td>
+          <td>User resumes or resume_at date arrives</td>
+          <td>Resume billing, restore full entitlements</td>
+        </tr>
+        <tr>
+          <td><code>CANCELLED</code></td>
+          <td><code>EXPIRED</code></td>
+          <td>Billing period ends (for cancel_at_period_end)</td>
+          <td>Revoke all entitlements, final cleanup</td>
+        </tr>
+        <tr>
+          <td><code>CANCELLED</code></td>
+          <td><code>ACTIVE</code></td>
+          <td>User resubscribes within 30 days</td>
+          <td>Create new subscription, carry over loyalty benefits</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Grace Period and Dunning Timeline</h3>
+  <div class="card">
+    <h4 style="color:var(--warning);">7-Day Dunning Sequence</h4>
+<pre><code><span class="comment">Day 0: Payment fails</span>
+  <span class="keyword">-></span> Status: PAST_DUE
+  <span class="keyword">-></span> Entitlements: STILL ACTIVE (grace period)
+  <span class="keyword">-></span> Email: "Your payment failed, please update your card"
+  <span class="keyword">-></span> Push notification sent
+
+<span class="comment">Day 1: First retry (Stripe automatic)</span>
+  <span class="keyword">-></span> If success: back to ACTIVE
+  <span class="keyword">-></span> If fail: continue dunning
+
+<span class="comment">Day 3: Second retry</span>
+  <span class="keyword">-></span> Email: "Second attempt failed -- update payment method"
+  <span class="keyword">-></span> In-app banner: "Action required: payment issue"
+
+<span class="comment">Day 5: Third retry</span>
+  <span class="keyword">-></span> Email: "Your subscription is at risk"
+  <span class="keyword">-></span> Push notification with deep link to billing page
+
+<span class="comment">Day 7: Final retry</span>
+  <span class="keyword">-></span> If fail: Status -> CANCELLED
+  <span class="keyword">-></span> Revoke all entitlements
+  <span class="keyword">-></span> Email: "Your subscription has been cancelled"
+  <span class="keyword">-></span> Offer: "Resubscribe within 30 days to keep your history"</span></code></pre>
+  </div>
+
+  <div class="tip-box tip">
+    <strong>PE Signal: Why Grace Periods Matter</strong>
+    Immediately revoking entitlements on first payment failure leads to terrible UX and increased churn. Most failed payments are recoverable (expired card, insufficient funds on payday). A 7-day grace period with progressive dunning recovers 60-80% of failed payments according to industry data. This is a business-critical design decision.
+  </div>
+</section>
+
+<!-- ============================= 8. BILLING DEEP DIVE ============================= -->
+<section id="billing">
+  <h2>
+    <span class="section-icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">8</span>
+    Billing Deep Dive
+  </h2>
+
+  <h3>Stripe Integration Architecture</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--accent);">Stripe Object Mapping</h4>
+      <ul>
+        <li><strong>Customer:</strong> Created 1:1 with Airbnb user. Stores default payment method.</li>
+        <li><strong>Subscription:</strong> Mirrors our subscription record. Stripe manages billing schedule.</li>
+        <li><strong>Price:</strong> Maps to our plans. One Price per plan+interval+currency.</li>
+        <li><strong>Invoice:</strong> Generated by Stripe on each billing cycle. We store a reference.</li>
+        <li><strong>PaymentIntent:</strong> Each invoice payment attempt. Contains decline codes on failure.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue);">Our Role vs Stripe's Role</h4>
+      <ul>
+        <li><strong>Stripe handles:</strong> Charge scheduling, retry logic (Smart Retries), card network communication, PCI compliance, receipt emails (optional).</li>
+        <li><strong>We handle:</strong> Subscription lifecycle logic, entitlement management, dunning UX, custom retry scheduling, plan catalog, analytics, user-facing billing portal.</li>
+        <li><strong>Overlap:</strong> Both track subscription status. We reconcile hourly via Stripe API. Our DB is source of truth for entitlements; Stripe is source of truth for payment state.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Webhook Reliability Pattern</h3>
+<pre><code><span class="comment">// Stripe webhooks are at-least-once delivery. We must handle:</span>
+<span class="comment">// 1. Duplicate events (idempotency via stripe_event_id)</span>
+<span class="comment">// 2. Out-of-order events (check timestamps, use event sequence)</span>
+<span class="comment">// 3. Missed events (reconciliation job)</span>
+
+<span class="keyword">class</span> <span class="type">WebhookProcessor</span> {
+  <span class="keyword">async</span> <span class="func">process</span>(event: StripeEvent): Promise&lt;void&gt; {
+    <span class="comment">// Step 1: Verify signature</span>
+    <span class="keyword">const</span> verified = stripe.webhooks.constructEvent(
+      rawBody, signature, WEBHOOK_SECRET
+    );
+
+    <span class="comment">// Step 2: Idempotency check</span>
+    <span class="keyword">const</span> existing = <span class="keyword">await</span> db.query(
+      <span class="string">`SELECT id FROM billing_events WHERE stripe_event_id = $1`</span>,
+      [verified.id]
+    );
+    <span class="keyword">if</span> (existing.rows.length > <span class="number">0</span>) {
+      logger.info(<span class="string">`Duplicate event ${verified.id}, skipping`</span>);
+      <span class="keyword">return</span>; <span class="comment">// Return 200 to prevent Stripe retry</span>
+    }
+
+    <span class="comment">// Step 3: Process within a transaction</span>
+    <span class="keyword">await</span> db.transaction(<span class="keyword">async</span> (tx) => {
+      <span class="comment">// Insert billing event (idempotency guard)</span>
+      <span class="keyword">await</span> tx.insert(<span class="string">'billing_events'</span>, {
+        stripe_event_id: verified.id,
+        event_type: verified.type,
+        ...extractEventData(verified)
+      });
+
+      <span class="comment">// Update subscription state</span>
+      <span class="keyword">await</span> <span class="keyword">this</span>.handleEventType(tx, verified);
+    });
+
+    <span class="comment">// Step 4: Publish to Kafka (outside DB transaction)</span>
+    <span class="keyword">await</span> kafka.publish(<span class="string">'billing.events'</span>, {
+      type: verified.type,
+      subscription_id: extractSubId(verified),
+      timestamp: verified.created
+    });
+  }
+}</code></pre>
+
+  <h3>Failed Payment Retry Strategy</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Retry</th>
+          <th>Day</th>
+          <th>Strategy</th>
+          <th>Notification</th>
+          <th>Recovery Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1st</td>
+          <td>Day 1</td>
+          <td>Stripe Smart Retry (ML-optimized timing)</td>
+          <td>Email + Push: "Payment failed"</td>
+          <td>~40%</td>
+        </tr>
+        <tr>
+          <td>2nd</td>
+          <td>Day 3</td>
+          <td>Retry with updated card info (if Stripe card updater found new details)</td>
+          <td>Email: "Second attempt failed"</td>
+          <td>~25%</td>
+        </tr>
+        <tr>
+          <td>3rd</td>
+          <td>Day 5</td>
+          <td>Retry at optimal time (avoid weekends, use card network hints)</td>
+          <td>Email + Push + In-app banner</td>
+          <td>~15%</td>
+        </tr>
+        <tr>
+          <td>Final</td>
+          <td>Day 7</td>
+          <td>Last attempt. If fails, cancel subscription.</td>
+          <td>Email: "Subscription cancelled"</td>
+          <td>~10%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Multi-Currency and Tax Handling</h3>
+  <div class="card">
+    <h4 style="color:var(--secondary);">Currency Strategy</h4>
+    <ul>
+      <li><strong>Display Currency:</strong> Users see prices in their local currency. Rates updated daily from ECB/Open Exchange Rates API.</li>
+      <li><strong>Billing Currency:</strong> Stripe charges in the user's local currency. We create one Stripe Price object per plan per currency.</li>
+      <li><strong>Settlement Currency:</strong> Stripe settles in USD to our account. Exchange rate risk is on us for the delta between display and settlement.</li>
+      <li><strong>Price Localization:</strong> We round to psychologically friendly prices (e.g., EUR 27.99 instead of EUR 27.43). Prices are manually reviewed quarterly.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--warning);">Tax Handling</h4>
+    <ul>
+      <li><strong>Stripe Tax:</strong> We use Stripe Tax for automatic tax calculation. It handles VAT (EU), GST (AU/NZ), sales tax (US), and consumption tax (JP).</li>
+      <li><strong>Tax-Inclusive vs Exclusive:</strong> EU prices are tax-inclusive (VAT included). US prices are tax-exclusive (tax added at checkout).</li>
+      <li><strong>Tax Receipts:</strong> Stripe generates compliant tax invoices. We store the Stripe invoice ID and provide a download link.</li>
+      <li><strong>B2B Reverse Charge:</strong> If the subscriber provides a VAT ID, reverse charge applies (0% VAT on cross-border EU B2B).</li>
+    </ul>
+  </div>
+
+  <div class="tip-box warning">
+    <strong>PE Signal: Reconciliation is Non-Negotiable</strong>
+    Webhooks can be lost, delayed, or arrive out of order. A reconciliation job must run hourly, pulling subscription state from Stripe's List Subscriptions API and comparing with our DB. Any discrepancy triggers an alert and auto-correction. For financial systems, "trust but verify" is the operating principle.
+  </div>
+</section>
+
+<!-- ============================= 9. ENTITLEMENT SYSTEM ============================= -->
+<section id="entitlements">
+  <h2>
+    <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">9</span>
+    Entitlement System
+  </h2>
+
+  <h3>How Premium Listings are Gated</h3>
+  <div class="flow-diagram">
+    <h4 style="color:var(--text); margin-bottom:18px;">Entitlement Check Flow (Listing Page Load)</h4>
+    <div class="flow-row">
+      <div class="flow-box client">Client: Fetch<br>Listing Page</div>
+      <div class="arrow">&#8594;</div>
+      <div class="flow-box service">Listing<br>Service</div>
+      <div class="arrow">&#8594;</div>
+      <div class="flow-box service">Entitlement<br>Service (gRPC)</div>
+      <div class="arrow">&#8594;</div>
+      <div class="flow-box cache">Redis<br>Cache</div>
+    </div>
+    <div class="flow-row" style="margin-top: 15px;">
+      <div class="flow-box cache">Cache HIT<br>(&lt;2ms)</div>
+      <div class="arrow">&#8594;</div>
+      <div class="flow-box service">Return<br>Entitlement</div>
+      <div class="arrow" style="visibility:hidden;">&#8594;</div>
+      <div class="flow-box cache" style="border-color:var(--warning); color:var(--warning);">Cache MISS</div>
+      <div class="arrow">&#8594;</div>
+      <div class="flow-box db">PostgreSQL<br>Lookup</div>
+    </div>
+  </div>
+
+  <h3>Redis Cache Design</h3>
+<pre><code><span class="comment">// Redis key structure for entitlements</span>
+<span class="comment">// Key: entitlement:{user_id}</span>
+<span class="comment">// Value: Hash of entitlement_key -> expiry timestamp</span>
+<span class="comment">// TTL: 5 minutes (balance freshness vs load)</span>
+
+<span class="comment">// Example Redis state for user usr_7c9e4d2a:</span>
+HSET entitlement:usr_7c9e4d2a
+  premium_listings     <span class="string">"2025-02-28T00:00:00Z"</span>
+  discount_12_pct      <span class="string">"2025-02-28T00:00:00Z"</span>
+  free_cancellation    <span class="string">"2025-02-28T00:00:00Z"</span>
+  concierge_chat       <span class="string">"2025-02-28T00:00:00Z"</span>
+  premium_insurance    <span class="string">"2025-02-28T00:00:00Z"</span>
+  family_plan_2        <span class="string">"2025-02-28T00:00:00Z"</span>
+
+EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="comment">// 5 min TTL</span>
+
+<span class="comment">// Entitlement check pseudocode:</span>
+<span class="keyword">async function</span> <span class="func">checkEntitlement</span>(userId, entitlementKey) {
+  <span class="comment">// 1. Check Redis first</span>
+  <span class="keyword">const</span> expiry = <span class="keyword">await</span> redis.hget(<span class="string">`entitlement:${userId}`</span>, entitlementKey);
+  <span class="keyword">if</span> (expiry) {
+    <span class="keyword">return</span> {
+      granted: <span class="keyword">new</span> Date(expiry) > Date.now(),
+      cached: <span class="keyword">true</span>,
+      expires_at: expiry
+    };
+  }
+
+  <span class="comment">// 2. Cache miss: query PostgreSQL</span>
+  <span class="keyword">const</span> ent = <span class="keyword">await</span> db.query(
+    <span class="string">`SELECT * FROM entitlements
+     WHERE user_id = $1 AND entitlement_key = $2 AND is_active = true`</span>,
+    [userId, entitlementKey]
+  );
+
+  <span class="keyword">if</span> (ent.rows.length > <span class="number">0</span>) {
+    <span class="comment">// 3. Populate cache for all user entitlements (batch)</span>
+    <span class="keyword">const</span> allEnts = <span class="keyword">await</span> db.query(
+      <span class="string">`SELECT entitlement_key, expires_at FROM entitlements
+       WHERE user_id = $1 AND is_active = true`</span>,
+      [userId]
+    );
+    <span class="keyword">const</span> hashData = {};
+    allEnts.rows.forEach(e => hashData[e.entitlement_key] = e.expires_at);
+    <span class="keyword">await</span> redis.hmset(<span class="string">`entitlement:${userId}`</span>, hashData);
+    <span class="keyword">await</span> redis.expire(<span class="string">`entitlement:${userId}`</span>, <span class="number">300</span>);
+  }
+
+  <span class="keyword">return</span> {
+    granted: ent.rows.length > <span class="number">0</span>,
+    cached: <span class="keyword">false</span>,
+    expires_at: ent.rows[<span class="number">0</span>]?.expires_at
+  };
+}</code></pre>
+
+  <h3>Eventual Consistency on Plan Changes</h3>
+  <div class="card">
+    <h4 style="color:var(--purple);">Propagation Timeline</h4>
+    <p>When a subscription state changes (e.g., upgrade from Explorer to Adventurer), entitlements must be updated. Here is the timeline:</p>
+    <ol>
+      <li><strong>T+0ms:</strong> User upgrades via API. Subscription Service updates PostgreSQL, publishes <code>subscription.upgraded</code> to Kafka.</li>
+      <li><strong>T+50ms:</strong> Entitlement Service consumes event, updates entitlements table in PostgreSQL (add new, revoke old).</li>
+      <li><strong>T+60ms:</strong> Entitlement Service invalidates Redis cache for this user (<code>DEL entitlement:{user_id}</code>).</li>
+      <li><strong>T+100ms:</strong> Next entitlement check triggers cache miss, repopulates with new entitlements.</li>
+      <li><strong>Worst case:</strong> If cache invalidation fails, old entitlements persist for up to 5 minutes (TTL). This is acceptable because upgrades grant more access (user is never denied something they paid for).</li>
+    </ol>
+  </div>
+
+  <div class="tip-box danger">
+    <strong>Critical Design Rule: Fail Open for Upgrades, Fail Closed for Downgrades</strong>
+    On upgrade, if there is any propagation delay, the user temporarily has their old (lesser) entitlements -- this is safe. On downgrade or cancellation, we must proactively invalidate the cache immediately. If Redis is down, the entitlement check falls back to the database. Never fail open on revocation -- that would give free access.
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--success);">Cache Invalidation Strategy</h4>
+      <ul>
+        <li><strong>Event-driven:</strong> Kafka consumer in Entitlement Service issues <code>DEL</code> on subscription state changes.</li>
+        <li><strong>TTL-based:</strong> 5-minute TTL ensures stale data self-heals even if event is lost.</li>
+        <li><strong>Eager refresh:</strong> On user login, proactively refresh entitlement cache.</li>
+        <li><strong>Pub/Sub backup:</strong> Redis Pub/Sub channel broadcasts invalidation to all Entitlement Service instances.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue);">Handling Redis Failures</h4>
+      <ul>
+        <li><strong>Circuit breaker:</strong> If Redis is unreachable, trip circuit breaker after 3 consecutive failures.</li>
+        <li><strong>Fallback to DB:</strong> Entitlement checks go directly to PostgreSQL read replica.</li>
+        <li><strong>Local cache:</strong> 30-second in-memory LRU cache as a final fallback (accepts higher staleness during outage).</li>
+        <li><strong>Monitoring:</strong> Alert on cache hit rate drop below 95%. Indicates potential Redis issues.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= 10. TRADE-OFFS ============================= -->
+<section id="tradeoffs">
+  <h2>
+    <span class="section-icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">10</span>
+    Trade-offs Analysis
+  </h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Option A</th>
+          <th>Option B</th>
+          <th>Our Choice</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Build vs Buy Billing</strong></td>
+          <td>Build custom billing engine</td>
+          <td>Use Stripe Billing</td>
+          <td style="color:var(--success);">Stripe Billing</td>
+          <td>PCI compliance, retry logic, tax handling, and card updater are exceptionally complex. Stripe handles this at scale. Build our own entitlement layer on top.</td>
+        </tr>
+        <tr>
+          <td><strong>Entitlement: Sync vs Async</strong></td>
+          <td>Synchronous DB check on every request</td>
+          <td>Async event-driven with Redis cache</td>
+          <td style="color:var(--success);">Async + Redis</td>
+          <td>50K QPS cannot hit PostgreSQL directly. Redis gives &lt;2ms lookups. Accept 5-min eventual consistency. Use event-driven invalidation for faster convergence.</td>
+        </tr>
+        <tr>
+          <td><strong>Consistency Model</strong></td>
+          <td>Strong consistency (two-phase commit with Stripe)</td>
+          <td>Eventual consistency with reconciliation</td>
+          <td style="color:var(--success);">Eventual + Reconciliation</td>
+          <td>2PC across Stripe boundary is impractical. Use idempotent event processing + hourly reconciliation. Stripe is source of truth for payments; we are source of truth for entitlements.</td>
+        </tr>
+        <tr>
+          <td><strong>Entitlement Checks: Centralized vs Distributed</strong></td>
+          <td>Central Entitlement Service (all checks go through one service)</td>
+          <td>Distributed (embed entitlement SDK in each service)</td>
+          <td style="color:var(--success);">Centralized + gRPC</td>
+          <td>Centralized gives single source of truth, easier auditing, and simpler cache invalidation. gRPC keeps latency under 5ms. SDK approach creates cache coherency nightmares at scale.</td>
+        </tr>
+        <tr>
+          <td><strong>State Machine: Application vs DB</strong></td>
+          <td>Enforce state transitions in application code</td>
+          <td>Use DB constraints and triggers</td>
+          <td style="color:var(--success);">Application Code</td>
+          <td>Application-level state machine is testable, loggable, and can emit events. DB triggers are opaque and hard to debug. Use partial unique indexes for safety nets.</td>
+        </tr>
+        <tr>
+          <td><strong>Billing Anchor: Fixed vs Staggered</strong></td>
+          <td>Bill everyone on 1st of month</td>
+          <td>Bill on subscription anniversary date</td>
+          <td style="color:var(--success);">Anniversary Date</td>
+          <td>Fixed billing creates massive renewal spikes. Anniversary billing distributes load evenly. Stripe supports this natively with billing_cycle_anchor.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Deep Dive: Build vs Buy</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--danger);">Build Custom Billing</h4>
+      <ul>
+        <li>Full control over billing logic and UX</li>
+        <li>No per-transaction fees to third party</li>
+        <li>Custom retry and dunning strategies</li>
+        <li style="color:var(--danger);"><strong>Con:</strong> PCI DSS Level 1 compliance ($500K+/yr)</li>
+        <li style="color:var(--danger);"><strong>Con:</strong> Card network integrations (Visa, MC, Amex)</li>
+        <li style="color:var(--danger);"><strong>Con:</strong> 12-18 month build time for a dedicated team</li>
+        <li style="color:var(--danger);"><strong>Con:</strong> Tax calculation across 190+ jurisdictions</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--success);">Use Stripe Billing</h4>
+      <ul>
+        <li>PCI compliance handled by Stripe</li>
+        <li>Smart Retries (ML-optimized retry timing)</li>
+        <li>Automatic card updater (new card details from networks)</li>
+        <li>Stripe Tax for global tax compliance</li>
+        <li>2.9% + 30c per transaction (cost)</li>
+        <li>Faster time to market (weeks, not months)</li>
+        <li style="color:var(--warning);"><strong>Con:</strong> Vendor lock-in risk</li>
+        <li style="color:var(--warning);"><strong>Con:</strong> Limited customization of billing flows</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tip-box info">
+    <strong>PE Signal: Vendor Lock-in Mitigation</strong>
+    To mitigate Stripe lock-in, design a Payment Provider Adapter interface. The Subscription Service calls <code>PaymentProvider.createSubscription()</code>, not <code>Stripe.createSubscription()</code>. This allows swapping to Adyen, Braintree, or a custom solution without changing business logic. In practice, migrations are rare, but the abstraction costs almost nothing upfront and buys insurance.
+  </div>
+</section>
+
+<!-- ============================= 11. INTERVIEW TIPS ============================= -->
+<section id="interview-tips">
+  <h2>
+    <span class="section-icon" style="background:rgba(16,185,129,0.15); color:var(--success);">11</span>
+    Interview Tips and Calibration
+  </h2>
+
+  <h3>Key Signals Interviewers Look For</h3>
+  <div class="card-grid-3">
+    <div class="card">
+      <h4 style="color:var(--success);">Strong Hire Signals</h4>
+      <ul>
+        <li>Separates billing, subscription, and entitlement into distinct services with clear ownership</li>
+        <li>Discusses idempotency for all payment mutations</li>
+        <li>Proposes webhook reliability pattern with deduplication and reconciliation</li>
+        <li>Designs a state machine with explicit transitions and side effects</li>
+        <li>Considers grace periods and dunning as first-class concerns</li>
+        <li>Caches entitlements in Redis with event-driven invalidation</li>
+        <li>Discusses proration, multi-currency, and tax without being prompted</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--warning);">Common Mistakes</h4>
+      <ul>
+        <li>Treating subscription as a CRUD problem without a state machine</li>
+        <li>No discussion of payment failure handling or retries</li>
+        <li>Checking entitlements directly from the database at 50K QPS</li>
+        <li>Missing idempotency on webhook handler (double-processing events)</li>
+        <li>No reconciliation strategy between local DB and Stripe</li>
+        <li>Over-engineering: building custom payment processing instead of using Stripe</li>
+        <li>Ignoring eventual consistency and its implications for entitlement checks</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--blue);">Follow-Up Questions to Expect</h4>
+      <ul>
+        <li>"How do you handle a user who upgrades mid-cycle? Walk me through the proration."</li>
+        <li>"What happens if Stripe is down for 2 hours?"</li>
+        <li>"How would you migrate from Stripe to Adyen?"</li>
+        <li>"A user claims they were double-charged. How do you investigate?"</li>
+        <li>"How do you test the billing system? Can you charge real cards in staging?"</li>
+        <li>"What metrics would you monitor on the subscription dashboard?"</li>
+        <li>"How does the family plan work technically?"</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Calibration by Level</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Level</th>
+          <th>Expected Depth</th>
+          <th>Key Differentiator</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-green">Mid-Level (L4)</span></td>
+          <td>CRUD APIs, basic DB schema, "use Stripe" without detail</td>
+          <td>Can describe the happy path end-to-end</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Senior (L5)</span></td>
+          <td>State machine, webhook handling, Redis caching, retry logic</td>
+          <td>Considers failure modes, discusses idempotency</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">Staff (L6)</span></td>
+          <td>Service decomposition, event-driven architecture, reconciliation, multi-currency</td>
+          <td>Designs for operational excellence, discusses monitoring and alerting</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">Principal (L7+)</span></td>
+          <td>Full system including trade-offs, vendor lock-in mitigation, proration engine, tax compliance, GDPR, capacity planning with renewal spikes</td>
+          <td>Makes and defends architectural trade-offs, considers business impact of every technical decision</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Suggested Interview Timeline (45 min)</h3>
+  <div class="card">
+    <h4 style="color:var(--accent);">Time Allocation</h4>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Phase</th><th>Time</th><th>Focus</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Requirements Gathering</td><td>5 min</td><td>Clarify scope, tiers, V1 vs V2 features</td></tr>
+          <tr><td>High-Level Design</td><td>10 min</td><td>Service topology, Stripe integration, Kafka events</td></tr>
+          <tr><td>API + Data Model</td><td>10 min</td><td>Key endpoints, schema, indexes</td></tr>
+          <tr><td>State Machine + Billing</td><td>10 min</td><td>Transitions, webhooks, retry, dunning</td></tr>
+          <tr><td>Entitlement Deep Dive</td><td>5 min</td><td>Redis caching, consistency, invalidation</td></tr>
+          <tr><td>Trade-offs + Extensions</td><td>5 min</td><td>Build vs buy, consistency model, monitoring</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tip-box purple">
+    <strong>Final PE Advice</strong>
+    The subscription problem is deceptively simple on the surface. What separates a principal engineer answer is the depth on <em>failure modes</em>: What happens when payments fail? When webhooks are lost? When Redis is down? When a user upgrades and immediately checks entitlements before the event propagates? Show that you have built and operated these systems, not just designed them on a whiteboard. Every design decision should connect back to a user experience or business outcome.
+  </div>
+</section>
+
+</div>
+
+<!-- ============================= FOOTER ============================= -->
+<footer>
+  <p>Airbnb Subscription Model -- Principal Engineer System Design Reference</p>
+  <p style="margin-top:8px; color:var(--text-muted);">Comprehensive coverage: Billing, Entitlements, State Machines, Stripe Integration, and Operational Excellence</p>
+</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>

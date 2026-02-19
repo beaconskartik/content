@@ -1,0 +1,2566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Search System - Principal Engineer System Design</title>
+<style>
+  :root {
+    --primary: #FF5A5F;
+    --primary-dark: #E04850;
+    --secondary: #00A699;
+    --accent: #FC642D;
+    --purple: #7B2FF7;
+    --blue: #428BF9;
+    --dark: #ffffff;
+    --darker: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #4b5563;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
+    padding: 60px 40px;
+    text-align: center;
+    border-bottom: 3px solid var(--primary);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,90,95,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(0,166,153,0.15) 0%, transparent 50%);
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .hero h1 {
+    font-size: 2.8em;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .hero .subtitle {
+    font-size: 1.2em;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    margin-bottom: 15px;
+  }
+  .hero .back-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+  .hero .back-link:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: #e5e7eb;
+    transform: translateX(-3px);
+  }
+  .hero .badge-row {
+    position: relative;
+    margin-top: 12px;
+  }
+  .hero .stats-row {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .stat-item { text-align: center; }
+  .hero .stat-value {
+    font-size: 2em;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .hero .stat-label {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+    margin: 5px;
+  }
+  .badge-red { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-green { background: rgba(0,166,153,0.2); color: #ffffff; border: 1px solid var(--secondary); }
+  .badge-blue { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-purple { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-orange { background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+  .badge-yellow { background: rgba(245,158,11,0.2); color: var(--warning); border: 1px solid var(--warning); }
+
+  /* NAV */
+  .toc {
+    background: #f8fafc;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--card-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .toc h2 { color: var(--secondary); margin-bottom: 12px; font-size: 1em; text-transform: uppercase; letter-spacing: 2px; }
+  .toc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.85em;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .toc a:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255,90,95,0.1);
+  }
+
+  /* SECTIONS */
+  .container { max-width: 1300px; margin: 0 auto; padding: 0 30px; }
+  section { padding: 50px 0; border-bottom: 1px solid var(--card-border); }
+  section:last-child { border-bottom: none; }
+  section h2 {
+    font-size: 1.9em;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section h2 .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    flex-shrink: 0;
+  }
+  section h3 {
+    font-size: 1.3em;
+    color: #ffffff;
+    margin: 28px 0 14px;
+    padding-left: 12px;
+    border-left: 3px solid var(--secondary);
+  }
+  section h4 {
+    font-size: 1.1em;
+    color: var(--blue);
+    margin: 18px 0 8px;
+  }
+  p { margin: 10px 0; }
+
+  /* CARDS */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 15px 0;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .card-header {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* DIAGRAM BOXES */
+  .diagram-box {
+    background: rgba(0,0,0,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+  .diagram-box pre {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: var(--text);
+    font-size: 0.82em;
+    line-height: 1.5;
+  }
+
+  /* TABLES */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin: 20px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92em;
+  }
+  th {
+    background: linear-gradient(135deg, rgba(255,90,95,0.15), rgba(0,166,153,0.15));
+    color: var(--text);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--card-border);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  tr:last-child td { border-bottom: none; }
+
+  /* CODE */
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    line-height: 1.6;
+    margin: 15px 0;
+    color: #6e7781;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+  }
+  .inline-code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    color: var(--accent);
+  }
+  .keyword { color: #cf222e; }
+  .string { color: #0a3069; }
+  .comment { color: #6e7781; font-style: italic; }
+  .type { color: #8250df; }
+  .func { color: #0550ae; }
+  .number { color: #f0883e; }
+
+  /* TIP BOXES */
+  .tip-box {
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    border-left: 4px solid;
+  }
+  .tip-interview { background: rgba(123,47,247,0.1); border-color: var(--purple); }
+  .tip-warning { background: rgba(245,158,11,0.1); border-color: var(--warning); }
+  .tip-success { background: rgba(16,185,129,0.1); border-color: var(--success); }
+  .tip-danger { background: rgba(239,68,68,0.1); border-color: var(--danger); }
+  .tip-info { background: rgba(66,139,249,0.08); border-color: var(--blue); }
+  .tip-box .tip-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 0.95em;
+  }
+
+  /* FLOW STEPS */
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 20px 0;
+    align-items: center;
+  }
+  .flow-step {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    font-size: 0.9em;
+    min-width: 130px;
+  }
+  .flow-arrow {
+    color: var(--primary);
+    font-size: 1.5em;
+    padding: 0 8px;
+  }
+
+  /* METRIC CARDS */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .metric-label {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    margin-top: 4px;
+  }
+
+  /* COMPARISON */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .option-a { border-top: 3px solid var(--secondary); }
+  .option-b { border-top: 3px solid var(--accent); }
+  .option-c { border-top: 3px solid var(--purple); }
+
+  /* LISTS */
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  li::marker { color: var(--primary); }
+
+  /* CALIBRATION GRID */
+  .calibration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+
+  /* PROGRESS BAR */
+  .bar-chart { margin: 15px 0; }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    gap: 10px;
+  }
+  .bar-label {
+    width: 180px;
+    font-size: 0.85em;
+    text-align: right;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: white;
+  }
+
+  /* GRAPH VISUALIZATION */
+  .graph-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* FOOTER */
+  footer {
+    background: #f8fafc;
+    padding: 30px 40px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    border-top: 1px solid #e5e7eb;
+  }
+  footer a { color: var(--secondary); text-decoration: none; }
+  footer a:hover { color: var(--primary); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero { padding: 40px 20px; }
+    .hero h1 { font-size: 1.8em; }
+    .hero .subtitle { font-size: 1em; }
+    .hero .stats-row { gap: 20px; }
+    .hero .stat-value { font-size: 1.5em; }
+    .comparison { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    .calibration-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 15px; }
+    .toc { padding: 15px 20px; }
+    section { padding: 30px 0; }
+    .flow-steps { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .bar-label { width: 120px; font-size: 0.78em; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 1.5em; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* === DIAGRAM ZOOM CONTROLS === */
+  .diagram-box { position: relative; }
+  .diagram-zoom-controls {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 4px; opacity: 0.5; transition: opacity 0.3s;
+  }
+  .diagram-box:hover .diagram-zoom-controls { opacity: 1; }
+  .diagram-zoom-controls button {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: #ffffff; color: #1e293b; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s;
+    font-family: system-ui; line-height: 1; padding: 0;
+  }
+  .diagram-zoom-controls button:hover { background: #f1f5f9; border-color: var(--blue); color: var(--blue); }
+  .diagram-zoom-controls button:active { transform: scale(0.95); }
+  .diagram-zoom-controls .zoom-level {
+    font-size: 11px; color: #64748b; display: flex; align-items: center;
+    padding: 0 6px; font-weight: 600; min-width: 40px; justify-content: center;
+  }
+  .diagram-box svg { transition: transform 0.3s ease; transform-origin: center center; }
+  .diagram-box.fullscreen {
+    position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; background: #ffffff; border-radius: 0; padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: auto;
+  }
+  .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <a href="index.html" class="back-link">&#8592; Back to All Topics</a>
+  <h1>Flight Search System Design</h1>
+  <p class="subtitle">Kayak / Google Flights / Skyscanner &mdash; Principal Engineer Blueprint</p>
+  <div class="badge-row">
+    <span class="badge badge-red">System Design</span>
+    <span class="badge badge-orange">Hard</span>
+    <span class="badge badge-blue">Graph Algorithms</span>
+    <span class="badge badge-purple">Search &amp; Aggregation</span>
+    <span class="badge badge-green">Real-Time Pricing</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value">~10K</div>
+      <div class="stat-label">Airports</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">~50K</div>
+      <div class="stat-label">Direct Routes</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">10M+</div>
+      <div class="stat-label">Searches / Day</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">&lt;3s</div>
+      <div class="stat-label">Target Latency</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">1M</div>
+      <div class="stat-label">Price Changes / hr</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== NAVIGATION ==================== -->
+<nav class="toc">
+  <h2>Navigation</h2>
+  <div class="toc-grid">
+    <a href="#overview">Overview</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#capacity">Capacity Estimates</a>
+    <a href="#data-schema">Data Schema</a>
+    <a href="#search-algorithms">Search Algorithms</a>
+    <a href="#online-offline">Online vs Offline</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#scaling">Scaling</a>
+    <a href="#booking-flow">Booking Flow</a>
+    <a href="#tradeoffs">Trade-offs</a>
+    <a href="#interview-tips">Interview Tips</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- ==================== SECTION 1: OVERVIEW ==================== -->
+<section id="overview">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--accent));">&#9992;</span> System Overview</h2>
+
+  <p>Design a <strong>flight search aggregator</strong> like Kayak, Google Flights, or Skyscanner. The system takes an <strong>origin + destination</strong> pair and returns a <strong>list of flight routes sorted by price</strong>, progressing from direct flights to 1-stop and 2-stop itineraries. The ultimate query is: <em>"Book a trip for a family of 3, max 2 stops, sorted by price."</em></p>
+
+  <div class="tip-box tip-interview">
+    <div class="tip-title" style="color:var(--purple);">&#127919; Interview Framing</div>
+    <p>This problem tests your ability to navigate <strong>combinatorial explosion</strong> (route permutations), <strong>data freshness vs speed trade-offs</strong>, and <strong>distributed systems</strong> (federated airline APIs). The key insight is recognizing the three types of flight data with different volatility levels.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-header" style="color:var(--primary);">&#128269; Core Problem</div>
+      <ul>
+        <li>Input: Origin city, destination city, date(s), passengers</li>
+        <li>Output: List of flight routes sorted by price</li>
+        <li>Direct flights first, then 1-stop, then 2-stop</li>
+        <li>Each route: sequence of flight legs with total price &amp; duration</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--secondary);">
+      <div class="card-header" style="color:var(--secondary);">&#128202; Three Data Types (Industry Key)</div>
+      <ul>
+        <li><strong>Fares (Prices)</strong> &mdash; Relatively stable; update hourly to daily</li>
+        <li><strong>Schedules (Routes)</strong> &mdash; Very stable; change seasonally</li>
+        <li><strong>Availability (Seats)</strong> &mdash; Highly volatile; changes minute-to-minute</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--purple);">
+      <div class="card-header" style="color:var(--purple);">&#9889; Core Trade-Off</div>
+      <ul>
+        <li><strong>Speed</strong>: Pre-compute routes, cache aggressively, show stale results</li>
+        <li><strong>Freshness</strong>: Query airlines live, up-to-the-minute pricing, slower</li>
+        <li>Industry standard: show cached results fast, refine with live data</li>
+        <li>Prices shown as "from $X" with verification at booking time</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Real-World Scale</h3>
+  <p>With approximately <strong>10,000 airports worldwide</strong>, the route combination space is massive. Direct routes number roughly 50,000, but 1-stop combinations are 50K &times; 50K = <strong>2.5 billion</strong> possible pairs before filtering. This combinatorial explosion is the central algorithmic challenge.</p>
+
+  <div class="diagram-box">
+    <pre>
+  USER QUERY                          SYSTEM RESPONSE
+  +------------------------+          +------------------------------------------+
+  | Origin:    SFO          |          | DIRECT FLIGHTS (sorted by price)         |
+  | Dest:      JFK          |   ---&gt;   |   SFO --&gt; JFK    $199  5h 20m  UA 234   |
+  | Date:      2024-03-15   |          |   SFO --&gt; JFK    $219  5h 45m  AA 100   |
+  | Passengers: 3           |          |                                          |
+  | Max Stops:  2           |          | 1-STOP FLIGHTS                           |
+  +------------------------+          |   SFO --&gt; ORD --&gt; JFK  $159  7h 30m      |
+                                      |   SFO --&gt; DEN --&gt; JFK  $179  8h 15m      |
+                                      |                                          |
+                                      | 2-STOP FLIGHTS                           |
+                                      |   SFO --&gt; LAX --&gt; ATL --&gt; JFK  $129 11h  |
+                                      |   SFO --&gt; DEN --&gt; ORD --&gt; JFK  $139 10h  |
+                                      +------------------------------------------+
+    </pre>
+  </div>
+</section>
+
+<!-- ==================== SECTION 2: REQUIREMENTS ==================== -->
+<section id="requirements">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--blue));">&#128203;</span> Requirements</h2>
+
+  <h3>Functional Requirements</h3>
+  <div class="card-grid">
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div class="card-header" style="color:var(--primary);">FR1: Flight Search</div>
+      <ul>
+        <li>Search direct flights between origin and destination</li>
+        <li>Search 1-stop connecting flights</li>
+        <li>Search 2-stop connecting flights</li>
+        <li>Validate connection times (min 45 min &ndash; max 8 hr layover)</li>
+        <li>Return results grouped by stops, sorted by price</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--secondary);">
+      <div class="card-header" style="color:var(--secondary);">FR2: Filtering &amp; Sorting</div>
+      <ul>
+        <li>Sort by price, total duration, departure time, or number of stops</li>
+        <li>Filter by airline, number of stops, departure/arrival time windows</li>
+        <li>Filter by fare class (economy, business, first)</li>
+        <li>Price range filter with min/max bounds</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--blue);">
+      <div class="card-header" style="color:var(--blue);">FR3: Round Trip &amp; Multi-Passenger</div>
+      <ul>
+        <li>Round-trip search: outbound + return flights</li>
+        <li>Multi-passenger pricing: ensure N seats available on every leg</li>
+        <li>Display per-person and total prices</li>
+        <li>Multi-city / open-jaw itinerary support</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--purple);">
+      <div class="card-header" style="color:var(--purple);">FR4: Booking Integration</div>
+      <ul>
+        <li>Select itinerary and redirect to airline or complete in-app</li>
+        <li>Seat hold with TTL during checkout</li>
+        <li>Price verification at booking time (prices may have changed)</li>
+        <li>Passenger detail collection (name, DOB, passport)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Non-Functional Requirements</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left: 4px solid var(--success);">
+      <div class="card-header" style="color:var(--success);">&#9201; Latency</div>
+      <ul>
+        <li><strong>&lt; 3 seconds</strong> for initial results (direct flights)</li>
+        <li><strong>&lt; 5 seconds</strong> for complete results including 2-stop</li>
+        <li>Progressive loading: stream results as they become available</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--blue);">
+      <div class="card-header" style="color:var(--blue);">&#128200; Throughput</div>
+      <ul>
+        <li>Handle <strong>10M+ searches per day</strong> (115 QPS average, 500+ QPS peak)</li>
+        <li>Process <strong>1M price updates per hour</strong> from airline feeds</li>
+        <li>Serve results from 800+ airlines globally</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--warning);">
+      <div class="card-header" style="color:var(--warning);">&#128274; Availability &amp; Freshness</div>
+      <ul>
+        <li>99.9% uptime (search must always work)</li>
+        <li>Near-real-time price updates (15-minute staleness acceptable)</li>
+        <li>Seat availability verified at booking time (eventually consistent for search)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SECTION 3: CAPACITY ==================== -->
+<section id="capacity">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--accent), var(--warning));">&#128290;</span> Capacity Estimation</h2>
+
+  <h3>Scale Parameters</h3>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-value">~10K</div>
+      <div class="metric-label">Airports Worldwide</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">~50K</div>
+      <div class="metric-label">Direct Routes</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">~800</div>
+      <div class="metric-label">Airlines</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">10M</div>
+      <div class="metric-label">Searches / Day</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">115</div>
+      <div class="metric-label">QPS (Average)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value">~500</div>
+      <div class="metric-label">QPS (Peak)</div>
+    </div>
+  </div>
+
+  <h3>Combinatorial Explosion</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Route Type</th>
+          <th>Combination Formula</th>
+          <th>Theoretical Max</th>
+          <th>After Pruning</th>
+          <th>Per Query (SFO-JFK)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Direct</strong></td>
+          <td>Lookup: origin=A, dest=B</td>
+          <td>~50K routes total</td>
+          <td>~50K</td>
+          <td>5-20 flights</td>
+        </tr>
+        <tr>
+          <td><strong>1-Stop</strong></td>
+          <td>50K &times; 50K (self-join on intermediate)</td>
+          <td>2.5 Billion</td>
+          <td>~500M (time-valid)</td>
+          <td>100-500 itineraries</td>
+        </tr>
+        <tr>
+          <td><strong>2-Stop</strong></td>
+          <td>50K &times; 50K &times; 50K (triple join)</td>
+          <td>125 Trillion</td>
+          <td>~10B (pruned)</td>
+          <td>500-5000 itineraries</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-warning">
+    <div class="tip-title" style="color:var(--warning);">&#9888; Key Insight: Why This Is Hard</div>
+    <p>The 2-stop combinatorial space is <strong>125 trillion</strong> before pruning. This is why you cannot compute all 2-stop routes online at query time for all city pairs. You MUST either pre-compute popular pairs offline, use graph-based pruning (BFS with depth limit), or both. This is the central scaling insight the interviewer expects.</p>
+  </div>
+
+  <h3>Storage Estimation</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data Type</th>
+          <th>Record Size</th>
+          <th>Count</th>
+          <th>Total Storage</th>
+          <th>Update Frequency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Flight Schedules</strong></td>
+          <td>~200 bytes</td>
+          <td>~500K flights/day</td>
+          <td>~100 MB/day</td>
+          <td>Seasonal (quarterly)</td>
+        </tr>
+        <tr>
+          <td><strong>Fares (Prices)</strong></td>
+          <td>~100 bytes</td>
+          <td>~5M fare rules</td>
+          <td>~500 MB</td>
+          <td>Hourly to daily</td>
+        </tr>
+        <tr>
+          <td><strong>Availability (Seats)</strong></td>
+          <td>~50 bytes</td>
+          <td>~500K flights &times; 365 days</td>
+          <td>~9 GB</td>
+          <td>Every minute</td>
+        </tr>
+        <tr>
+          <td><strong>Pre-computed 1-stop Routes</strong></td>
+          <td>~150 bytes</td>
+          <td>~500M valid combinations</td>
+          <td>~75 GB</td>
+          <td>Rebuilt nightly</td>
+        </tr>
+        <tr>
+          <td><strong>Search Result Cache</strong></td>
+          <td>~5 KB/query</td>
+          <td>~1M cached queries</td>
+          <td>~5 GB (Redis)</td>
+          <td>TTL: 15 min</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Throughput Analysis</h3>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">Searches (read QPS)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:23%; background:linear-gradient(90deg, var(--blue), var(--secondary));">115 avg / 500 peak</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Price Updates (write/hr)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:65%; background:linear-gradient(90deg, var(--warning), var(--accent));">1,000,000 / hour = 278 / sec</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Availability Updates</div>
+      <div class="bar-track"><div class="bar-fill" style="width:85%; background:linear-gradient(90deg, var(--danger), var(--primary));">500K flights &times; minute-level = high</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Cache Hit Ratio</div>
+      <div class="bar-track"><div class="bar-fill" style="width:80%; background:linear-gradient(90deg, var(--success), var(--secondary));">~80% (popular routes)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SECTION 4: DATA SCHEMA ==================== -->
+<section id="data-schema">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--purple));">&#128451;</span> Data Schema</h2>
+
+  <h3>Core Tables</h3>
+  <pre>
+<span class="comment">-- AIRPORTS: Reference data (~10K rows, rarely changes)</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">airports</span> (
+    airport_code   <span class="type">CHAR(3)</span> <span class="keyword">PRIMARY KEY</span>,     <span class="comment">-- IATA code: SFO, JFK, LHR</span>
+    city           <span class="type">VARCHAR(100)</span>,
+    country        <span class="type">VARCHAR(100)</span>,
+    timezone       <span class="type">VARCHAR(50)</span>,
+    latitude       <span class="type">DECIMAL(9,6)</span>,
+    longitude      <span class="type">DECIMAL(9,6)</span>
+);
+
+<span class="comment">-- AIRLINES: Reference data (~800 rows)</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">airlines</span> (
+    airline_code   <span class="type">CHAR(2)</span> <span class="keyword">PRIMARY KEY</span>,     <span class="comment">-- IATA: UA, AA, DL</span>
+    name           <span class="type">VARCHAR(200)</span>,
+    alliance       <span class="type">VARCHAR(50)</span>              <span class="comment">-- Star Alliance, oneworld, SkyTeam</span>
+);
+
+<span class="comment">-- FLIGHTS: Schedule data (~500K active flights/day, changes seasonally)</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">flights</span> (
+    flight_id      <span class="type">BIGINT</span> <span class="keyword">PRIMARY KEY</span>,
+    flight_no      <span class="type">VARCHAR(10)</span>,              <span class="comment">-- UA 234</span>
+    airline_code   <span class="type">CHAR(2)</span>,
+    origin         <span class="type">CHAR(3)</span>,                  <span class="comment">-- Airport IATA code</span>
+    destination    <span class="type">CHAR(3)</span>,                  <span class="comment">-- Airport IATA code</span>
+    departure_time <span class="type">TIME</span>,                     <span class="comment">-- Scheduled departure (local time)</span>
+    arrival_time   <span class="type">TIME</span>,                     <span class="comment">-- Scheduled arrival (local time)</span>
+    duration_min   <span class="type">INT</span>,                      <span class="comment">-- Flight duration in minutes</span>
+    aircraft_type  <span class="type">VARCHAR(20)</span>,
+    days_of_week   <span class="type">VARCHAR(7)</span>,               <span class="comment">-- e.g., 'MTWT_S_' for Mon-Thu, Sat</span>
+    valid_from     <span class="type">DATE</span>,
+    valid_to       <span class="type">DATE</span>,
+    <span class="keyword">INDEX</span> idx_route (origin, destination),
+    <span class="keyword">INDEX</span> idx_origin (origin),
+    <span class="keyword">INDEX</span> idx_destination (destination)
+);
+
+<span class="comment">-- FARES: Price data (relatively stable, ~5M rows, changes hourly-daily)</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">fares</span> (
+    fare_id        <span class="type">BIGINT</span> <span class="keyword">PRIMARY KEY</span>,
+    flight_id      <span class="type">BIGINT</span>,
+    fare_class     <span class="type">ENUM</span>(<span class="string">'economy'</span>, <span class="string">'premium_economy'</span>, <span class="string">'business'</span>, <span class="string">'first'</span>),
+    base_price     <span class="type">DECIMAL(10,2)</span>,           <span class="comment">-- Base fare in USD</span>
+    taxes_fees     <span class="type">DECIMAL(10,2)</span>,
+    total_price    <span class="type">DECIMAL(10,2)</span>,
+    currency       <span class="type">CHAR(3)</span>,
+    flight_date    <span class="type">DATE</span>,
+    updated_at     <span class="type">TIMESTAMP</span>,
+    <span class="keyword">INDEX</span> idx_flight_date (flight_id, flight_date),
+    <span class="keyword">INDEX</span> idx_price (total_price)
+);
+
+<span class="comment">-- AVAILABILITY: Seat data (VOLATILE - changes every minute, ~180M rows)</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">availability</span> (
+    flight_id      <span class="type">BIGINT</span>,
+    flight_date    <span class="type">DATE</span>,
+    fare_class     <span class="type">ENUM</span>(<span class="string">'economy'</span>, <span class="string">'premium_economy'</span>, <span class="string">'business'</span>, <span class="string">'first'</span>),
+    available_seats <span class="type">INT</span>,
+    last_updated   <span class="type">TIMESTAMP</span>,
+    <span class="keyword">PRIMARY KEY</span> (flight_id, flight_date, fare_class)
+);
+  </pre>
+
+  <h3>Data Volatility Matrix</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data Type</th>
+          <th>Volatility</th>
+          <th>Update Freq</th>
+          <th>Storage Strategy</th>
+          <th>Caching Strategy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:var(--success);">Schedules</strong></td>
+          <td><span class="badge badge-green" style="margin:0;">Low</span></td>
+          <td>Seasonal / quarterly</td>
+          <td>RDBMS + full replicas</td>
+          <td>CDN-level, TTL: 24h</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--warning);">Fares</strong></td>
+          <td><span class="badge badge-yellow" style="margin:0;">Medium</span></td>
+          <td>Hourly to daily</td>
+          <td>RDBMS + in-memory cache</td>
+          <td>Redis, TTL: 15-60 min</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--danger);">Availability</strong></td>
+          <td><span class="badge badge-red" style="margin:0;">High</span></td>
+          <td>Every minute</td>
+          <td>In-memory (Redis) or live API</td>
+          <td>Redis, TTL: 1-5 min or no cache</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-success">
+    <div class="tip-title" style="color:var(--success);">&#128161; PE Insight: Separate by Volatility</div>
+    <p>A principal-level answer separates these three data types into different storage tiers. Schedules go in a read-optimized RDBMS with aggressive caching. Fares sit in an in-memory store (Redis) with 15-min refresh. Availability is either queried live from airline GDS systems or held in a sub-minute-TTL cache. This separation is what enables the system to serve fast results while maintaining freshness where it matters.</p>
+  </div>
+</section>
+
+<!-- ==================== SECTION 5: SEARCH ALGORITHMS ==================== -->
+<section id="search-algorithms">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--blue));">&#128300;</span> Search Algorithms</h2>
+
+  <h3>Approach 1: SQL-Based Search (Relational)</h3>
+
+  <h4>Direct Flights &mdash; Simple WHERE Clause</h4>
+  <pre>
+<span class="comment">-- DIRECT FLIGHTS: O(1) lookup with index on (origin, destination)</span>
+<span class="keyword">SELECT</span> f.flight_no, f.airline_code, f.departure_time, f.arrival_time,
+       f.duration_min, fa.total_price, a.available_seats
+<span class="keyword">FROM</span> flights f
+<span class="keyword">JOIN</span> fares fa <span class="keyword">ON</span> f.flight_id = fa.flight_id
+<span class="keyword">JOIN</span> availability a <span class="keyword">ON</span> f.flight_id = a.flight_id
+                    <span class="keyword">AND</span> fa.flight_date = a.flight_date
+<span class="keyword">WHERE</span> f.origin = <span class="string">'SFO'</span>
+  <span class="keyword">AND</span> f.destination = <span class="string">'JFK'</span>
+  <span class="keyword">AND</span> fa.flight_date = <span class="string">'2024-03-15'</span>
+  <span class="keyword">AND</span> a.available_seats >= <span class="number">3</span>           <span class="comment">-- Family of 3</span>
+  <span class="keyword">AND</span> fa.fare_class = <span class="string">'economy'</span>
+<span class="keyword">ORDER BY</span> fa.total_price <span class="keyword">ASC</span>;
+
+<span class="comment">-- Complexity: O(log N) with B-tree index on (origin, destination)</span>
+<span class="comment">-- Returns: 5-20 direct flights typically</span>
+  </pre>
+
+  <h4>1-Stop Flights &mdash; Self-Join (The Key Query)</h4>
+  <pre>
+<span class="comment">-- 1-STOP FLIGHTS: Self-join on intermediate airport</span>
+<span class="comment">-- This is THE query the interviewer wants to see you derive</span>
+<span class="keyword">SELECT</span>
+    f1.flight_no <span class="keyword">AS</span> leg1_flight,
+    f1.origin <span class="keyword">AS</span> leg1_origin,
+    f1.destination <span class="keyword">AS</span> connection_airport,
+    f1.departure_time <span class="keyword">AS</span> leg1_depart,
+    f1.arrival_time <span class="keyword">AS</span> leg1_arrive,
+    f2.flight_no <span class="keyword">AS</span> leg2_flight,
+    f2.departure_time <span class="keyword">AS</span> leg2_depart,
+    f2.arrival_time <span class="keyword">AS</span> leg2_arrive,
+    (fa1.total_price + fa2.total_price) <span class="keyword">AS</span> total_price,
+    (f1.duration_min + f2.duration_min +
+     TIMESTAMPDIFF(<span class="type">MINUTE</span>, f1.arrival_time, f2.departure_time)) <span class="keyword">AS</span> total_duration
+<span class="keyword">FROM</span> flights f1
+<span class="keyword">JOIN</span> flights f2
+    <span class="keyword">ON</span> f1.destination = f2.origin        <span class="comment">-- Connect at intermediate airport</span>
+<span class="keyword">JOIN</span> fares fa1 <span class="keyword">ON</span> f1.flight_id = fa1.flight_id
+<span class="keyword">JOIN</span> fares fa2 <span class="keyword">ON</span> f2.flight_id = fa2.flight_id
+<span class="keyword">JOIN</span> availability a1 <span class="keyword">ON</span> f1.flight_id = a1.flight_id
+<span class="keyword">JOIN</span> availability a2 <span class="keyword">ON</span> f2.flight_id = a2.flight_id
+<span class="keyword">WHERE</span> f1.origin = <span class="string">'SFO'</span>                <span class="comment">-- Start: origin</span>
+  <span class="keyword">AND</span> f2.destination = <span class="string">'JFK'</span>            <span class="comment">-- End: destination</span>
+  <span class="keyword">AND</span> fa1.flight_date = <span class="string">'2024-03-15'</span>
+  <span class="keyword">AND</span> fa2.flight_date = <span class="string">'2024-03-15'</span>
+  <span class="keyword">AND</span> a1.available_seats >= <span class="number">3</span>
+  <span class="keyword">AND</span> a2.available_seats >= <span class="number">3</span>
+  <span class="comment">-- CONNECTION TIME CONSTRAINTS (critical!)</span>
+  <span class="keyword">AND</span> f2.departure_time > f1.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">45</span> <span class="type">MINUTE</span>   <span class="comment">-- Min connection</span>
+  <span class="keyword">AND</span> f2.departure_time < f1.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">8</span> <span class="type">HOUR</span>      <span class="comment">-- Max layover</span>
+<span class="keyword">ORDER BY</span> total_price <span class="keyword">ASC</span>
+<span class="keyword">LIMIT</span> <span class="number">50</span>;
+
+<span class="comment">-- Complexity: O(F * A) where F = flights from origin, A = avg flights from each hub</span>
+<span class="comment">-- With indexes: reasonably fast if intermediate airports are bounded</span>
+  </pre>
+
+  <h4>2-Stop Flights &mdash; Triple Join</h4>
+  <pre>
+<span class="comment">-- 2-STOP FLIGHTS: Triple self-join (computationally expensive!)</span>
+<span class="keyword">SELECT</span>
+    f1.flight_no <span class="keyword">AS</span> leg1, f1.destination <span class="keyword">AS</span> stop1,
+    f2.flight_no <span class="keyword">AS</span> leg2, f2.destination <span class="keyword">AS</span> stop2,
+    f3.flight_no <span class="keyword">AS</span> leg3,
+    (fa1.total_price + fa2.total_price + fa3.total_price) <span class="keyword">AS</span> total_price
+<span class="keyword">FROM</span> flights f1
+<span class="keyword">JOIN</span> flights f2 <span class="keyword">ON</span> f1.destination = f2.origin
+<span class="keyword">JOIN</span> flights f3 <span class="keyword">ON</span> f2.destination = f3.origin
+<span class="keyword">JOIN</span> fares fa1 <span class="keyword">ON</span> f1.flight_id = fa1.flight_id
+<span class="keyword">JOIN</span> fares fa2 <span class="keyword">ON</span> f2.flight_id = fa2.flight_id
+<span class="keyword">JOIN</span> fares fa3 <span class="keyword">ON</span> f3.flight_id = fa3.flight_id
+<span class="keyword">WHERE</span> f1.origin = <span class="string">'SFO'</span>
+  <span class="keyword">AND</span> f3.destination = <span class="string">'JFK'</span>
+  <span class="keyword">AND</span> f1.destination != <span class="string">'JFK'</span>            <span class="comment">-- Don't revisit destination</span>
+  <span class="keyword">AND</span> f2.destination != <span class="string">'SFO'</span>            <span class="comment">-- Don't revisit origin</span>
+  <span class="keyword">AND</span> f1.destination != f2.destination   <span class="comment">-- No repeated stops</span>
+  <span class="comment">-- Connection time constraints for both stops</span>
+  <span class="keyword">AND</span> f2.departure_time > f1.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">45</span> <span class="type">MINUTE</span>
+  <span class="keyword">AND</span> f2.departure_time < f1.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">8</span> <span class="type">HOUR</span>
+  <span class="keyword">AND</span> f3.departure_time > f2.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">45</span> <span class="type">MINUTE</span>
+  <span class="keyword">AND</span> f3.departure_time < f2.arrival_time + <span class="keyword">INTERVAL</span> <span class="number">8</span> <span class="type">HOUR</span>
+<span class="keyword">ORDER BY</span> total_price <span class="keyword">ASC</span>
+<span class="keyword">LIMIT</span> <span class="number">50</span>;
+
+<span class="comment">-- Complexity: O(F * A * A) = cubic in worst case</span>
+<span class="comment">-- THIS IS TOO SLOW for online computation at scale!</span>
+<span class="comment">-- Solution: pre-compute or use graph-based approach</span>
+  </pre>
+
+  <div class="tip-box tip-danger">
+    <div class="tip-title" style="color:var(--danger);">&#9888; Complexity Warning</div>
+    <p>The triple join for 2-stop flights can produce an <strong>astronomical number of intermediate results</strong>. With 50K routes, the database engine may need to evaluate billions of row combinations. This is where the interview pivots from "can you write SQL" to "can you design a system that doesn't need to run this query online."</p>
+  </div>
+
+  <h3>Approach 2: Graph-Based Search</h3>
+
+  <p>Model airports as <strong>nodes</strong> and flights as <strong>directed edges</strong> with weights (price, duration). This transforms the problem into a shortest-path problem on a directed graph.</p>
+
+  <div class="diagram-box">
+    <pre>
+            AIRPORT GRAPH (Price-Weighted Edges)
+
+           $120                $89              $95
+    SFO --------&gt; ORD --------&gt; JFK    SFO --------&gt; DEN
+     |              ^            ^                      |
+     |   $199       |            |                      | $110
+     +--------------+------------+                      v
+     |  (direct)    |   $75      |                    ATL
+     |              +--  DEN ----+                      |
+     |                            $85                   | $95
+     +---&gt; LAX ----&gt; ATL --------&gt; JFK                  v
+      $80    $100         $95                          JFK
+
+
+    Shortest paths by price (SFO -&gt; JFK):
+      Direct:   SFO --&gt; JFK = $199
+      1-stop:   SFO --&gt; DEN --&gt; JFK = $95 + $75 = $170
+      1-stop:   SFO --&gt; ORD --&gt; JFK = $120 + $89 = $209
+      2-stop:   SFO --&gt; LAX --&gt; ATL --&gt; JFK = $80 + $100 + $95 = $275
+    </pre>
+  </div>
+
+  <h4>BFS / Modified Dijkstra Pseudocode</h4>
+  <pre>
+<span class="keyword">def</span> <span class="func">search_flights</span>(origin, destination, date, max_stops, passengers):
+    <span class="string">"""
+    Modified BFS/Dijkstra for flight search.
+    Uses priority queue ordered by price.
+    Limits search depth to max_stops + 1 legs.
+    """</span>
+    <span class="comment"># Build adjacency list: airport -> list of (dest, flight_info)</span>
+    graph = build_flight_graph(date)
+
+    <span class="comment"># Priority queue: (total_price, current_airport, legs_so_far, path)</span>
+    pq = MinHeap()
+    pq.push((<span class="number">0</span>, origin, <span class="number">0</span>, [], <span class="keyword">None</span>))  <span class="comment"># (price, airport, stops, path, last_arrival)</span>
+
+    results = {<span class="number">0</span>: [], <span class="number">1</span>: [], <span class="number">2</span>: []}    <span class="comment"># Group by number of stops</span>
+    visited_states = {}                  <span class="comment"># (airport, num_stops) -> best price</span>
+
+    <span class="keyword">while</span> <span class="keyword">not</span> pq.empty():
+        price, airport, stops, path, last_arrival = pq.pop()
+
+        <span class="comment"># PRUNING: Skip if we've seen a cheaper path to this state</span>
+        state = (airport, stops)
+        <span class="keyword">if</span> state <span class="keyword">in</span> visited_states <span class="keyword">and</span> visited_states[state] <= price:
+            <span class="keyword">continue</span>
+        visited_states[state] = price
+
+        <span class="comment"># FOUND: Reached destination</span>
+        <span class="keyword">if</span> airport == destination:
+            num_stops = stops - <span class="number">1</span>  <span class="comment"># stops = legs - 1</span>
+            <span class="keyword">if</span> num_stops >= <span class="number">0</span>:
+                results[num_stops].append((price, path))
+            <span class="keyword">continue</span>
+
+        <span class="comment"># PRUNING: Don't exceed max stops</span>
+        <span class="keyword">if</span> stops > max_stops:
+            <span class="keyword">continue</span>
+
+        <span class="comment"># EXPAND: Try all flights from current airport</span>
+        <span class="keyword">for</span> flight <span class="keyword">in</span> graph[airport]:
+            <span class="comment"># Connection time validation</span>
+            <span class="keyword">if</span> last_arrival <span class="keyword">and</span> flight.departure < last_arrival + MIN_CONNECTION:
+                <span class="keyword">continue</span>
+            <span class="keyword">if</span> last_arrival <span class="keyword">and</span> flight.departure > last_arrival + MAX_LAYOVER:
+                <span class="keyword">continue</span>
+
+            <span class="comment"># Seat availability check</span>
+            <span class="keyword">if</span> flight.available_seats < passengers:
+                <span class="keyword">continue</span>
+
+            new_price = price + flight.price
+            new_path = path + [flight]
+            pq.push((new_price, flight.destination, stops + <span class="number">1</span>,
+                     new_path, flight.arrival_time))
+
+    <span class="keyword">return</span> results
+
+<span class="comment"># Complexity: O(E * log V) where E = edges (flights), V = vertices (airports)</span>
+<span class="comment"># With max_stops pruning, effective complexity is much lower</span>
+<span class="comment"># Typically explores ~1000-5000 flights for a 2-stop search</span>
+  </pre>
+
+  <h3>Complexity Comparison</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Approach</th>
+          <th>Direct</th>
+          <th>1-Stop</th>
+          <th>2-Stop</th>
+          <th>Pros</th>
+          <th>Cons</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SQL Self-Join</strong></td>
+          <td>O(log N)</td>
+          <td>O(N * M)</td>
+          <td>O(N * M<sup>2</sup>)</td>
+          <td>Simple, familiar, works for direct/1-stop</td>
+          <td>Explodes at 2+ stops</td>
+        </tr>
+        <tr>
+          <td><strong>Graph BFS</strong></td>
+          <td>O(E)</td>
+          <td>O(E * log V)</td>
+          <td>O(E * log V)</td>
+          <td>Naturally handles multi-stop, prunable</td>
+          <td>Requires in-memory graph</td>
+        </tr>
+        <tr>
+          <td><strong>Graph + Dijkstra</strong></td>
+          <td>O(E)</td>
+          <td>O(E * log V)</td>
+          <td>O(E * log V)</td>
+          <td>Optimal paths, price-weighted</td>
+          <td>More complex implementation</td>
+        </tr>
+        <tr>
+          <td><strong>Pre-computed Pairs</strong></td>
+          <td>O(1)</td>
+          <td>O(1)</td>
+          <td>O(1)</td>
+          <td>Fastest query time</td>
+          <td>Huge storage, staleness</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Pruning Strategies</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color:var(--primary);">&#9986; Time-Based Pruning</div>
+      <ul>
+        <li>Minimum connection time: 45 minutes (domestic) / 90 minutes (international)</li>
+        <li>Maximum layover: 8 hours</li>
+        <li>Maximum total journey time: 24 hours (for 2-stop)</li>
+        <li>Don't consider overnight connections unless intentional</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--secondary);">&#128176; Price-Based Pruning</div>
+      <ul>
+        <li>If cheapest direct is $200, don't explore 2-stop paths already over $200</li>
+        <li>Price cap: discard results 3x more expensive than cheapest found</li>
+        <li>Use Dijkstra's early termination: once we have K results, stop</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--purple);">&#127758; Geography-Based Pruning</div>
+      <ul>
+        <li>SFO to JFK: don't route through Tokyo</li>
+        <li>Bounding box: intermediate airports within 1.5x great-circle distance</li>
+        <li>Only consider hub airports as connections (top 200 airports by traffic)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SECTION 6: ONLINE VS OFFLINE ==================== -->
+<section id="online-offline">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--accent));">&#9889;</span> Online vs Offline Computation</h2>
+
+  <p>This is the <strong>most critical architecture decision</strong> in the flight search system and the trade-off the interviewer is testing for. The question is: do you compute routes at query time (online), pre-compute them (offline), or use a hybrid approach?</p>
+
+  <div class="comparison">
+    <div class="card option-a">
+      <div class="card-header" style="color:var(--secondary);">Option A: Online Computation</div>
+      <p><strong>Compute all routes at query time</strong></p>
+      <ul>
+        <li style="color:var(--success);">Always fresh prices and availability</li>
+        <li style="color:var(--success);">No storage overhead for pre-computed data</li>
+        <li style="color:var(--success);">Handles all city pairs equally</li>
+        <li style="color:var(--danger);">2-stop search is too slow (&gt;10 seconds)</li>
+        <li style="color:var(--danger);">High CPU cost per query</li>
+        <li style="color:var(--danger);">Can't scale to 500 QPS peak</li>
+      </ul>
+      <p style="margin-top:12px;"><strong>Verdict:</strong> Works for direct + 1-stop only</p>
+    </div>
+    <div class="card option-b">
+      <div class="card-header" style="color:var(--accent);">Option B: Offline Pre-Computation</div>
+      <p><strong>Pre-compute all valid routes nightly</strong></p>
+      <ul>
+        <li style="color:var(--success);">Sub-100ms query time (lookup, not compute)</li>
+        <li style="color:var(--success);">Predictable latency under load</li>
+        <li style="color:var(--success);">Can optimize and rank routes offline</li>
+        <li style="color:var(--danger);">Stale prices (up to 24h old)</li>
+        <li style="color:var(--danger);">75+ GB storage for 1-stop routes alone</li>
+        <li style="color:var(--danger);">Rebuild is expensive (hours for full recompute)</li>
+      </ul>
+      <p style="margin-top:12px;"><strong>Verdict:</strong> Fast but prices may be wrong</p>
+    </div>
+  </div>
+
+  <h3>Option C: Hybrid Approach (Recommended)</h3>
+  <div class="card" style="border-top: 3px solid var(--purple); border-bottom: 3px solid var(--purple);">
+    <div class="card-header" style="color:var(--purple);">&#127775; The PE-Level Answer</div>
+    <p>Combine the best of both worlds:</p>
+
+    <div class="table-wrap" style="margin-top:15px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Strategy</th>
+            <th>Freshness</th>
+            <th>Speed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Direct Flights</strong></td>
+            <td>Always compute online (fast enough)</td>
+            <td>Real-time</td>
+            <td>&lt;200ms</td>
+          </tr>
+          <tr>
+            <td><strong>1-Stop: Popular Routes</strong></td>
+            <td>Pre-computed + price refresh every 15 min</td>
+            <td>15-min stale</td>
+            <td>&lt;100ms</td>
+          </tr>
+          <tr>
+            <td><strong>1-Stop: Rare Routes</strong></td>
+            <td>Compute online with graph BFS</td>
+            <td>Real-time</td>
+            <td>&lt;2 sec</td>
+          </tr>
+          <tr>
+            <td><strong>2-Stop: Popular Routes</strong></td>
+            <td>Pre-computed nightly, prices from cache</td>
+            <td>Price: 15-min</td>
+            <td>&lt;200ms</td>
+          </tr>
+          <tr>
+            <td><strong>2-Stop: Rare Routes</strong></td>
+            <td>Graph BFS with aggressive pruning (hub-only)</td>
+            <td>Real-time</td>
+            <td>&lt;5 sec</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>Pre-Computation Pipeline</h3>
+  <div class="diagram-box">
+    <pre>
+  OFFLINE PIPELINE (runs nightly + incremental updates)
+
+  +------------------+      +--------------------+      +---------------------+
+  |  Schedule Feed   |      |  Route Generator   |      |  Route Store        |
+  |  (airlines push  | --&gt;  |  - Build graph     | --&gt;  |  - Popular 1-stop   |
+  |   new schedules) |      |  - BFS all pairs   |      |  - Popular 2-stop   |
+  +------------------+      |  - Prune invalid   |      |  - Indexed by O/D   |
+                            +--------------------+      +---------------------+
+                                                               |
+  +------------------+      +--------------------+             v
+  |  Fare Feed       |      |  Price Enrichment  |      +---------------------+
+  |  (1M changes/hr) | --&gt;  |  - Match routes    | --&gt;  |  Redis Cache        |
+  |                  |      |  - Update prices   |      |  - route:SFO:JFK    |
+  +------------------+      |  - Invalidate old  |      |  - TTL: 15 min      |
+                            +--------------------+      +---------------------+
+                                                               |
+                                                               v
+  +------------------+      +--------------------+      +---------------------+
+  |  Availability    |      |  Search Service    |      |  API Response       |
+  |  (live check)    | --&gt;  |  - Merge cached    | --&gt;  |  - Progressive load |
+  |                  |      |  - Filter by seats  |      |  - Direct first     |
+  +------------------+      |  - Sort by price   |      |  - Then 1-stop, 2   |
+                            +--------------------+      +---------------------+
+    </pre>
+  </div>
+
+  <h3>Cache Invalidation Strategy</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color:var(--warning);">Time-Based (TTL)</div>
+      <ul>
+        <li>Search results cache: <strong>15 minutes TTL</strong></li>
+        <li>Popular route cache: <strong>1 hour TTL</strong></li>
+        <li>Schedule data: <strong>24 hour TTL</strong></li>
+        <li>Simple, predictable, eventual consistency</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--accent);">Event-Based (Push)</div>
+      <ul>
+        <li>Fare feed publishes price change events to Kafka</li>
+        <li>Cache subscriber invalidates affected routes</li>
+        <li>Targeted: only invalidate routes containing changed flights</li>
+        <li>More complex but fresher results</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--purple);">Hybrid Versioning</div>
+      <ul>
+        <li>Routes stored with version + timestamp</li>
+        <li>On query: if cache version &gt; 15 min, refresh prices inline</li>
+        <li>Serve stale result instantly + async refresh for next query</li>
+        <li><strong>Stale-While-Revalidate</strong> pattern</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SECTION 7: HIGH-LEVEL ARCHITECTURE ==================== -->
+<section id="architecture">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--secondary));">&#127959;</span> High-Level Architecture</h2>
+
+  <div class="diagram-box">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" style="width:100%;max-width:1100px;">
+      <defs>
+        <linearGradient id="fg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF5A5F"/><stop offset="100%" stop-color="#E04850"/></linearGradient>
+        <linearGradient id="fg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00A699"/><stop offset="100%" stop-color="#008C82"/></linearGradient>
+        <linearGradient id="fg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#428BF9"/><stop offset="100%" stop-color="#3070D4"/></linearGradient>
+        <linearGradient id="fg4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7B2FF7"/><stop offset="100%" stop-color="#6420D0"/></linearGradient>
+        <linearGradient id="fg5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FC642D"/><stop offset="100%" stop-color="#E05520"/></linearGradient>
+        <filter id="fs" x="-5%" y="-5%" width="115%" height="115%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+        </filter>
+        <marker id="arrS" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#94a3b8">
+          <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="arrA" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#7B2FF7">
+          <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+        <marker id="arrK" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#ef4444">
+          <polygon points="0 0, 10 3.5, 0 7"/>
+        </marker>
+      </defs>
+
+      <!-- Background -->
+      <rect width="1100" height="650" rx="16" fill="#16213e"/>
+      <text x="550" y="28" text-anchor="middle" fill="#1e293b" font-size="18" font-weight="700" letter-spacing="1">FLIGHT SEARCH SYSTEM ARCHITECTURE</text>
+
+      <!-- ===== CLIENTS (Web, Mobile) ===== -->
+      <!-- Mobile icon -->
+      <g filter="url(#fs)" transform="translate(30, 48)">
+        <rect x="0" y="0" width="30" height="50" rx="5" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="3" y="6" width="24" height="34" rx="2" fill="#1a1a2e"/>
+        <circle cx="15" cy="45" r="2.5" fill="#94a3b8"/>
+        <text x="15" y="24" text-anchor="middle" fill="#00A699" font-size="6">App</text>
+      </g>
+      <text x="45" y="112" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600">Mobile</text>
+
+      <!-- Web icon (browser) -->
+      <g filter="url(#fs)" transform="translate(90, 52)">
+        <rect x="0" y="0" width="44" height="32" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="3" y="8" width="38" height="20" rx="2" fill="#1a1a2e"/>
+        <circle cx="7" cy="4" r="1.5" fill="#ef4444"/>
+        <circle cx="13" cy="4" r="1.5" fill="#f59e0b"/>
+        <circle cx="19" cy="4" r="1.5" fill="#10b981"/>
+        <rect x="14" y="32" width="16" height="4" fill="#94a3b8"/>
+        <rect x="8" y="36" width="28" height="2" rx="1" fill="#94a3b8"/>
+      </g>
+      <text x="112" y="112" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600">Web</text>
+
+      <!-- Arrow: Clients -> CDN -->
+      <line x1="140" y1="75" x2="185" y2="75" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+      <!-- ===== CDN (Globe icon) ===== -->
+      <g filter="url(#fs)" transform="translate(195, 50)">
+        <rect x="0" y="0" width="90" height="50" rx="10" fill="#f8fafc" stroke="#f59e0b" stroke-width="1.5"/>
+        <!-- Globe icon -->
+        <circle cx="24" cy="25" r="12" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+        <ellipse cx="24" cy="25" rx="6" ry="12" fill="none" stroke="#f59e0b" stroke-width="1"/>
+        <line x1="12" y1="25" x2="36" y2="25" stroke="#f59e0b" stroke-width="1"/>
+        <line x1="14" y1="18" x2="34" y2="18" stroke="#f59e0b" stroke-width="0.7"/>
+        <line x1="14" y1="32" x2="34" y2="32" stroke="#f59e0b" stroke-width="0.7"/>
+        <text x="58" y="22" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">CDN</text>
+        <text x="58" y="34" text-anchor="middle" fill="#94a3b8" font-size="7">Static cache</text>
+      </g>
+
+      <!-- Arrow: CDN -> API Gateway -->
+      <line x1="285" y1="75" x2="315" y2="75" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+      <!-- ===== API GATEWAY (Shield + Checkmark icon) ===== -->
+      <g filter="url(#fs)" transform="translate(325, 42)">
+        <rect x="0" y="0" width="120" height="65" rx="10" fill="url(#fg1)" opacity="0.95"/>
+        <!-- Shield icon -->
+        <g transform="translate(10, 10)">
+          <path d="M12,2 L22,7 L22,14 C22,22 17,28 12,30 C7,28 2,22 2,14 L2,7 Z" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <polyline points="8,16 11,19 17,12" fill="none" stroke="#fff" stroke-width="2"/>
+        </g>
+        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">API Gateway</text>
+        <text x="75" y="35" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Rate Limit &bull; Auth</text>
+        <text x="75" y="47" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Dedup &bull; Routing</text>
+      </g>
+
+      <!-- Arrow: API GW -> Search Service -->
+      <line x1="445" y1="75" x2="485" y2="75" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrS)"/>
+
+      <!-- ===== SEARCH SERVICE (large rounded box with magnifying glass) ===== -->
+      <g filter="url(#fs)">
+        <rect x="495" y="42" width="260" height="190" rx="12" fill="#f8fafc" stroke="#00A699" stroke-width="1.5"/>
+        <rect x="495" y="42" width="260" height="32" rx="12" fill="url(#fg2)" opacity="0.9"/>
+        <!-- Magnifying glass icon -->
+        <g transform="translate(505, 48)">
+          <circle cx="8" cy="8" r="6" fill="none" stroke="#fff" stroke-width="1.8"/>
+          <line x1="12" y1="12" x2="18" y2="18" stroke="#fff" stroke-width="2"/>
+        </g>
+        <text x="625" y="63" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Search Service</text>
+
+        <!-- Query Orchestrator sub-box -->
+        <rect x="510" y="82" width="230" height="30" rx="6" fill="rgba(0,166,153,0.15)" stroke="#00A699" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="625" y="101" text-anchor="middle" fill="#00A699" font-size="10" font-weight="600">Query Orchestrator (parse / fan-out / merge+rank)</text>
+
+        <!-- Fan-out arrows -->
+        <line x1="565" y1="112" x2="545" y2="135" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+        <line x1="625" y1="112" x2="625" y2="135" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+        <line x1="685" y1="112" x2="705" y2="135" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+
+        <!-- Direct Engine -->
+        <rect x="510" y="138" width="70" height="40" rx="6" fill="rgba(66,139,249,0.08)" stroke="#428BF9" stroke-width="1"/>
+        <text x="545" y="155" text-anchor="middle" fill="#428BF9" font-size="9" font-weight="600">Direct</text>
+        <text x="545" y="168" text-anchor="middle" fill="#94a3b8" font-size="7">Engine</text>
+
+        <!-- 1-Stop Engine -->
+        <rect x="590" y="138" width="70" height="40" rx="6" fill="rgba(123,47,247,0.15)" stroke="#7B2FF7" stroke-width="1"/>
+        <text x="625" y="155" text-anchor="middle" fill="#7B2FF7" font-size="9" font-weight="600">1-Stop</text>
+        <text x="625" y="168" text-anchor="middle" fill="#94a3b8" font-size="7">Engine</text>
+
+        <!-- 2-Stop Engine -->
+        <rect x="670" y="138" width="70" height="40" rx="6" fill="rgba(252,100,45,0.15)" stroke="#FC642D" stroke-width="1"/>
+        <text x="705" y="155" text-anchor="middle" fill="#FC642D" font-size="9" font-weight="600">2-Stop</text>
+        <text x="705" y="168" text-anchor="middle" fill="#94a3b8" font-size="7">Engine</text>
+
+        <!-- Timeout labels -->
+        <text x="545" y="188" text-anchor="middle" fill="#94a3b8" font-size="7">T/O: 1s</text>
+        <text x="625" y="188" text-anchor="middle" fill="#94a3b8" font-size="7">T/O: 2s</text>
+        <text x="705" y="188" text-anchor="middle" fill="#94a3b8" font-size="7">T/O: 4s</text>
+
+        <!-- Merge + response arrow -->
+        <text x="625" y="225" text-anchor="middle" fill="#00A699" font-size="8" font-weight="600">merge + rank + respond</text>
+      </g>
+
+      <!-- Arrow: Search Service -> Response back to client (curved) -->
+      <path d="M495,200 Q460,200 460,155 Q460,110 445,95" fill="none" stroke="#00A699" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrS)"/>
+      <text x="460" y="148" text-anchor="start" fill="#00A699" font-size="7" transform="rotate(-90,460,148)">response</text>
+
+      <!-- ===== DATA LAYER ===== -->
+      <!-- Arrows from engines down to data layer -->
+      <line x1="545" y1="232" x2="375" y2="280" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+      <line x1="625" y1="232" x2="530" y2="280" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+      <line x1="705" y1="232" x2="680" y2="280" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+
+      <!-- Elasticsearch (flight index) - concentric circles + bars -->
+      <g filter="url(#fs)" transform="translate(265, 280)">
+        <rect x="0" y="0" width="130" height="65" rx="10" fill="#f8fafc" stroke="#00A699" stroke-width="1.5"/>
+        <!-- ES icon: concentric circles + bars -->
+        <circle cx="26" cy="28" r="14" fill="none" stroke="#00A699" stroke-width="1.2"/>
+        <circle cx="26" cy="28" r="9" fill="none" stroke="#00A699" stroke-width="1"/>
+        <circle cx="26" cy="28" r="4" fill="#00A699" opacity="0.6"/>
+        <rect x="35" y="20" width="3" height="16" rx="1" fill="#00A699" opacity="0.6"/>
+        <rect x="40" y="24" width="3" height="8" rx="1" fill="#00A699" opacity="0.5"/>
+        <text x="82" y="24" text-anchor="middle" fill="#00A699" font-size="10" font-weight="700">Elastic</text>
+        <text x="82" y="36" text-anchor="middle" fill="#00A699" font-size="10" font-weight="700">search</text>
+        <text x="82" y="50" text-anchor="middle" fill="#94a3b8" font-size="7">Flight Index</text>
+        <text x="82" y="60" text-anchor="middle" fill="#94a3b8" font-size="7">Direct lookups</text>
+      </g>
+
+      <!-- Redis (route cache + fare cache) - diamond icon -->
+      <g filter="url(#fs)" transform="translate(450, 280)">
+        <rect x="0" y="0" width="130" height="65" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <!-- Redis diamond icon -->
+        <polygon points="22,10 34,25 22,40 10,25" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <polygon points="22,15 30,25 22,35 14,25" fill="#ef4444" opacity="0.3"/>
+        <text x="82" y="22" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">Redis</text>
+        <text x="82" y="34" text-anchor="middle" fill="#94a3b8" font-size="7">Route Cache</text>
+        <text x="82" y="44" text-anchor="middle" fill="#94a3b8" font-size="7">Fare Cache</text>
+        <text x="82" y="55" text-anchor="middle" fill="#94a3b8" font-size="7">TTL: 15 min</text>
+      </g>
+
+      <!-- PostgreSQL (flights DB) - cylinder icon -->
+      <g filter="url(#fs)" transform="translate(630, 280)">
+        <rect x="0" y="0" width="130" height="65" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="1.5"/>
+        <!-- DB Cylinder -->
+        <ellipse cx="24" cy="16" rx="12" ry="5" fill="#428BF9" opacity="0.4" stroke="#428BF9" stroke-width="1.2"/>
+        <rect x="12" y="16" width="24" height="24" fill="#428BF9" opacity="0.2"/>
+        <ellipse cx="24" cy="40" rx="12" ry="5" fill="#428BF9" opacity="0.4" stroke="#428BF9" stroke-width="1.2"/>
+        <line x1="12" y1="16" x2="12" y2="40" stroke="#428BF9" stroke-width="1.2"/>
+        <line x1="36" y1="16" x2="36" y2="40" stroke="#428BF9" stroke-width="1.2"/>
+        <text x="85" y="22" text-anchor="middle" fill="#428BF9" font-size="10" font-weight="700">PostgreSQL</text>
+        <text x="85" y="36" text-anchor="middle" fill="#94a3b8" font-size="7">Flights DB</text>
+        <text x="85" y="47" text-anchor="middle" fill="#94a3b8" font-size="7">Airports &bull; Airlines</text>
+        <text x="85" y="58" text-anchor="middle" fill="#94a3b8" font-size="7">Schedules</text>
+      </g>
+
+      <!-- ===== PIPELINE SECTION ===== -->
+      <!-- Kafka -->
+      <g filter="url(#fs)" transform="translate(265, 390)">
+        <rect x="0" y="0" width="130" height="55" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5"/>
+        <!-- Kafka icon: 3 circles + lines -->
+        <circle cx="18" cy="18" r="5" fill="#ef4444" opacity="0.6" stroke="#ef4444" stroke-width="1"/>
+        <circle cx="32" cy="28" r="5" fill="#ef4444" opacity="0.6" stroke="#ef4444" stroke-width="1"/>
+        <circle cx="18" cy="38" r="5" fill="#ef4444" opacity="0.6" stroke="#ef4444" stroke-width="1"/>
+        <line x1="22" y1="20" x2="28" y2="26" stroke="#ef4444" stroke-width="1.2"/>
+        <line x1="22" y1="36" x2="28" y2="30" stroke="#ef4444" stroke-width="1.2"/>
+        <text x="80" y="22" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700">Kafka</text>
+        <text x="80" y="36" text-anchor="middle" fill="#94a3b8" font-size="7">Event Stream</text>
+        <text x="80" y="47" text-anchor="middle" fill="#94a3b8" font-size="7">1M updates/hr</text>
+      </g>
+
+      <!-- Arrows: Kafka -> DB, ES, Redis (updates) -->
+      <line x1="330" y1="390" x2="330" y2="345" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arrK)"/>
+      <line x1="395" y1="410" x2="450" y2="345" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arrK)"/>
+      <line x1="395" y1="420" x2="695" y2="345" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#arrK)"/>
+      <text x="410" y="380" fill="#ef4444" font-size="7" font-weight="600">updates DB + ES + cache</text>
+
+      <!-- Airline Feed Aggregator (gear icon) -->
+      <g filter="url(#fs)" transform="translate(265, 480)">
+        <rect x="0" y="0" width="160" height="55" rx="10" fill="url(#fg5)" opacity="0.95"/>
+        <!-- Gear icon -->
+        <g transform="translate(14, 10)">
+          <circle cx="12" cy="12" r="6" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="2.5" fill="#fff" opacity="0.6"/>
+          <line x1="12" y1="2" x2="12" y2="6" stroke="#fff" stroke-width="2"/>
+          <line x1="12" y1="18" x2="12" y2="22" stroke="#fff" stroke-width="2"/>
+          <line x1="2" y1="12" x2="6" y2="12" stroke="#fff" stroke-width="2"/>
+          <line x1="18" y1="12" x2="22" y2="12" stroke="#fff" stroke-width="2"/>
+          <line x1="5" y1="5" x2="8" y2="8" stroke="#fff" stroke-width="1.5"/>
+          <line x1="16" y1="16" x2="19" y2="19" stroke="#fff" stroke-width="1.5"/>
+          <line x1="5" y1="19" x2="8" y2="16" stroke="#fff" stroke-width="1.5"/>
+          <line x1="16" y1="8" x2="19" y2="5" stroke="#fff" stroke-width="1.5"/>
+        </g>
+        <text x="105" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Airline Feed</text>
+        <text x="105" y="36" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Aggregator</text>
+        <text x="105" y="48" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Schedule sync &bull; Fare ingestion</text>
+      </g>
+
+      <!-- Arrow: Aggregator -> Kafka -->
+      <line x1="330" y1="480" x2="330" y2="448" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrK)"/>
+
+      <!-- ===== EXTERNAL: GDS / Airline APIs ===== -->
+      <!-- GDS Systems (cloud with plane) -->
+      <g filter="url(#fs)" transform="translate(500, 395)">
+        <rect x="0" y="0" width="160" height="60" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5"/>
+        <!-- Cloud icon -->
+        <path d="M18,38 Q8,38 8,30 Q8,24 14,22 Q14,16 22,16 Q28,16 30,20 Q32,18 36,18 Q42,18 42,24 Q48,24 48,30 Q48,38 38,38 Z" fill="none" stroke="#7B2FF7" stroke-width="1.3"/>
+        <!-- Plane icon inside cloud -->
+        <g transform="translate(21, 24) scale(0.6)">
+          <path d="M0,8 L6,6 L12,0 L14,2 L10,8 L16,10 L18,8 L20,10 L14,14 L12,12 L6,16 L4,14 L8,10 L2,12 Z" fill="#7B2FF7" opacity="0.7"/>
+        </g>
+        <text x="110" y="20" text-anchor="middle" fill="#7B2FF7" font-size="10" font-weight="700">GDS Systems</text>
+        <text x="110" y="33" text-anchor="middle" fill="#94a3b8" font-size="7">Amadeus &bull; Sabre</text>
+        <text x="110" y="44" text-anchor="middle" fill="#94a3b8" font-size="7">Travelport</text>
+        <text x="110" y="55" text-anchor="middle" fill="#94a3b8" font-size="7">Real-time pricing</text>
+      </g>
+
+      <!-- Arrow: GDS -> Aggregator -->
+      <line x1="500" y1="440" x2="425" y2="500" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrA)"/>
+
+      <!-- Arrow: Airline APIs -> Aggregator -->
+      <line x1="580" y1="528" x2="425" y2="510" stroke="#7B2FF7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrA)"/>
+
+      <!-- ===== AIRLINE BACKEND BOXES ===== -->
+      <g filter="url(#fs)" transform="translate(500, 490)">
+        <rect x="0" y="0" width="320" height="70" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+        <text x="160" y="18" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600">AIRLINE SYSTEMS (800+ airlines)</text>
+        <!-- Individual airline boxes -->
+        <rect x="10" y="28" width="60" height="30" rx="5" fill="rgba(66,139,249,0.08)" stroke="#428BF9" stroke-width="1"/>
+        <text x="40" y="47" text-anchor="middle" fill="#428BF9" font-size="9" font-weight="600">United</text>
+
+        <rect x="80" y="28" width="60" height="30" rx="5" fill="rgba(255,90,95,0.15)" stroke="#FF5A5F" stroke-width="1"/>
+        <text x="110" y="47" text-anchor="middle" fill="#FF5A5F" font-size="9" font-weight="600">Delta</text>
+
+        <rect x="150" y="28" width="60" height="30" rx="5" fill="rgba(252,100,45,0.15)" stroke="#FC642D" stroke-width="1"/>
+        <text x="180" y="47" text-anchor="middle" fill="#FC642D" font-size="9" font-weight="600">AA</text>
+
+        <rect x="220" y="28" width="80" height="30" rx="5" fill="rgba(123,47,247,0.15)" stroke="#7B2FF7" stroke-width="1"/>
+        <text x="260" y="47" text-anchor="middle" fill="#7B2FF7" font-size="9" font-weight="600">Lufthansa</text>
+      </g>
+
+      <!-- Arrow: Airline boxes -> GDS -->
+      <line x1="620" y1="490" x2="600" y2="458" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrS)"/>
+
+      <!-- ===== ADDITIONAL SERVICES ===== -->
+      <!-- Booking Service (ticket icon) -->
+      <g filter="url(#fs)" transform="translate(810, 42)">
+        <rect x="0" y="0" width="120" height="55" rx="10" fill="url(#fg4)" opacity="0.9"/>
+        <!-- Ticket icon -->
+        <g transform="translate(10, 10)">
+          <rect x="0" y="0" width="24" height="14" rx="3" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <line x1="16" y1="0" x2="16" y2="14" stroke="#fff" stroke-width="1" stroke-dasharray="2,2"/>
+          <circle cx="8" cy="7" r="2" fill="#fff" opacity="0.7"/>
+        </g>
+        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Booking</text>
+        <text x="75" y="35" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Service</text>
+        <text x="75" y="48" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Seat hold &bull; TTL</text>
+      </g>
+
+      <!-- Price Service (dollar icon) -->
+      <g filter="url(#fs)" transform="translate(810, 110)">
+        <rect x="0" y="0" width="120" height="55" rx="10" fill="url(#fg2)" opacity="0.9"/>
+        <!-- Dollar icon -->
+        <g transform="translate(10, 8)">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <text x="12" y="17" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">$</text>
+        </g>
+        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Price</text>
+        <text x="75" y="35" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Service</text>
+        <text x="75" y="48" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Dynamic pricing</text>
+      </g>
+
+      <!-- Route Engine (graph/path icon) -->
+      <g filter="url(#fs)" transform="translate(810, 178)">
+        <rect x="0" y="0" width="120" height="55" rx="10" fill="url(#fg3)" opacity="0.9"/>
+        <!-- Graph/path icon -->
+        <g transform="translate(10, 10)">
+          <circle cx="4" cy="4" r="3" fill="#fff" opacity="0.7"/>
+          <circle cx="20" cy="4" r="3" fill="#fff" opacity="0.7"/>
+          <circle cx="12" cy="18" r="3" fill="#fff" opacity="0.7"/>
+          <line x1="6" y1="6" x2="10" y2="16" stroke="#fff" stroke-width="1.2"/>
+          <line x1="18" y1="6" x2="14" y2="16" stroke="#fff" stroke-width="1.2"/>
+          <line x1="7" y1="4" x2="17" y2="4" stroke="#fff" stroke-width="1.2"/>
+        </g>
+        <text x="75" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Route</text>
+        <text x="75" y="35" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Engine</text>
+        <text x="75" y="48" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="7">Precomputed paths</text>
+      </g>
+
+      <!-- Connections from Search Service to side services -->
+      <line x1="755" y1="75" x2="810" y2="68" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrS)"/>
+      <line x1="755" y1="120" x2="810" y2="135" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrS)"/>
+      <line x1="755" y1="165" x2="810" y2="198" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrS)"/>
+
+      <!-- ===== FLOW ANNOTATIONS ===== -->
+      <!-- Search flow -->
+      <g transform="translate(810, 280)">
+        <rect x="0" y="0" width="260" height="100" rx="10" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
+        <text x="130" y="18" text-anchor="middle" fill="#00A699" font-size="10" font-weight="700">SEARCH FLOW</text>
+        <text x="8" y="34" fill="#94a3b8" font-size="8">1. Client -> CDN -> API GW -> Search Svc</text>
+        <text x="8" y="47" fill="#94a3b8" font-size="8">2. Fan-out: ES + Route Engine + Redis</text>
+        <text x="8" y="60" fill="#94a3b8" font-size="8">3. Direct results return first (SSE)</text>
+        <text x="8" y="73" fill="#94a3b8" font-size="8">4. Merge + rank + dedup</text>
+        <text x="8" y="86" fill="#94a3b8" font-size="8">5. Stream response progressively</text>
+      </g>
+
+      <!-- Ingestion flow -->
+      <g transform="translate(810, 395)">
+        <rect x="0" y="0" width="260" height="85" rx="10" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
+        <text x="130" y="18" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">INGESTION PIPELINE</text>
+        <text x="8" y="34" fill="#94a3b8" font-size="8">1. Airline APIs -> Feed Aggregator</text>
+        <text x="8" y="47" fill="#94a3b8" font-size="8">2. Normalize + validate</text>
+        <text x="8" y="60" fill="#94a3b8" font-size="8">3. Publish to Kafka</text>
+        <text x="8" y="73" fill="#94a3b8" font-size="8">4. Consumers update DB + ES + Redis</text>
+      </g>
+
+      <!-- ===== NUMBERED STEP CIRCLES ===== -->
+      <!-- Step 1: Client -> CDN (HTTPS, cached popular routes) -->
+      <circle cx="165" cy="68" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="165" y="72" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Step 2: CDN miss -> API Gateway (auth, rate limit, dedup) -->
+      <circle cx="302" cy="68" r="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="302" y="72" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
+
+      <!-- Step 3: API Gateway -> Search Service (query orchestrator) -->
+      <circle cx="468" cy="68" r="10" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+      <text x="468" y="72" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
+
+      <!-- Step 4: Search Service -> Elasticsearch (direct flight lookup) -->
+      <circle cx="365" cy="270" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/>
+      <text x="365" y="274" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
+
+      <!-- Step 5: Search Service -> Route Engine (1-stop/2-stop precomputed routes) -->
+      <circle cx="785" cy="188" r="10" fill="#00A699" stroke="#fff" stroke-width="1.5"/>
+      <text x="785" y="192" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
+
+      <!-- Step 6: Search Service -> Redis (fare cache, TTL 15min) -->
+      <circle cx="530" cy="270" r="10" fill="#428BF9" stroke="#fff" stroke-width="1.5"/>
+      <text x="530" y="274" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
+
+      <!-- Step 7: Search results merged, ranked, returned to client -->
+      <circle cx="475" cy="148" r="10" fill="#7B2FF7" stroke="#fff" stroke-width="1.5"/>
+      <text x="475" y="152" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
+
+      <!-- Step 8: Airline Feed Aggregator -> GDS/Airline APIs (pull schedules+fares) -->
+      <circle cx="470" cy="470" r="10" fill="#FC642D" stroke="#fff" stroke-width="1.5"/>
+      <text x="470" y="474" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
+
+      <!-- Step 9: Aggregator -> Kafka (price/availability updates, 1M/hr) -->
+      <circle cx="322" cy="465" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="322" y="469" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
+
+      <!-- Step 10: Kafka -> ES + Redis + PostgreSQL (update flight data) -->
+      <circle cx="410" cy="370" r="10" fill="#ef4444" stroke="#fff" stroke-width="1.5"/>
+      <text x="410" y="374" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">10</text>
+
+      <!-- ===== LEGEND ===== -->
+      <g transform="translate(15, 610)">
+        <text x="0" y="12" fill="#1e293b" font-size="10" font-weight="600">LEGEND:</text>
+        <line x1="65" y1="8" x2="95" y2="8" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrS)"/>
+        <text x="100" y="12" fill="#94a3b8" font-size="9">Sync request</text>
+        <line x1="185" y1="8" x2="215" y2="8" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="220" y="12" fill="#94a3b8" font-size="9">Async / event</text>
+        <line x1="300" y1="8" x2="330" y2="8" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrK)"/>
+        <text x="335" y="12" fill="#ef4444" font-size="9">Kafka stream</text>
+        <polygon points="422,2 428,8 422,14 416,8" fill="none" stroke="#ef4444" stroke-width="1.2"/>
+        <text x="435" y="12" fill="#ef4444" font-size="9">Redis</text>
+        <!-- DB cylinder small -->
+        <ellipse cx="485" cy="5" rx="6" ry="3" fill="#428BF9" opacity="0.5" stroke="#428BF9" stroke-width="0.8"/>
+        <rect x="479" y="5" width="12" height="8" fill="#428BF9" opacity="0.3"/>
+        <ellipse cx="485" cy="13" rx="6" ry="3" fill="#428BF9" opacity="0.5" stroke="#428BF9" stroke-width="0.8"/>
+        <text x="497" y="12" fill="#428BF9" font-size="9">PostgreSQL</text>
+        <!-- Globe small -->
+        <circle cx="570" cy="8" r="5" fill="none" stroke="#f59e0b" stroke-width="1"/>
+        <text x="580" y="12" fill="#f59e0b" font-size="9">CDN</text>
+        <!-- ES circles small -->
+        <circle cx="615" cy="8" r="5" fill="none" stroke="#00A699" stroke-width="1"/>
+        <circle cx="615" cy="8" r="2.5" fill="#00A699" opacity="0.5"/>
+        <text x="625" y="12" fill="#00A699" font-size="9">Elasticsearch</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ===== REQUEST FLOW REFERENCE ===== -->
+  <h3>Request Flow Reference</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>From &rarr; To</th>
+          <th>Protocol</th>
+          <th>What Happens</th>
+          <th>Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">1</span></td>
+          <td>Client &rarr; CDN</td>
+          <td><code>HTTPS</code></td>
+          <td>Popular route results served from edge cache (e.g., "SFO&rarr;JFK"); static assets cached; reduces origin load by ~60%</td>
+          <td>~5-20 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:11px;">2</span></td>
+          <td>CDN miss &rarr; API Gateway</td>
+          <td><code>HTTPS</code></td>
+          <td>Authenticate request (JWT/API key), enforce rate limit (10 req/min/user), dedup identical queries within 5s window</td>
+          <td>~5-15 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#10b981;color:#fff;font-weight:800;font-size:11px;">3</span></td>
+          <td>API Gateway &rarr; Search Service</td>
+          <td><code>gRPC</code></td>
+          <td>Query orchestrator parses search params (origin, dest, dates, class), builds execution plan for parallel fan-out</td>
+          <td>~5-10 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">4</span></td>
+          <td>Search Service &rarr; Elasticsearch</td>
+          <td><code>HTTP</code></td>
+          <td>Direct flight lookup: bool query on origin+dest+date with fare class filter; returns ranked results with availability</td>
+          <td>~15-50 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">5</span></td>
+          <td>Search Service &rarr; Route Engine</td>
+          <td><code>gRPC</code></td>
+          <td>Lookup precomputed 1-stop and 2-stop connecting routes from graph DB; timeout at 2s/4s respectively</td>
+          <td>~50-200 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">6</span></td>
+          <td>Search Service &rarr; Redis</td>
+          <td><code>TCP</code></td>
+          <td>Check fare cache for recently-priced routes (TTL 15 min); cache hit avoids expensive GDS re-query</td>
+          <td>~1-3 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:11px;">7</span></td>
+          <td>Search results merged, ranked, returned</td>
+          <td><code>HTTPS / SSE</code></td>
+          <td>Orchestrator merges direct + connecting results, dedup, rank by price/duration/stops, stream progressively to client</td>
+          <td>~100-500 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FC642D;color:#fff;font-weight:800;font-size:11px;">8</span></td>
+          <td>Airline Feed Aggregator &rarr; GDS / Airline APIs</td>
+          <td><code>HTTPS / SFTP</code></td>
+          <td>Pull flight schedules and fare updates from Amadeus, Sabre, Travelport, and direct airline APIs; normalize to internal schema</td>
+          <td>~500 ms-5 s (external)</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">9</span></td>
+          <td>Aggregator &rarr; Kafka</td>
+          <td><code>TCP</code></td>
+          <td>Publish price/availability update events to Kafka topics; ~1M events/hr; partitioned by route for ordering</td>
+          <td>~5-15 ms</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">10</span></td>
+          <td>Kafka &rarr; ES + Redis + PostgreSQL</td>
+          <td><code>Consumer</code></td>
+          <td>Kafka consumers update Elasticsearch flight index, invalidate/refresh Redis fare cache, upsert PostgreSQL schedule records</td>
+          <td>~50-500 ms (async)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HAPPY PATH ===== -->
+  <h3>Happy Path: Search Success Flow</h3>
+  <div class="card" style="border-left: 3px solid var(--success);">
+    <p style="margin-bottom:16px;">The complete success flow when a user searches for flights:</p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">1</span>
+        <span>User searches "SFO &rarr; JFK, Mar 15" &rarr; request hits <strong>CDN</strong>; cache miss (not a popular cached route)</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">2</span>
+        <span>CDN forwards to <strong>API Gateway</strong> &rarr; JWT validated, rate limit passed, request is not a duplicate</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#10b981;color:#fff;font-weight:800;font-size:12px;">3</span>
+        <span>API Gateway routes to <strong>Search Service</strong> &rarr; query orchestrator parses params and initiates parallel fan-out</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">4</span>
+        <span>Fan-out: <strong>Elasticsearch</strong> returns direct SFO&rarr;JFK flights in ~30ms</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:12px;">5</span>
+        <span>Fan-out: <strong>Route Engine</strong> returns 1-stop options (SFO&rarr;ORD&rarr;JFK, SFO&rarr;DFW&rarr;JFK) in ~150ms</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:12px;">6</span>
+        <span>Fan-out: <strong>Redis</strong> fare cache provides cached prices for known routes (TTL 15 min), avoiding GDS re-query</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:12px;">7</span>
+        <span>Orchestrator merges + ranks results by price/duration/stops &rarr; streams response progressively to client via SSE</span>
+      </div>
+    </div>
+    <p style="margin-top:16px; color:var(--success); font-weight:600;">Result: User sees first direct flights in &lt;1s, full results (direct + connecting) in &lt;3s. Total end-to-end latency well under SLA.</p>
+  </div>
+
+  <!-- ===== FAILURE PATHS ===== -->
+  <h3>Failure Paths</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fails At</th>
+          <th>Failure Scenario</th>
+          <th>Impact</th>
+          <th>Recovery Strategy</th>
+          <th>User Sees</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FC642D;color:#fff;font-weight:800;font-size:11px;">8</span> GDS API Timeout</td>
+          <td>Amadeus/Sabre API times out or returns errors during fare ingestion</td>
+          <td>New fare data stops flowing; cached prices become increasingly stale</td>
+          <td>Serve stale cached prices from Redis (TTL-based); circuit breaker on GDS calls; retry with exponential backoff; alert ops if staleness exceeds 30 min</td>
+          <td>Prices shown may be slightly outdated; "Prices may have changed" disclaimer displayed</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:11px;">4</span> ES Shard Failure</td>
+          <td>Elasticsearch primary shard becomes unavailable (node crash, disk failure)</td>
+          <td>Queries to that shard fail; partial search results</td>
+          <td>ES automatically promotes replica shard to primary (~5-10s); during failover, remaining shards still serve partial results; circuit breaker returns cached results if ES is fully down</td>
+          <td>Brief slowdown; "Showing partial results" if shard failover is in progress</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">5</span> Route Engine Slow</td>
+          <td>Route engine exceeds timeout (2s for 1-stop, 4s for 2-stop connections)</td>
+          <td>Connecting flight results missing; only direct flights returned</td>
+          <td>Timeout and return direct-only results immediately; background async retry populates connecting routes for next query; cache connecting routes once computed</td>
+          <td>"Showing direct flights. Connecting flights loading..." with progressive update</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:11px;">6</span> Stale Prices</td>
+          <td>Redis fare cache contains prices that have changed since last TTL refresh</td>
+          <td>User sees incorrect price during search; price changes at booking time</td>
+          <td>TTL-based refresh (15 min); stale-while-revalidate pattern; at booking time, real-time price verification against GDS before confirming</td>
+          <td>"Price changed from $X to $Y" shown at booking confirmation step</td>
+        </tr>
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#7B2FF7;color:#fff;font-weight:800;font-size:11px;">7</span> Booking Race Condition</td>
+          <td>Seat sold between search result display and user clicking "Book"</td>
+          <td>User attempts to book a seat that no longer exists; booking fails</td>
+          <td>Real-time seat availability check at booking time via GDS; optimistic lock with retry; suggest alternative flights with similar price/time; seat hold with short TTL (10 min) during checkout</td>
+          <td>"This fare is no longer available. Here are similar options:" with alternatives</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Component Breakdown</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left: 4px solid var(--primary);">
+      <div class="card-header" style="color:var(--primary);">API Gateway</div>
+      <ul>
+        <li>Rate limiting: 10 searches/min per user</li>
+        <li>Request deduplication (same query within 5 sec)</li>
+        <li>CDN for static fare pages (e.g., "SFO to JFK" landing page)</li>
+        <li>Progressive response: stream results via SSE or WebSocket</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--secondary);">
+      <div class="card-header" style="color:var(--secondary);">Query Orchestrator</div>
+      <ul>
+        <li>Parses search query into structured request</li>
+        <li>Fans out to Direct, 1-Stop, 2-Stop engines in parallel</li>
+        <li>Merges results, deduplicates, applies user filters</li>
+        <li>Returns direct results first (progressive loading)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--blue);">
+      <div class="card-header" style="color:var(--blue);">Search Engines</div>
+      <ul>
+        <li><strong>Direct Engine:</strong> Simple DB lookup, always online</li>
+        <li><strong>1-Stop Engine:</strong> Check cache, fallback to graph BFS</li>
+        <li><strong>2-Stop Engine:</strong> Check cache, fallback to pruned graph search</li>
+        <li>Each engine has independent timeout (1s, 2s, 4s respectively)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--purple);">
+      <div class="card-header" style="color:var(--purple);">Airline Feed Aggregator</div>
+      <ul>
+        <li>Ingests schedule updates from airlines (batch, daily/seasonal)</li>
+        <li>Processes 1M fare changes per hour via message queue (Kafka)</li>
+        <li>Normalizes data formats across 800+ airline systems</li>
+        <li>Triggers cache invalidation on price changes</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Federated Search: Fan-Out to Airlines</h3>
+  <div class="card" style="border-top: 3px solid var(--accent);">
+    <div class="card-header" style="color:var(--accent);">Parallel Query with Timeout</div>
+    <p>For live pricing (especially at booking time), the system fans out requests to multiple airline APIs in parallel:</p>
+    <pre>
+<span class="keyword">async def</span> <span class="func">federated_search</span>(origin, dest, date, passengers):
+    <span class="string">"""Fan out to airline APIs with timeout + fallback"""</span>
+
+    airlines = get_airlines_for_route(origin, dest)
+
+    <span class="comment"># Fan out: query all airlines in parallel</span>
+    tasks = []
+    <span class="keyword">for</span> airline <span class="keyword">in</span> airlines:
+        task = query_airline_api(airline, origin, dest, date, passengers)
+        tasks.append(task)
+
+    <span class="comment"># Gather with timeout: return whatever completes in 2 seconds</span>
+    results = <span class="keyword">await</span> asyncio.gather(
+        *tasks,
+        return_exceptions=<span class="keyword">True</span>
+    )
+
+    <span class="comment"># Timeout strategy: show results from fast responders,</span>
+    <span class="comment"># display "Still loading results from X airlines..." for slow ones</span>
+    fast_results = [r <span class="keyword">for</span> r <span class="keyword">in</span> results <span class="keyword">if not</span> isinstance(r, Exception)]
+
+    <span class="keyword">if</span> <span class="keyword">not</span> fast_results:
+        <span class="comment"># All airlines timed out: fall back to cached prices</span>
+        <span class="keyword">return</span> get_cached_results(origin, dest, date)
+
+    <span class="keyword">return</span> merge_and_rank(fast_results)
+    </pre>
+  </div>
+</section>
+
+<!-- ==================== SECTION 8: SCALING ==================== -->
+<section id="scaling">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--success), var(--secondary));">&#128640;</span> Scaling Strategies</h2>
+
+  <h3>Read Scaling</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color:var(--primary);">&#128230; Cache Popular Routes</div>
+      <ul>
+        <li>80/20 rule: 20% of city pairs generate 80% of searches</li>
+        <li>Pre-compute and cache top 10K origin-destination pairs</li>
+        <li>Redis cluster: 5 GB for cached search results</li>
+        <li>Cache key: <span class="inline-code">search:{origin}:{dest}:{date}:{stops}</span></li>
+        <li>Expected cache hit ratio: ~80%</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--secondary);">&#127760; CDN for Static Results</div>
+      <ul>
+        <li>Route info pages (SFO-JFK flights) can be CDN-served</li>
+        <li>"Flights from $X" landing pages cached at edge</li>
+        <li>Calendar view (cheapest dates) pre-rendered and cached</li>
+        <li>Reduces origin server load by 60%+</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--blue);">&#128451; Read Replicas</div>
+      <ul>
+        <li>PostgreSQL read replicas for schedule lookups</li>
+        <li>3-5 replicas across regions (US, EU, APAC)</li>
+        <li>Replication lag acceptable (schedules change rarely)</li>
+        <li>Route read queries to nearest replica</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Write Scaling</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header" style="color:var(--warning);">&#128203; Partition by Origin Airport</div>
+      <ul>
+        <li>Shard flight data by origin airport code</li>
+        <li>Hash(origin_airport) % num_shards</li>
+        <li>1-stop queries fan out to 2 shards (origin + intermediate)</li>
+        <li>Works well because searches always specify an origin</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header" style="color:var(--accent);">&#128228; Batch Price Updates</div>
+      <ul>
+        <li>1M price changes/hour = ~278 writes/sec</li>
+        <li>Batch updates: accumulate 5 seconds of changes, write in bulk</li>
+        <li>Kafka consumer groups: parallel processing by airline</li>
+        <li>Write-behind cache: update Redis first, DB async</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Geographic Distribution</h3>
+  <div class="diagram-box">
+    <pre>
+  MULTI-REGION DEPLOYMENT
+
+  +---------------------+     +---------------------+     +---------------------+
+  |    US-WEST (SFO)    |     |    US-EAST (IAD)    |     |    EU-WEST (DUB)    |
+  |                     |     |                     |     |                     |
+  | Search Service      |     | Search Service      |     | Search Service      |
+  | Redis Cache         |     | Redis Cache         |     | Redis Cache         |
+  | PG Read Replica     |     | PG Primary          |     | PG Read Replica     |
+  |                     |     |                     |     |                     |
+  +---------------------+     +---------------------+     +---------------------+
+           |                          |                          |
+           +------------+-------------+-------------+------------+
+                        |                           |
+                  +-----+------+              +-----+------+
+                  | CDN Layer  |              | CDN Layer  |
+                  | CloudFront |              | CloudFront |
+                  +------------+              +------------+
+    </pre>
+  </div>
+</section>
+
+<!-- ==================== SECTION 9: BOOKING FLOW ==================== -->
+<section id="booking-flow">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--danger));">&#128179;</span> Booking Flow &amp; Race Conditions</h2>
+
+  <h3>End-to-End Booking Flow</h3>
+  <div class="flow-steps">
+    <div class="flow-step" style="border-color:var(--blue);">
+      <strong style="color:var(--blue);">1. Search</strong><br>
+      Query flights
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color:var(--secondary);">
+      <strong style="color:var(--secondary);">2. Select</strong><br>
+      Choose itinerary
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color:var(--warning);">
+      <strong style="color:var(--warning);">3. Price Check</strong><br>
+      Verify live price
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color:var(--accent);">
+      <strong style="color:var(--accent);">4. Hold Seats</strong><br>
+      Lock N seats (TTL)
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color:var(--purple);">
+      <strong style="color:var(--purple);">5. Payment</strong><br>
+      Process payment
+    </div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step" style="border-color:var(--success);">
+      <strong style="color:var(--success);">6. Confirm</strong><br>
+      Issue PNR
+    </div>
+  </div>
+
+  <h3>The Seat Availability Race Condition</h3>
+  <div class="tip-box tip-danger">
+    <div class="tip-title" style="color:var(--danger);">&#9888; The Classic Problem</div>
+    <p>Between search and booking, seats may have been sold. With 10M searches/day and limited seats, this is not a theoretical concern -- it happens on every popular flight. The system must handle this gracefully.</p>
+  </div>
+
+  <pre>
+<span class="comment">// BOOKING FLOW WITH DISTRIBUTED LOCK</span>
+
+<span class="keyword">async function</span> <span class="func">bookItinerary</span>(itinerary, passengers, paymentInfo) {
+    <span class="comment">// Step 1: Re-verify price with airline (prices shown during search may be stale)</span>
+    <span class="keyword">const</span> livePrice = <span class="keyword">await</span> verifyPriceWithAirline(itinerary);
+    <span class="keyword">if</span> (livePrice > itinerary.displayedPrice * <span class="number">1.05</span>) {
+        <span class="comment">// Price increased more than 5% -- notify user</span>
+        <span class="keyword">return</span> { status: <span class="string">'PRICE_CHANGED'</span>, newPrice: livePrice };
+    }
+
+    <span class="comment">// Step 2: Hold seats on ALL legs (distributed lock with TTL)</span>
+    <span class="keyword">const</span> holdIds = [];
+    <span class="keyword">try</span> {
+        <span class="keyword">for</span> (<span class="keyword">const</span> leg <span class="keyword">of</span> itinerary.legs) {
+            <span class="keyword">const</span> holdId = <span class="keyword">await</span> holdSeats(leg.flightId, leg.date, passengers, {
+                ttl: <span class="number">600</span>,  <span class="comment">// 10-minute hold</span>
+                idempotencyKey: `${bookingSessionId}-${leg.flightId}`
+            });
+
+            <span class="keyword">if</span> (!holdId) {
+                <span class="comment">// Seats no longer available -- release all previous holds</span>
+                <span class="keyword">await</span> releaseHolds(holdIds);
+                <span class="keyword">return</span> { status: <span class="string">'SEATS_UNAVAILABLE'</span>, leg: leg };
+            }
+            holdIds.push(holdId);
+        }
+
+        <span class="comment">// Step 3: Process payment</span>
+        <span class="keyword">const</span> paymentResult = <span class="keyword">await</span> processPayment(paymentInfo, livePrice * passengers);
+
+        <span class="keyword">if</span> (!paymentResult.success) {
+            <span class="keyword">await</span> releaseHolds(holdIds);
+            <span class="keyword">return</span> { status: <span class="string">'PAYMENT_FAILED'</span> };
+        }
+
+        <span class="comment">// Step 4: Confirm booking with airline (two-phase commit)</span>
+        <span class="keyword">const</span> pnr = <span class="keyword">await</span> confirmWithAirline(holdIds, paymentResult.txnId);
+
+        <span class="keyword">return</span> { status: <span class="string">'CONFIRMED'</span>, pnr: pnr, totalPrice: livePrice * passengers };
+
+    } <span class="keyword">catch</span> (error) {
+        <span class="comment">// Rollback: release all holds, refund payment if charged</span>
+        <span class="keyword">await</span> releaseHolds(holdIds);
+        <span class="keyword">await</span> refundIfCharged(paymentResult);
+        <span class="keyword">throw</span> error;
+    }
+}
+  </pre>
+
+  <h3>Two-Phase Commit with Airlines</h3>
+  <div class="diagram-box">
+    <pre>
+  TWO-PHASE COMMIT (multi-leg booking)
+
+  Our System              Airline A (Leg 1)       Airline B (Leg 2)
+      |                        |                        |
+      |--- PREPARE (hold) ---&gt; |                        |
+      |&lt;-- HOLD_OK (id: H1) ---|                        |
+      |                        |                        |
+      |--- PREPARE (hold) --------------------------&gt;   |
+      |&lt;-- HOLD_OK (id: H2) ----------------------------|
+      |                        |                        |
+      |  [Process Payment]     |                        |
+      |                        |                        |
+      |--- COMMIT (H1) ------&gt; |                        |
+      |&lt;-- CONFIRMED (PNR1) ---|                        |
+      |                        |                        |
+      |--- COMMIT (H2) --------------------------------&gt;|
+      |&lt;-- CONFIRMED (PNR2) --------------------------------|
+      |                        |                        |
+      | [Generate unified itinerary with PNR1 + PNR2]   |
+
+  FAILURE CASE:
+      |--- COMMIT (H1) ------&gt; |                        |
+      |&lt;-- CONFIRMED (PNR1) ---|                        |
+      |                        |                        |
+      |--- COMMIT (H2) --------------------------------&gt;|
+      |&lt;-- FAILED (seats sold) ----------------------------|
+      |                        |                        |
+      |--- CANCEL (PNR1) ----&gt; |  [Compensating transaction]
+      |&lt;-- CANCELLED ----------|                        |
+      |  [Refund payment]      |                        |
+    </pre>
+  </div>
+
+  <h3>Idempotency</h3>
+  <div class="card">
+    <div class="card-header" style="color:var(--success);">Idempotency Key Design</div>
+    <p>Network failures during booking can cause duplicate requests. Every booking operation must be idempotent:</p>
+    <ul>
+      <li><strong>Idempotency Key:</strong> <span class="inline-code">{user_id}:{session_id}:{itinerary_hash}:{timestamp_bucket}</span></li>
+      <li><strong>Storage:</strong> Redis with 1-hour TTL to track processed keys</li>
+      <li><strong>Behavior:</strong> If key exists, return the result of the original request (don't re-process)</li>
+      <li><strong>Payment:</strong> Stripe/payment processor handles its own idempotency with our key</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== SECTION 10: TRADE-OFFS ==================== -->
+<section id="tradeoffs">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--danger), var(--warning));">&#9878;</span> Trade-offs Table</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Option A</th>
+          <th>Option B</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Route Computation</strong></td>
+          <td><strong style="color:var(--secondary);">Online</strong><br>Fresh results, high CPU, slow for 2-stop</td>
+          <td><strong style="color:var(--accent);">Offline Pre-compute</strong><br>Fast queries, stale data, high storage</td>
+          <td><strong style="color:var(--purple);">Hybrid:</strong> Online for direct + rare routes, offline for popular 1-stop/2-stop pairs</td>
+        </tr>
+        <tr>
+          <td><strong>Data Source</strong></td>
+          <td><strong style="color:var(--secondary);">Own Database</strong><br>Fast, in our control, possibly stale</td>
+          <td><strong style="color:var(--accent);">Live Airline APIs</strong><br>Fresh, slow, depends on airline uptime</td>
+          <td><strong style="color:var(--purple);">Own DB for search, live API at booking time</strong> for price verification</td>
+        </tr>
+        <tr>
+          <td><strong>Storage Engine</strong></td>
+          <td><strong style="color:var(--secondary);">Graph DB (Neo4j)</strong><br>Natural model, good for traversals</td>
+          <td><strong style="color:var(--accent);">RDBMS (PostgreSQL)</strong><br>Mature, SQL joins, team familiarity</td>
+          <td><strong style="color:var(--purple);">RDBMS + In-Memory Graph</strong> (build adjacency list in app memory from DB)</td>
+        </tr>
+        <tr>
+          <td><strong>Pre-compute Scope</strong></td>
+          <td><strong style="color:var(--secondary);">All Pairs</strong><br>10K &times; 10K = 100M pairs, huge</td>
+          <td><strong style="color:var(--accent);">Popular Pairs Only</strong><br>Top 10K O/D pairs, 80% of traffic</td>
+          <td><strong style="color:var(--purple);">Popular pairs + hub-to-hub routes</strong> (covers 95% of traffic)</td>
+        </tr>
+        <tr>
+          <td><strong>Result Delivery</strong></td>
+          <td><strong style="color:var(--secondary);">Complete Results</strong><br>Wait for all engines, return once</td>
+          <td><strong style="color:var(--accent);">Progressive Loading</strong><br>Stream as available, update UI</td>
+          <td><strong style="color:var(--purple);">Progressive:</strong> Direct in 200ms, 1-stop in 1s, 2-stop in 3s</td>
+        </tr>
+        <tr>
+          <td><strong>Price Display</strong></td>
+          <td><strong style="color:var(--secondary);">Guaranteed Price</strong><br>Verify before displaying, slower</td>
+          <td><strong style="color:var(--accent);">Estimated Price</strong><br>Show cached, verify at booking, faster</td>
+          <td><strong style="color:var(--purple);">Estimated with disclaimer</strong> "Prices may change. Final price confirmed at checkout."</td>
+        </tr>
+        <tr>
+          <td><strong>Connection Validation</strong></td>
+          <td><strong style="color:var(--secondary);">Strict (same terminal/airline)</strong><br>Fewer results but all bookable</td>
+          <td><strong style="color:var(--accent);">Loose (any connection)</strong><br>More results, some may be impractical</td>
+          <td><strong style="color:var(--purple);">Tiered:</strong> Show alliance/codeshare connections first, then interline, then self-connect</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-interview">
+    <div class="tip-title" style="color:var(--purple);">&#127919; Trade-off Discussion Framework</div>
+    <p>For each trade-off, articulate: (1) <strong>What are we optimizing for?</strong> (latency, freshness, cost, correctness), (2) <strong>What are we sacrificing?</strong>, (3) <strong>Is the sacrifice acceptable given our requirements?</strong> For flight search, the interviewer expects you to favor speed over perfect freshness for search results, but require correctness at booking time.</p>
+  </div>
+</section>
+
+<!-- ==================== SECTION 11: INTERVIEW TIPS ==================== -->
+<section id="interview-tips">
+  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--primary));">&#127919;</span> Interview Calibration &amp; Tips</h2>
+
+  <h3>Evaluation Rubric</h3>
+  <div class="calibration-grid">
+    <div class="card" style="border-top: 4px solid var(--success);">
+      <div class="card-header" style="color:var(--success);">&#11088; STRONG YES</div>
+      <p style="color:var(--text-muted); margin-bottom:12px;">Candidate demonstrates all of the following:</p>
+      <ul>
+        <li>Understands the <strong>graph nature</strong> of the problem (airports = nodes, flights = edges)</li>
+        <li>Can write SQL for <strong>1-stop self-join</strong> and explain why 2-stop is expensive</li>
+        <li>Identifies <strong>combinatorial explosion</strong> and proposes pruning strategies</li>
+        <li>Explains <strong>online vs offline trade-off</strong> and recommends hybrid approach</li>
+        <li>Separates data by <strong>volatility</strong> (schedules vs fares vs availability)</li>
+        <li>Addresses <strong>booking race conditions</strong> and seat hold mechanism</li>
+        <li>Discusses <strong>progressive loading</strong> UX pattern</li>
+        <li>Proposes specific <strong>caching strategy</strong> with TTLs per data type</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--blue);">
+      <div class="card-header" style="color:var(--blue);">&#9989; YES</div>
+      <p style="color:var(--text-muted); margin-bottom:12px;">Candidate demonstrates:</p>
+      <ul>
+        <li>Can write the <strong>1-stop SQL self-join</strong> correctly</li>
+        <li>Explains <strong>conceptually</strong> how 2-stop works and why it's harder</li>
+        <li>Identifies the <strong>speed vs freshness trade-off</strong></li>
+        <li>Proposes a <strong>reasonable caching strategy</strong></li>
+        <li>Considers <strong>connection time constraints</strong></li>
+        <li>Mentions data freshness concerns</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--warning);">
+      <div class="card-header" style="color:var(--warning);">&#9888; LEAN NO</div>
+      <p style="color:var(--text-muted); margin-bottom:12px;">Candidate shows:</p>
+      <ul>
+        <li>Can describe direct flights but <strong>struggles with 1-stop SQL</strong></li>
+        <li>Doesn't recognize the <strong>combinatorial explosion</strong> problem</li>
+        <li>No discussion of <strong>online vs offline</strong> computation</li>
+        <li>Ignores data <strong>freshness</strong> concerns entirely</li>
+        <li>Treats it as simple CRUD without understanding graph properties</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--danger);">
+      <div class="card-header" style="color:var(--danger);">&#10060; NO</div>
+      <p style="color:var(--text-muted); margin-bottom:12px;">Candidate cannot:</p>
+      <ul>
+        <li>Write <strong>SQL or pseudocode</strong> for the 1-stop query</li>
+        <li>Explain what a <strong>self-join</strong> is or why it's needed</li>
+        <li>Identify that this is fundamentally a <strong>graph problem</strong></li>
+        <li>Propose any <strong>scaling strategy</strong> beyond "add more servers"</li>
+        <li>Recognize that flight data has <strong>different update frequencies</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Key Questions to Ask (as Interviewer or Candidate)</h3>
+  <div class="card" style="border-left: 4px solid var(--purple);">
+    <div class="card-header" style="color:var(--purple);">Scoping Questions (Ask These First!)</div>
+    <div class="table-wrap" style="margin-top:10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>Why It Matters</th>
+            <th>Expected Answer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"How many airports are we dealing with?"</td>
+            <td>Determines if brute-force is feasible</td>
+            <td>~10K airports. This scopes the graph size.</td>
+          </tr>
+          <tr>
+            <td>"How many direct routes exist?"</td>
+            <td>Determines join complexity</td>
+            <td>~50K. This makes 1-stop = 50K x 50K = huge.</td>
+          </tr>
+          <tr>
+            <td>"How often do prices change?"</td>
+            <td>Determines caching strategy</td>
+            <td>~1M changes/hour. Can't query live for every search.</td>
+          </tr>
+          <tr>
+            <td>"What latency is acceptable?"</td>
+            <td>Determines online vs offline balance</td>
+            <td>&lt;3 seconds. Rules out pure online for 2-stop.</td>
+          </tr>
+          <tr>
+            <td>"Max number of stops?"</td>
+            <td>Bounds the graph traversal depth</td>
+            <td>Usually 2. This is critical for pruning.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>Common Interview Mistakes</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header" style="color:var(--danger);">&#10060; Mistake: Ignoring Scale</div>
+      <p>Proposing a solution that computes all routes online at query time without discussing the combinatorial explosion. With 50K routes, a triple join is not feasible in real-time.</p>
+      <p style="color:var(--success); margin-top:8px;"><strong>Fix:</strong> Start with "How many airports?" to scope the problem, then explain why offline pre-computation is needed.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header" style="color:var(--danger);">&#10060; Mistake: Treating All Data Equally</div>
+      <p>Storing schedules, fares, and availability in the same table with the same caching strategy. Availability changes every minute; schedules change quarterly.</p>
+      <p style="color:var(--success); margin-top:8px;"><strong>Fix:</strong> Separate data by volatility. Different storage, different caching, different update strategies.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header" style="color:var(--danger);">&#10060; Mistake: Forgetting Connection Time</div>
+      <p>Joining flights without checking that the second leg departs after the first leg arrives (plus minimum connection time). This produces invalid itineraries.</p>
+      <p style="color:var(--success); margin-top:8px;"><strong>Fix:</strong> Always include <span class="inline-code">f2.depart > f1.arrive + 45min</span> and <span class="inline-code">f2.depart < f1.arrive + 8hr</span> in the join condition.</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger);">
+      <div class="card-header" style="color:var(--danger);">&#10060; Mistake: No Booking Race Condition</div>
+      <p>Assuming that seats shown during search will still be available at booking time. With millions of concurrent searchers, this is a guaranteed race condition.</p>
+      <p style="color:var(--success); margin-top:8px;"><strong>Fix:</strong> Discuss seat holds with TTL, two-phase commit with airlines, and graceful handling of "seats no longer available."</p>
+    </div>
+  </div>
+
+  <h3>30/60 Minute Interview Pacing</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>30-Min Interview</th>
+          <th>60-Min Interview</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>0-5 min</strong></td>
+          <td>Clarify requirements, ask scoping questions (how many airports?)</td>
+          <td>Same + discuss use cases (one-way, round-trip, multi-city)</td>
+        </tr>
+        <tr>
+          <td><strong>5-10 min</strong></td>
+          <td>Data model: flights, fares, availability. Three data types.</td>
+          <td>Same + data volatility matrix + schema design</td>
+        </tr>
+        <tr>
+          <td><strong>10-18 min</strong></td>
+          <td>SQL for direct + 1-stop. Explain 2-stop complexity.</td>
+          <td>SQL for all three + graph-based alternative + complexity analysis</td>
+        </tr>
+        <tr>
+          <td><strong>18-25 min</strong></td>
+          <td>Online vs offline trade-off. Caching strategy.</td>
+          <td>Hybrid approach + pre-computation pipeline + cache invalidation</td>
+        </tr>
+        <tr>
+          <td><strong>25-30 min</strong></td>
+          <td>Quick mention of booking flow and scaling</td>
+          <td>N/A</td>
+        </tr>
+        <tr>
+          <td><strong>30-45 min</strong></td>
+          <td>N/A</td>
+          <td>High-level architecture + federated search + scaling strategies</td>
+        </tr>
+        <tr>
+          <td><strong>45-55 min</strong></td>
+          <td>N/A</td>
+          <td>Booking flow + race conditions + two-phase commit</td>
+        </tr>
+        <tr>
+          <td><strong>55-60 min</strong></td>
+          <td>N/A</td>
+          <td>Trade-offs summary + Q&A</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>PE-Level Differentiators</h3>
+  <div class="card" style="border: 2px solid var(--purple); background: linear-gradient(135deg, rgba(123,47,247,0.05), rgba(66,139,249,0.05));">
+    <div class="card-header" style="color:var(--purple);">What Separates Principal Engineers in This Problem</div>
+    <ul>
+      <li><strong>Graph Thinking:</strong> Immediately models the problem as a graph and discusses BFS/Dijkstra vs SQL joins. Knows when each is appropriate.</li>
+      <li><strong>Data Classification:</strong> Separates flight data into three tiers by volatility without being prompted. Proposes different storage strategies for each.</li>
+      <li><strong>System-Level Thinking:</strong> Discusses progressive loading UX, federated search fan-out, and graceful degradation when airline APIs are slow.</li>
+      <li><strong>Quantitative Reasoning:</strong> Calculates combinatorial explosion numbers (50K^2 for 1-stop, 50K^3 for 2-stop) to justify offline computation.</li>
+      <li><strong>Production Experience:</strong> Mentions stale-while-revalidate caching, idempotent booking operations, and compensating transactions for failed multi-leg bookings.</li>
+      <li><strong>Business Awareness:</strong> Understands the "prices from $X" UX pattern, why airlines use GDS systems, and the role of fare filing in the industry.</li>
+    </ul>
+  </div>
+
+  <div class="tip-box tip-success">
+    <div class="tip-title" style="color:var(--success);">&#128161; The One-Liner That Shows Depth</div>
+    <p>"The flight search problem is fundamentally a <strong>bounded-depth shortest-path problem on a weighted directed graph</strong>, where the graph has ~10K nodes and ~50K edges, and the challenge is that edge weights (prices) change 1M times per hour while we need sub-3-second query latency." -- If you can deliver this framing in the first 2 minutes, you've signaled PE-level understanding immediately.</p>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <p>Flight Search System Design &mdash; Principal Engineer Interview Prep</p>
+  <p style="margin-top:8px;">Part of the <a href="index.html">Airbnb System Design Interview Collection</a></p>
+  <p style="margin-top:8px; font-size:0.8em; color:var(--text-muted);">Covers: Kayak, Google Flights, Skyscanner, Hopper, and similar flight search aggregators</p>
+</footer>
+
+<script>
+(function(){
+  document.querySelectorAll(".diagram-box").forEach(function(box){
+    var svg=box.querySelector("svg");
+    if(!svg) return;
+    var zoom=1, minZ=0.5, maxZ=3;
+    var ctrl=document.createElement("div");
+    ctrl.className="diagram-zoom-controls";
+    ctrl.innerHTML='<button class="zoom-out" title="Zoom Out">−</button><span class="zoom-level">100%</span><button class="zoom-in" title="Zoom In">+</button><button class="zoom-reset" title="Reset">↺</button><button class="zoom-fs" title="Fullscreen">⤢</button>';
+    box.insertBefore(ctrl,box.firstChild);
+    var lvl=ctrl.querySelector(".zoom-level");
+    function apply(){svg.style.transform="scale("+zoom+")";lvl.textContent=Math.round(zoom*100)+"%";}
+    ctrl.querySelector(".zoom-in").onclick=function(){zoom=Math.min(maxZ,zoom+0.25);apply();};
+    ctrl.querySelector(".zoom-out").onclick=function(){zoom=Math.max(minZ,zoom-0.25);apply();};
+    ctrl.querySelector(".zoom-reset").onclick=function(){zoom=1;apply();};
+    ctrl.querySelector(".zoom-fs").onclick=function(){
+      box.classList.toggle("fullscreen");
+      if(box.classList.contains("fullscreen")){this.textContent="✖";zoom=1.2;}else{this.textContent="⤢";zoom=1;}
+      apply();
+    };
+    box.addEventListener("wheel",function(e){
+      if(e.ctrlKey){e.preventDefault();zoom=e.deltaY<0?Math.min(maxZ,zoom+0.1):Math.max(minZ,zoom-0.1);apply();}
+    },{passive:false});
+  });
+})();
+</script>
+</body>
+</html>
