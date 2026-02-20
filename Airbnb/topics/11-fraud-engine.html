@@ -538,10 +538,18 @@
     .lifecycle-arrow { transform: rotate(90deg); padding: 4px 0; }
     .bar-label { width: 120px; font-size: 0.78em; }
     .confusion-matrix { grid-template-columns: auto 1fr 1fr; max-width: 100%; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
   }
   @media (max-width: 480px) {
     .hero h1 { font-size: 1.5em; }
     .metric-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
   }
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }

@@ -469,16 +469,51 @@
     font-size: 0.85em;
   }
 
-  /* ===== RESPONSIVE ===== */
+    /* ===== RESPONSIVE ===== */
   @media (max-width: 768px) {
-    .hero { padding: 40px 20px 35px; }
-    .hero h1 { font-size: 1.8em; }
-    .toc { padding: 15px 20px; }
-    .container { padding: 20px; }
-    .card-grid, .card-grid-3, .pricing-grid { grid-template-columns: 1fr; }
-    .hero .stats-row { gap: 20px; }
-    section > h2 { font-size: 1.3em; }
+    .hero { padding: 36px 16px 30px; }
+    .hero h1 { font-size: 1.7em; }
+    .hero .subtitle { font-size: 0.95em; }
+    .hero .back-link { font-size: 0.85em; padding: 8px 16px; }
+    .hero .stats-row { gap: 16px; margin-top: 18px; }
+    .hero .stat-value { font-size: 1.4em; }
+    .hero .stat-label { font-size: 0.7em; }
+    .toc { padding: 14px 16px; }
+    .toc-grid { gap: 6px; }
+    .toc a { padding: 5px 12px; font-size: 0.78em; }
+    .container { padding: 16px 12px; }
+    .card-grid, .card-grid-3, .pricing-grid, .comparison { grid-template-columns: 1fr; gap: 14px; }
+    section { padding: 24px 0; }
+    section > h2 { font-size: 1.25em; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    th, td { padding: 8px 10px; white-space: nowrap; }
+    pre { font-size: 0.82em; padding: 14px; overflow-x: auto; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
+    footer { padding: 24px 16px; font-size: 0.8em; }
   }
+  @media (max-width: 480px) {
+    .hero { padding: 28px 12px 22px; }
+    .hero h1 { font-size: 1.35em; line-height: 1.3; }
+    .hero .subtitle { font-size: 0.85em; }
+    .hero .back-link { font-size: 0.78em; padding: 6px 12px; }
+    .hero .stats-row { gap: 8px; }
+    .hero .stat-value { font-size: 1.15em; }
+    .container { padding: 14px 10px; }
+    .toc a { padding: 4px 10px; font-size: 0.72em; }
+    section > h2 { font-size: 1.1em; }
+    .badge { padding: 3px 10px; font-size: 0.7em; }
+    pre { font-size: 0.75em; padding: 10px; }
+    table { font-size: 0.75em; }
+    th, td { padding: 6px 8px; }
+    footer { padding: 18px 12px; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
+  }
+
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }
   .diagram-zoom-controls {

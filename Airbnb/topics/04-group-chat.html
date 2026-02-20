@@ -530,10 +530,18 @@
     .flow-arrow { transform: rotate(90deg); }
     .calibration-row { flex-direction: column; gap: 6px; }
     .calibration-label { text-align: left; min-width: unset; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
   }
   @media (max-width: 480px) {
     .hero h1 { font-size: 1.4em; }
     pre { font-size: 0.75em; padding: 14px; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
   }
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }

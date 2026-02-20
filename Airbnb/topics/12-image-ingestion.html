@@ -640,11 +640,19 @@
     .pipeline-step { margin-right: 0; }
     .pipeline-step::after { content: '\2193'; right: auto; left: 50%; top: auto; bottom: -18px; transform: translateX(-50%); }
     .tradeoff-row { grid-template-columns: 1fr; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
   }
   @media (max-width: 480px) {
     .hero h1 { font-size: 1.5em; }
     .card { padding: 20px; }
     .code-block { padding: 16px; font-size: 0.78em; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
   }
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }

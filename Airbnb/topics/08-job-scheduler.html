@@ -183,7 +183,8 @@
 
   /* ===== SECTIONS ===== */
   section { margin-bottom: 55px; }
-  section > h2 {
+  section > h2,
+  section > details > summary > h2 {
     font-size: 1.7em;
     margin-bottom: 22px;
     padding-bottom: 12px;
@@ -476,11 +477,19 @@
     .comparison { grid-template-columns: 1fr; }
     section > h2 { font-size: 1.3em; }
     .arch-diagram { font-size: 0.65em; padding: 16px; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
   }
   @media (max-width: 480px) {
     .hero h1 { font-size: 1.4em; }
     .hero .stats-row { gap: 20px; }
     .hero .stat-value { font-size: 1.4em; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
   }
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }
@@ -510,6 +519,51 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6';
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    font-size: 0.5em;
+    color: var(--text-muted);
+  }
+  details[open] summary h2::before {
+    transform: rotate(90deg);
+  }
+  .toggle-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .toggle-controls button {
+    padding: 5px 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.78em;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover {
+    color: var(--purple);
+    border-color: var(--purple);
+    background: rgba(123,47,247,0.1);
+  }
 </style>
 </head>
 <body>
@@ -561,6 +615,10 @@
     <a href="#deep-dives">Deep Dives</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
@@ -569,7 +627,8 @@
 <!--  1. OVERVIEW                                                  -->
 <!-- ============================================================ -->
 <section id="overview">
-  <h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#9881;</span> Overview</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#9881;</span> Overview</h2></summary>
 
   <p>Design a <strong>distributed job scheduler</strong> comparable to Apache Airflow. The system orchestrates complex computational workflows expressed as <strong>Directed Acyclic Graphs (DAGs)</strong>, where each node represents a task and edges encode dependencies. It must support cron-based schedules, event-triggered execution, retries with exponential backoff, and priority-based queuing.</p>
 
@@ -600,13 +659,15 @@
     <span class="tip-icon">&#128161;</span>
     <div><strong>Why Airbnb needs this:</strong> Airbnb runs thousands of data pipelines daily for pricing optimization, search ranking, fraud detection, financial reconciliation, and experimentation analysis. A reliable job scheduler is foundational infrastructure that powers every data-driven decision.</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  2. REQUIREMENTS                                              -->
 <!-- ============================================================ -->
 <section id="requirements">
-  <h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128203;</span> Requirements</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128203;</span> Requirements</h2></summary>
 
   <div class="card-grid">
     <div class="card">
@@ -635,13 +696,15 @@
       </ol>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  3. CAPACITY ESTIMATES                                        -->
 <!-- ============================================================ -->
 <section id="capacity">
-  <h2><span class="icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#128200;</span> Capacity Estimates</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#128200;</span> Capacity Estimates</h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -711,13 +774,15 @@
     <span class="tip-icon">&#128202;</span>
     <div><strong>Key insight:</strong> The scheduling control plane is relatively low throughput (50 TPS peak) compared to user-facing services. The real challenge is <strong>state management correctness</strong> (exactly-once semantics) and <strong>worker orchestration</strong> (scaling to handle variable task durations from seconds to hours).</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  4. HIGH-LEVEL ARCHITECTURE                                   -->
 <!-- ============================================================ -->
 <section id="architecture">
-  <h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#127959;</span> High-Level Architecture</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#127959;</span> High-Level Architecture</h2></summary>
 
   <div class="diagram-box">
   <svg viewBox="0 0 1100 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
@@ -1127,15 +1192,19 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  5. DAG MODEL                                                 -->
 <!-- ============================================================ -->
 <section id="dag-model">
-  <h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#128209;</span> DAG Model &amp; Schema</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#128209;</span> DAG Model &amp; Schema</h2></summary>
 
   <h3>Entity Relationship</h3>
+
+  <p>The entity relationship diagram below shows the five core database tables and how they relate. A <strong>dag</strong> (workflow definition) contains many <strong>tasks</strong> (individual steps), and each task can declare upstream dependencies in the <strong>task_dependency</strong> junction table. When the scheduler triggers a DAG, it creates a <strong>dag_run</strong> (one execution of the workflow for a specific date). Each dag_run fans out into <strong>task_instances</strong> &mdash; one per task &mdash; which track the real-time state, retry count, assigned worker, and log location for that particular execution.</p>
 
   <div class="arch-diagram"><span class="label">                              DAG MODEL - ENTITY RELATIONSHIPS</span>
 
@@ -1167,9 +1236,9 @@
     <span class="comp">| ended_at         |</span>       <span class="comp">| ended_at           |</span>
     <span class="comp">| external_trigger |</span>       <span class="comp">| worker_id          |</span>
     <span class="comp">+------------------+</span>       <span class="comp">| log_url            |</span>
-                                  <span class="comp">| max_tries          |</span>
-                                  <span class="comp">| queued_at          |</span>
-                                  <span class="comp">+--------------------+</span></div>
+                               <span class="comp">| max_tries          |</span>
+                               <span class="comp">| queued_at          |</span>
+                               <span class="comp">+--------------------+</span></div>
 
   <h3>Schema DDL</h3>
 
@@ -1246,98 +1315,77 @@
     <span class="tip-icon">&#9888;</span>
     <div><strong>UNIQUE constraint on (dag_id, execution_date, run_type)</strong> is the first line of defense for exactly-once execution. It prevents duplicate DAG runs even if the scheduler crashes and restarts mid-cycle. The partial indexes on active states keep the scheduler tick loop queries fast even as historical data grows.</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  6. SCHEDULING ENGINE                                         -->
 <!-- ============================================================ -->
 <section id="scheduling-engine">
-  <h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#9200;</span> Scheduling Engine</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#9200;</span> Scheduling Engine</h2></summary>
 
   <h3>Tick-Based Scheduler Loop</h3>
   <p>The scheduler runs a continuous <strong>tick loop</strong> every N seconds (configurable, typically 1-5s). Each tick performs three phases:</p>
 
-  <pre><code><span class="code-label">Python</span>
-<span class="kw">class</span> <span class="type">Scheduler</span>:
-    <span class="kw">def</span> <span class="fn">tick</span>(self):
-        <span class="cm">"""Single scheduler tick - runs every N seconds"""</span>
+  <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Scheduler Tick — runs every N seconds (typically 1–5s)</span>
 
-        <span class="cm"># PHASE 1: Create new DAG Runs for DAGs whose schedule is due</span>
-        due_dags = self.<span class="fn">find_dags_due_for_execution</span>()
-        <span class="kw">for</span> dag <span class="kw">in</span> due_dags:
-            next_exec = self.<span class="fn">compute_next_execution_date</span>(dag)
-            <span class="kw">try</span>:
-                dag_run = self.<span class="fn">create_dag_run</span>(dag, next_exec)  <span class="cm"># INSERT with UNIQUE</span>
-                self.<span class="fn">create_task_instances</span>(dag_run)
-            <span class="kw">except</span> <span class="type">UniqueViolation</span>:
-                <span class="kw">pass</span>  <span class="cm"># Already created - idempotent</span>
+<span class="fn">SCHEDULER_TICK</span>():
 
-        <span class="cm"># PHASE 2: Schedule task instances whose dependencies are met</span>
-        schedulable = self.<span class="fn">find_schedulable_task_instances</span>()
-        <span class="kw">for</span> ti <span class="kw">in</span> schedulable:
-            <span class="kw">if</span> self.<span class="fn">all_upstream_succeeded</span>(ti):
-                <span class="kw">if</span> self.<span class="fn">check_concurrency_limits</span>(ti):
-                    ti.state = <span class="str">'queued'</span>
-                    ti.queued_at = now()
-                    self.<span class="fn">enqueue_to_executor</span>(ti)
+    <span class="cm">── PHASE 1: Create new DAG Runs ──</span>
+    <span class="fn">due_dags</span> = <span class="fn">FIND_DAGS_DUE_FOR_EXECUTION</span>()
+        <span class="cm">→ Query: active DAGs (not paused, has schedule) with no existing</span>
+        <span class="cm">  dag_run at the next computed execution_date</span>
 
-        <span class="cm"># PHASE 3: Handle timed-out and zombie tasks</span>
-        self.<span class="fn">detect_zombie_tasks</span>()
-        self.<span class="fn">check_sla_violations</span>()
+    <span class="kw">FOR EACH</span> dag <span class="kw">IN</span> due_dags:
+        next_exec = <span class="fn">COMPUTE_NEXT_EXECUTION_DATE</span>(dag.schedule_expr)
+        <span class="kw">TRY</span>:
+            dag_run = <span class="fn">INSERT</span> dag_run(dag, next_exec)  <span class="cm">← UNIQUE constraint prevents duplicates</span>
+            <span class="fn">CREATE_TASK_INSTANCES</span>(dag_run)
+        <span class="kw">ON</span> <span class="type">UniqueViolation</span>: <span class="cm">skip — already created (idempotent)</span>
 
-    <span class="kw">def</span> <span class="fn">find_dags_due_for_execution</span>(self):
-        <span class="cm">"""Find all active DAGs whose next execution_date is in the past"""</span>
-        <span class="kw">return</span> db.query(<span class="str">"""
-            SELECT d.* FROM dag d
-            WHERE d.is_paused = false
-              AND d.schedule_expr IS NOT NULL
-              AND NOT EXISTS (
-                  SELECT 1 FROM dag_run dr
-                  WHERE dr.dag_id = d.id
-                    AND dr.execution_date >= compute_next_schedule(d.schedule_expr, now())
-              )
-        """</span>)
+    <span class="cm">── PHASE 2: Schedule tasks whose dependencies are met ──</span>
+    <span class="fn">schedulable</span> = <span class="fn">FIND_SCHEDULABLE_TASK_INSTANCES</span>()
+        <span class="cm">→ Query: task_instances in 'scheduled' state, in 'running' dag_runs</span>
+        <span class="cm">  ORDER BY priority DESC, queued_at ASC</span>
+        <span class="cm">  Use FOR UPDATE SKIP LOCKED (prevents duplicate claims)</span>
 
-    <span class="kw">def</span> <span class="fn">find_schedulable_task_instances</span>(self):
-        <span class="cm">"""Get task instances in 'scheduled' state with met dependencies"""</span>
-        <span class="kw">return</span> db.query(<span class="str">"""
-            SELECT ti.* FROM task_instance ti
-            JOIN dag_run dr ON ti.dag_run_id = dr.id
-            WHERE ti.state = 'scheduled'
-              AND dr.state = 'running'
-            ORDER BY ti.priority_weight DESC, ti.queued_at ASC
-            FOR UPDATE SKIP LOCKED
-        """</span>)  <span class="cm"># SKIP LOCKED prevents multiple schedulers from grabbing same row</span></code></pre>
+    <span class="kw">FOR EACH</span> ti <span class="kw">IN</span> schedulable:
+        <span class="kw">IF</span> <span class="fn">ALL_UPSTREAM_SUCCEEDED</span>(ti) <span class="kw">AND</span> <span class="fn">CONCURRENCY_LIMITS_OK</span>(ti):
+            ti.state = <span class="str">'queued'</span>
+            ti.queued_at = <span class="fn">NOW</span>()
+            <span class="fn">ENQUEUE_TO_EXECUTOR</span>(ti)   <span class="cm">← push to message queue</span>
+
+    <span class="cm">── PHASE 3: Handle timed-out and zombie tasks ──</span>
+    <span class="fn">DETECT_ZOMBIE_TASKS</span>()      <span class="cm">← tasks marked 'running' but worker heartbeat stale</span>
+    <span class="fn">CHECK_SLA_VIOLATIONS</span>()     <span class="cm">← dag_runs exceeding their SLA deadline</span></code></pre>
 
   <h3>Topological Sort for Task Ordering</h3>
   <p>When a DAG run is created, tasks are ordered using <strong>Kahn's algorithm</strong> (BFS-based topological sort). Tasks with no upstream dependencies are immediately set to <span class="inline-code">scheduled</span> state. Others remain in <span class="inline-code">none</span> until their upstream tasks complete.</p>
 
-  <pre><code><span class="code-label">Python</span>
-<span class="kw">def</span> <span class="fn">topological_sort</span>(tasks, dependencies):
-    <span class="cm">"""Kahn's algorithm - O(V+E) where V=tasks, E=dependencies"""</span>
-    in_degree = {t.id: <span class="num">0</span> <span class="kw">for</span> t <span class="kw">in</span> tasks}
-    graph = defaultdict(list)
+  <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Kahn's Algorithm — BFS-based topological sort, O(V+E)</span>
 
-    <span class="kw">for</span> dep <span class="kw">in</span> dependencies:
-        graph[dep.upstream_task_id].append(dep.task_id)
-        in_degree[dep.task_id] += <span class="num">1</span>
+<span class="fn">TOPOLOGICAL_SORT</span>(tasks, dependencies):
+    <span class="cm">1.</span> Build in-degree map: count incoming edges for each task
+    <span class="cm">2.</span> Build adjacency list: upstream → [downstream tasks]
 
-    <span class="cm"># Tasks with no incoming edges are immediately schedulable</span>
-    queue = deque([tid <span class="kw">for</span> tid, deg <span class="kw">in</span> in_degree.items() <span class="kw">if</span> deg == <span class="num">0</span>])
-    order = []
+    <span class="cm">3.</span> Initialize queue with all tasks having in-degree = <span class="num">0</span>
+       <span class="cm">→ These are root tasks (no upstream dependencies)</span>
+       <span class="cm">→ Set their state to 'scheduled' immediately</span>
 
-    <span class="kw">while</span> queue:
-        task_id = queue.popleft()
-        order.append(task_id)
-        <span class="kw">for</span> downstream <span class="kw">in</span> graph[task_id]:
-            in_degree[downstream] -= <span class="num">1</span>
-            <span class="kw">if</span> in_degree[downstream] == <span class="num">0</span>:
-                queue.append(downstream)
+    <span class="cm">4.</span> <span class="kw">WHILE</span> queue is not empty:
+         task = <span class="fn">DEQUEUE</span>()
+         <span class="fn">ADD</span> task to ordered result
+         <span class="kw">FOR EACH</span> downstream of task:
+             decrement in-degree of downstream
+             <span class="kw">IF</span> in-degree reaches <span class="num">0</span> → <span class="fn">ENQUEUE</span>(downstream)
 
-    <span class="kw">if</span> len(order) != len(tasks):
-        <span class="kw">raise</span> <span class="type">CycleDetectedError</span>(<span class="str">"DAG contains a cycle!"</span>)
+    <span class="cm">5.</span> <span class="kw">IF</span> result length ≠ total tasks → <span class="type">CycleDetectedError</span>
+       <span class="cm">→ Graph contains a cycle, reject the DAG definition</span>
 
-    <span class="kw">return</span> order</code></pre>
+    <span class="kw">RETURN</span> ordered list of task IDs</code></pre>
 
   <h3>Concurrency Limits</h3>
 
@@ -1390,13 +1438,15 @@
     <span class="tip-icon">&#9989;</span>
     <div><strong>FOR UPDATE SKIP LOCKED</strong> is the critical PostgreSQL feature that enables multiple scheduler instances to safely process task instances concurrently without conflicts. It acquires row-level locks and skips rows that are already locked by another scheduler, providing natural work distribution.</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  7. EXECUTION MODEL                                           -->
 <!-- ============================================================ -->
 <section id="execution-model">
-  <h2><span class="icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#9654;</span> Execution Model</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#9654;</span> Execution Model</h2></summary>
 
   <h3>Task Lifecycle State Machine</h3>
 
@@ -1518,33 +1568,38 @@
 
   <h3>Retry with Exponential Backoff</h3>
 
-  <pre><code><span class="code-label">Python</span>
-<span class="kw">def</span> <span class="fn">compute_retry_delay</span>(task, try_number):
-    <span class="cm">"""Exponential backoff with jitter"""</span>
-    base_delay = task.retry_delay_sec           <span class="cm"># e.g., 300s (5 min)</span>
-    exponential = base_delay * (<span class="num">2</span> ** try_number) <span class="cm"># 300, 600, 1200, 2400...</span>
-    max_delay = <span class="num">3600</span>                              <span class="cm"># cap at 1 hour</span>
-    jitter = random.uniform(<span class="num">0</span>, base_delay * <span class="num">0.1</span>) <span class="cm"># 10% jitter to prevent thundering herd</span>
-    <span class="kw">return</span> min(exponential + jitter, max_delay)
+  <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Compute retry delay with exponential backoff + jitter</span>
 
-<span class="kw">def</span> <span class="fn">handle_task_failure</span>(task_instance):
-    <span class="kw">if</span> task_instance.try_number &lt; task_instance.max_tries:
-        task_instance.state = <span class="str">'up_for_retry'</span>
-        task_instance.try_number += <span class="num">1</span>
-        delay = <span class="fn">compute_retry_delay</span>(task_instance.task, task_instance.try_number)
-        task_instance.next_retry_at = now() + timedelta(seconds=delay)
-        log.warning(<span class="str">f"Task {task_instance.id} failed, retry #{task_instance.try_number} in {delay}s"</span>)
-    <span class="kw">else</span>:
-        task_instance.state = <span class="str">'failed'</span>
-        <span class="fn">check_dag_run_completion</span>(task_instance.dag_run_id)
-        <span class="fn">send_failure_alert</span>(task_instance)</code></pre>
+<span class="fn">COMPUTE_RETRY_DELAY</span>(task, try_number):
+    base_delay   = task.retry_delay_sec            <span class="cm">← e.g., 300s (5 min)</span>
+    exponential  = base_delay × <span class="num">2</span>^try_number       <span class="cm">← 300, 600, 1200, 2400…</span>
+    max_delay    = <span class="num">3600</span>                             <span class="cm">← cap at 1 hour</span>
+    jitter       = random(<span class="num">0</span>, base_delay × <span class="num">0.1</span>)     <span class="cm">← 10% jitter prevents thundering herd</span>
+    <span class="kw">RETURN</span> min(exponential + jitter, max_delay)
+
+<span class="cm">// Handle a failed task execution</span>
+
+<span class="fn">HANDLE_TASK_FAILURE</span>(task_instance):
+    <span class="kw">IF</span> task_instance.try_number &lt; task_instance.max_tries:
+        set state → <span class="str">'up_for_retry'</span>
+        increment try_number
+        delay = <span class="fn">COMPUTE_RETRY_DELAY</span>(task, try_number)
+        set next_retry_at = <span class="fn">NOW</span>() + delay
+        <span class="fn">LOG_WARNING</span>(<span class="str">"Task failed, retry #N in {delay}s"</span>)
+    <span class="kw">ELSE</span>:
+        set state → <span class="str">'failed'</span> (terminal)
+        <span class="fn">CHECK_DAG_RUN_COMPLETION</span>(dag_run_id)
+        <span class="fn">SEND_FAILURE_ALERT</span>(task_instance)</code></pre>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  8. FAULT TOLERANCE                                           -->
 <!-- ============================================================ -->
 <section id="fault-tolerance">
-  <h2><span class="icon" style="background:rgba(239,68,68,0.15); color:var(--danger);">&#128737;</span> Fault Tolerance</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(239,68,68,0.15); color:var(--danger);">&#128737;</span> Fault Tolerance</h2></summary>
 
   <div class="card-grid">
     <div class="card">
@@ -1612,37 +1667,36 @@
   <div class="card">
     <h4 style="color:var(--danger);">&#128165; Dead Letter Queue for Poison Tasks</h4>
     <p>Tasks that repeatedly fail despite retries are "poison tasks" that can clog the system. After exhausting all retries, these tasks are routed to a <strong>Dead Letter Queue (DLQ)</strong>.</p>
-    <pre><code><span class="code-label">Python</span>
-<span class="kw">def</span> <span class="fn">route_to_dlq</span>(task_instance):
-    <span class="cm">"""Move permanently failed task to DLQ for manual investigation"""</span>
-    dlq_entry = {
-        <span class="str">'task_instance_id'</span>: task_instance.id,
-        <span class="str">'dag_id'</span>: task_instance.dag_run.dag_id,
-        <span class="str">'task_key'</span>: task_instance.task.task_key,
-        <span class="str">'execution_date'</span>: task_instance.dag_run.execution_date,
-        <span class="str">'final_try_number'</span>: task_instance.try_number,
-        <span class="str">'error_message'</span>: task_instance.last_error,
-        <span class="str">'failed_at'</span>: now(),
-    }
-    redis.lpush(<span class="str">'dlq:tasks'</span>, json.dumps(dlq_entry))
-    <span class="fn">alert_oncall</span>(
-        severity=<span class="str">'P2'</span>,
-        message=<span class="str">f"Task {task_instance.task.task_key} permanently failed after "
-                f"{task_instance.try_number} attempts"</span>
-    )</code></pre>
+    <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Move permanently failed task to DLQ for manual investigation</span>
+
+<span class="fn">ROUTE_TO_DLQ</span>(task_instance):
+    <span class="cm">1.</span> Build DLQ entry with:
+       <span class="cm">→</span> task_instance_id, dag_id, task_key
+       <span class="cm">→</span> execution_date, final_try_number
+       <span class="cm">→</span> error_message, failed_at timestamp
+
+    <span class="cm">2.</span> <span class="fn">PUSH</span> entry to Redis list <span class="str">'dlq:tasks'</span>
+
+    <span class="cm">3.</span> <span class="fn">ALERT_ONCALL</span>(
+         severity: <span class="str">'P2'</span>,
+         message: <span class="str">"Task {task_key} permanently failed after {N} attempts"</span>
+       )</code></pre>
   </div>
 
   <div class="tip-box tip-box-danger">
     <span class="tip-icon">&#128680;</span>
     <div><strong>Critical failure scenario:</strong> If the metadata database goes down, the entire scheduling system halts. Mitigation: PostgreSQL with synchronous replication to a hot standby, automated failover via Patroni/pg_auto_failover, and a circuit breaker in the scheduler that pauses new DAG runs rather than creating inconsistent state.</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  9. SCALABILITY                                               -->
 <!-- ============================================================ -->
 <section id="scalability">
-  <h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128640;</span> Scalability</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128640;</span> Scalability</h2></summary>
 
   <div class="card-grid">
     <div class="card">
@@ -1669,27 +1723,23 @@
     <div class="card">
       <h4 style="color:var(--secondary);">&#128200; Worker Auto-Scaling</h4>
       <p>Scale workers dynamically based on queue depth:</p>
-      <pre><code><span class="code-label">Python</span>
-<span class="kw">def</span> <span class="fn">compute_desired_workers</span>(metrics):
-    queue_depth = metrics.get_queue_depth()
-    avg_task_duration = metrics.get_avg_duration()
-    target_drain_time = <span class="num">60</span>  <span class="cm"># seconds</span>
+      <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Compute desired worker count based on queue pressure</span>
 
-    <span class="cm"># Workers needed to drain queue</span>
-    desired = math.ceil(
-        queue_depth * avg_task_duration
-        / target_drain_time
-    )
+<span class="fn">COMPUTE_DESIRED_WORKERS</span>(metrics):
+    queue_depth       = metrics.queue_depth
+    avg_task_duration = metrics.avg_duration
+    target_drain_time = <span class="num">60</span> seconds
 
-    <span class="cm"># Apply bounds</span>
-    min_workers = <span class="num">10</span>
-    max_workers = <span class="num">500</span>
-    <span class="kw">return</span> max(min_workers,
-              min(desired, max_workers))
+    <span class="cm">// Workers needed to drain queue within target time</span>
+    desired = <span class="fn">CEIL</span>( queue_depth × avg_task_duration / target_drain_time )
 
-<span class="cm"># K8s HPA integration</span>
-<span class="cm"># Scale based on custom metric:</span>
-<span class="cm"># celery_queue_length / workers &gt; 5</span></code></pre>
+    <span class="cm">// Clamp to bounds</span>
+    min_workers = <span class="num">10</span>,  max_workers = <span class="num">500</span>
+    <span class="kw">RETURN</span> <span class="fn">CLAMP</span>(desired, min_workers, max_workers)
+
+<span class="cm">// K8s HPA integration:</span>
+<span class="cm">// Scale when custom metric celery_queue_length / workers &gt; 5</span></code></pre>
     </div>
   </div>
 
@@ -1739,13 +1789,15 @@
   <span class="comp">|                WORKER POOL  (Auto-scaling: 10 - 500)                  |</span>
   <span class="comp">|   Worker-1  Worker-2  Worker-3  ...  Worker-N                         |</span>
   <span class="comp">+----------------------------------------------------------------------+</span></div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  10. TRADE-OFFS                                               -->
 <!-- ============================================================ -->
 <section id="tradeoffs">
-  <h2><span class="icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">&#9878;</span> Trade-offs</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">&#9878;</span> Trade-offs</h2></summary>
 
   <h3>1. Push vs Pull Task Distribution</h3>
   <div class="comparison">
@@ -1874,47 +1926,41 @@
       <p style="margin-top:10px;color:var(--text-muted);font-size:0.88em;"><strong>Complexity:</strong> Requires distributed locking and consensus for global resource limits.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  11. DEEP DIVES                                               -->
 <!-- ============================================================ -->
 <section id="deep-dives">
-  <h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#128300;</span> Deep Dives</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#128300;</span> Deep Dives</h2></summary>
 
   <h3>1. Backfill Mechanism</h3>
   <p>Backfill allows retroactive execution of a DAG for historical date ranges. This is essential when pipeline logic changes and historical data needs reprocessing.</p>
 
-  <pre><code><span class="code-label">Python</span>
-<span class="kw">def</span> <span class="fn">create_backfill</span>(dag_id, start_date, end_date, max_concurrent=<span class="num">5</span>):
-    <span class="cm">"""
-    Generate DAG runs for a historical date range.
-    Uses a semaphore to limit concurrent backfill runs
-    and prevent overwhelming downstream systems.
-    """</span>
-    dag = get_dag(dag_id)
-    schedule = CronExpression(dag.schedule_expr)
+  <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Create backfill: generate DAG runs for a historical date range</span>
+<span class="cm">// Uses batching to limit concurrent runs and avoid overwhelming downstream</span>
 
-    <span class="cm"># Generate all execution dates in the range</span>
-    exec_dates = schedule.get_dates_between(start_date, end_date)
-    log.info(<span class="str">f"Backfill: {len(exec_dates)} runs for DAG {dag_id}"</span>)
+<span class="fn">CREATE_BACKFILL</span>(dag_id, start_date, end_date, max_concurrent = <span class="num">5</span>):
+    dag = <span class="fn">GET_DAG</span>(dag_id)
+    schedule = <span class="fn">PARSE_CRON</span>(dag.schedule_expr)
 
-    <span class="kw">for</span> batch <span class="kw">in</span> chunk(exec_dates, max_concurrent):
-        <span class="kw">for</span> exec_date <span class="kw">in</span> batch:
-            <span class="kw">try</span>:
-                dag_run = create_dag_run(
-                    dag_id=dag_id,
-                    execution_date=exec_date,
-                    run_type=<span class="str">'backfill'</span>,
-                )
-                create_task_instances(dag_run)
-            <span class="kw">except</span> <span class="type">UniqueViolation</span>:
-                log.info(<span class="str">f"Backfill run already exists for {exec_date}"</span>)
+    <span class="cm">1.</span> exec_dates = <span class="fn">GET_DATES_BETWEEN</span>(schedule, start_date, end_date)
+       <span class="cm">→ All execution dates the cron would have triggered</span>
 
-        <span class="cm"># Wait for batch to complete before starting next</span>
-        wait_for_dag_runs(batch)
+    <span class="cm">2.</span> <span class="kw">FOR EACH</span> batch of max_concurrent dates:
+         <span class="kw">FOR EACH</span> exec_date <span class="kw">IN</span> batch:
+             <span class="kw">TRY</span>:
+                 dag_run = <span class="fn">INSERT</span> dag_run(dag_id, exec_date, run_type=<span class="str">'backfill'</span>)
+                 <span class="fn">CREATE_TASK_INSTANCES</span>(dag_run)
+             <span class="kw">ON</span> <span class="type">UniqueViolation</span>: <span class="cm">skip — run already exists (idempotent)</span>
 
-    <span class="kw">return</span> {<span class="str">'total_runs'</span>: len(exec_dates), <span class="str">'status'</span>: <span class="str">'complete'</span>}</code></pre>
+         <span class="fn">WAIT_FOR_BATCH_COMPLETION</span>(batch)
+         <span class="cm">→ Prevents next batch from starting until current finishes</span>
+
+    <span class="kw">RETURN</span> { total_runs, status: <span class="str">'complete'</span> }</code></pre>
 
   <div class="tip-box tip-box-warning">
     <span class="tip-icon">&#9888;</span>
@@ -1926,31 +1972,25 @@
   <div class="card">
     <h4 style="color:var(--warning);">&#128276; SLA Definition and Enforcement</h4>
     <p>Each DAG can define an SLA (Service Level Agreement) specifying the maximum allowed time from scheduled start to successful completion.</p>
-    <pre><code><span class="code-label">Python</span>
-<span class="cm"># DAG config with SLA</span>
+    <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// DAG config with SLA</span>
 dag_config = {
-    <span class="str">"sla_seconds"</span>: <span class="num">7200</span>,          <span class="cm"># DAG must complete within 2 hours</span>
-    <span class="str">"sla_miss_callback"</span>: <span class="str">"alert_oncall"</span>,
-    <span class="str">"sla_alert_channels"</span>: [<span class="str">"#data-eng-alerts"</span>, <span class="str">"pagerduty:team-data"</span>],
+    sla_seconds: <span class="num">7200</span>,                   <span class="cm">← DAG must complete within 2 hours</span>
+    sla_miss_callback: <span class="str">"alert_oncall"</span>,
+    sla_alert_channels: [<span class="str">"#data-eng-alerts"</span>, <span class="str">"pagerduty:team-data"</span>]
 }
 
-<span class="kw">def</span> <span class="fn">check_sla_violations</span>():
-    <span class="cm">"""Called every scheduler tick"""</span>
-    violations = db.query(<span class="str">"""
-        SELECT dr.*, d.config->>'sla_seconds' AS sla_sec
-        FROM dag_run dr
-        JOIN dag d ON dr.dag_id = d.id
-        WHERE dr.state = 'running'
-          AND d.config->>'sla_seconds' IS NOT NULL
-          AND dr.started_at + (d.config->>'sla_seconds')::int * interval '1 sec' &lt; now()
-          AND NOT EXISTS (
-              SELECT 1 FROM sla_miss sm
-              WHERE sm.dag_run_id = dr.id
-          )
-    """</span>)
-    <span class="kw">for</span> v <span class="kw">in</span> violations:
-        record_sla_miss(v)
-        fire_sla_callback(v)</code></pre>
+<span class="cm">// Called every scheduler tick</span>
+<span class="fn">CHECK_SLA_VIOLATIONS</span>():
+    violations = <span class="fn">QUERY</span>:
+        <span class="cm">Find running dag_runs WHERE:</span>
+        <span class="cm">  - DAG has an sla_seconds configured</span>
+        <span class="cm">  - started_at + sla_seconds &lt; NOW (deadline passed)</span>
+        <span class="cm">  - No existing sla_miss record (avoid duplicate alerts)</span>
+
+    <span class="kw">FOR EACH</span> violation:
+        <span class="fn">RECORD_SLA_MISS</span>(violation)    <span class="cm">← persist to sla_miss table</span>
+        <span class="fn">FIRE_SLA_CALLBACK</span>(violation)  <span class="cm">← Slack / PagerDuty notification</span></code></pre>
   </div>
 
   <h3>3. Task Dependency Patterns</h3>
@@ -1994,54 +2034,47 @@ dag_config = {
   </div>
 
   <h3>4. Dynamic DAG Generation</h3>
-  <pre><code><span class="code-label">Python</span>
-<span class="cm"># Dynamic DAGs allow programmatic generation based on external config</span>
-<span class="cm"># Example: One DAG per Airbnb market (city)</span>
+  <pre><code><span class="code-label">Pseudocode</span>
+<span class="cm">// Dynamic DAGs — programmatic generation based on external config</span>
+<span class="cm">// Example: One ETL DAG per Airbnb market (city)</span>
 
-<span class="kw">def</span> <span class="fn">generate_market_dags</span>():
-    <span class="cm">"""Generate an ETL DAG for each active market"""</span>
-    markets = config_service.get_active_markets()
-    <span class="cm"># Returns: ['san_francisco', 'new_york', 'london', 'paris', ...]</span>
+<span class="fn">GENERATE_MARKET_DAGS</span>():
+    markets = <span class="fn">CONFIG_SERVICE.GET_ACTIVE_MARKETS</span>()
+    <span class="cm">→ Returns: ['san_francisco', 'new_york', 'london', 'paris', …]</span>
 
-    <span class="kw">for</span> market <span class="kw">in</span> markets:
-        dag = DAG(
-            name=<span class="str">f"etl_market_{market}"</span>,
-            schedule=<span class="str">"0 2 * * *"</span>,  <span class="cm"># 2 AM daily</span>
-            owner=<span class="str">"data-eng"</span>,
-            config={
-                <span class="str">"market"</span>: market,
-                <span class="str">"sla_seconds"</span>: <span class="num">3600</span>,
-            }
-        )
+    <span class="kw">FOR EACH</span> market <span class="kw">IN</span> markets:
+        <span class="cm">1.</span> Create DAG:
+             name     = <span class="str">"etl_market_{market}"</span>
+             schedule = <span class="str">"0 2 * * *"</span>   <span class="cm">← 2 AM daily</span>
+             owner    = <span class="str">"data-eng"</span>
+             config   = { market, sla_seconds: <span class="num">3600</span> }
 
-        extract = Task(dag, <span class="str">"extract"</span>, operator=<span class="str">"SQLOperator"</span>,
-                       params={<span class="str">"query"</span>: <span class="str">f"SELECT * FROM bookings WHERE market='{market}'"</span>})
-        transform = Task(dag, <span class="str">"transform"</span>, operator=<span class="str">"SparkOperator"</span>,
-                         params={<span class="str">"job"</span>: <span class="str">"etl_transform"</span>, <span class="str">"market"</span>: market})
-        validate = Task(dag, <span class="str">"validate"</span>, operator=<span class="str">"DataQualityOperator"</span>,
-                        params={<span class="str">"checks"</span>: [<span class="str">"row_count > 0"</span>, <span class="str">"null_rate < 0.01"</span>]})
-        load = Task(dag, <span class="str">"load"</span>, operator=<span class="str">"BigQueryOperator"</span>,
-                    params={<span class="str">"table"</span>: <span class="str">f"warehouse.bookings_{market}"</span>})
+        <span class="cm">2.</span> Define tasks:
+             <span class="fn">extract</span>   → SQLOperator:          query bookings for market
+             <span class="fn">transform</span> → SparkOperator:        run etl_transform job
+             <span class="fn">validate</span>  → DataQualityOperator:  check row_count &gt; 0, null_rate &lt; 1%
+             <span class="fn">load</span>      → BigQueryOperator:     write to warehouse.bookings_{market}
 
-        extract >> transform >> validate >> load
-        <span class="cm"># Creates dependency chain: extract -> transform -> validate -> load</span>
+        <span class="cm">3.</span> Set dependency chain:
+             extract → transform → validate → load
 
-        register_dag(dag)
+        <span class="cm">4.</span> <span class="fn">REGISTER_DAG</span>(dag)
 
-<span class="cm"># Runs periodically by DAG Processor to pick up config changes</span>
-<span class="fn">generate_market_dags</span>()</code></pre>
+<span class="cm">// Runs periodically by DAG Processor to pick up config changes</span></code></pre>
 
   <div class="tip-box tip-box-info">
     <span class="tip-icon">&#128218;</span>
     <div><strong>Dynamic DAG versioning:</strong> When the DAG Processor detects that a dynamically generated DAG has changed (new tasks added, dependencies modified), it increments the DAG version in the metadata DB. In-flight DAG runs continue with the old version; only new runs use the updated definition. This prevents mid-execution schema changes from causing failures.</div>
   </div>
+  </details>
 </section>
 
 <!-- ============================================================ -->
 <!--  12. INTERVIEW TIPS                                           -->
 <!-- ============================================================ -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#127919;</span> Interview Tips</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#127919;</span> Interview Tips</h2></summary>
 
   <div class="card">
     <h4 style="color:var(--primary);">&#128680; Key Signals Interviewers Look For</h4>
@@ -2175,6 +2208,7 @@ dag_config = {
       </tbody>
     </table>
   </div>
+  </details>
 </section>
 
 </div>
@@ -2188,6 +2222,18 @@ dag_config = {
 </div>
 
 <script>
+// Auto-open collapsed section when clicking TOC link
+document.querySelectorAll('.toc a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) {
+      var details = section.querySelector('details');
+      if (details) details.open = true;
+    }
+  });
+});
+
 (function(){
   document.querySelectorAll(".diagram-box").forEach(function(box){
     var svg=box.querySelector("svg");

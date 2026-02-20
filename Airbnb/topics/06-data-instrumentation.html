@@ -511,10 +511,18 @@
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
     .metric-row { grid-template-columns: 1fr 1fr; }
     .section h2 { font-size: 1.5em; }
+    table { font-size: 0.82em; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-box svg { min-width: 600px; }
   }
   @media (max-width: 480px) {
     .hero h1 { font-size: 1.4em; }
     .metric-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.15em; }
+    .hero .stat-value { font-size: 1em; }
+    .container { padding: 10px 8px; }
   }
   /* === DIAGRAM ZOOM CONTROLS === */
   .diagram-box { position: relative; }
