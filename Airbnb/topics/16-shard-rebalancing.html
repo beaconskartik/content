@@ -227,7 +227,7 @@
 
   .code-block {
     background: #f6f8fa;
-    border: 1px solid #30363d;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 22px;
     margin: 16px 0;
@@ -235,7 +235,7 @@
     font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
     font-size: 0.88rem;
     line-height: 1.7;
-    color: #6e7781;
+    color: #24292f;
   }
   .code-block .kw { color: #cf222e; }
   .code-block .fn { color: #8250df; }
@@ -253,25 +253,26 @@
     margin: 20px 0;
   }
   .flow-diagram {
-    background: linear-gradient(135deg, #0d1117, #161b22);
-    border: 1px solid #30363d;
+    background: #f6f8fa;
+    border: 1px solid #e5e7eb;
     border-radius: 14px;
     padding: 30px;
     margin: 20px 0;
     text-align: center;
     font-family: 'Cascadia Code', 'Fira Code', monospace;
     overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
   .flow-diagram .flow-title {
     font-size: 0.85rem;
-    color: var(--accent);
+    color: var(--purple);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
     margin-bottom: 18px;
   }
   .flow-diagram pre {
-    color: #6e7781;
+    color: var(--text-muted);
     font-size: 0.82rem;
     line-height: 1.6;
     display: inline-block;
@@ -323,7 +324,7 @@
     border-bottom: 1px solid var(--card-border);
     color: var(--text-muted);
   }
-  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr:hover td { background: rgba(123,47,247,0.04); }
 
   .badge {
     display: inline-block;
@@ -1269,7 +1270,7 @@
         <h4>Enable Double-Writes</h4>
         <p>Application writes every new payment to <strong>both</strong> the source shard and the target shard. Old shard remains the authoritative read source.</p>
       </div>
-      <div class="timeline-item" style="--timeline-color: #ffffff;">
+      <div class="timeline-item">
         <div class="step-num">Phase 2</div>
         <h4>Backfill Historical Data</h4>
         <p>Background job copies existing rows from source to target in batches (e.g., 5000 rows/batch). Uses <code>WHERE updated_at &lt; migration_start</code> to avoid conflicts with double-writes.</p>
@@ -1970,34 +1971,7 @@
       </table>
     </div>
 
-    <div class="card card-accent-teal">
-      <h4>&#128202; Consistency Check Queries</h4>
-      <div class="code-block" style="font-size:0.82rem;">
-<span class="cm">-- Run every 60 seconds during migration</span>
 
-<span class="cm">-- 1. Row count comparison per vShard batch</span>
-<span class="kw">SELECT</span> <span class="str">'source'</span> <span class="kw">AS</span> shard, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> cnt
-<span class="kw">FROM</span> source_db.payment_transactions
-<span class="kw">WHERE</span> vshard_id <span class="kw">BETWEEN</span> :start <span class="kw">AND</span> :end
-<span class="kw">UNION ALL</span>
-<span class="kw">SELECT</span> <span class="str">'target'</span>, <span class="kw">COUNT</span>(*)
-<span class="kw">FROM</span> target_db.payment_transactions
-<span class="kw">WHERE</span> vshard_id <span class="kw">BETWEEN</span> :start <span class="kw">AND</span> :end;
-
-<span class="cm">-- 2. Detect orphaned idempotency keys</span>
-<span class="kw">SELECT</span> ik.idempotency_key
-<span class="kw">FROM</span> idempotency_keys ik
-<span class="kw">LEFT JOIN</span> payment_transactions pt <span class="kw">ON</span> ik.payment_id = pt.id
-<span class="kw">WHERE</span> pt.id <span class="kw">IS NULL</span> <span class="kw">AND</span> ik.created_at > :migration_start;
-
-<span class="cm">-- 3. Identify stuck migrations</span>
-<span class="kw">SELECT</span> id, vshard_start, vshard_end, state, started_at,
-       <span class="fn">NOW</span>() - started_at <span class="kw">AS</span> duration
-<span class="kw">FROM</span> migration_tasks
-<span class="kw">WHERE</span> state <span class="kw">NOT IN</span> (<span class="str">'COMPLETE'</span>, <span class="str">'FAILED'</span>, <span class="str">'ROLLED_BACK'</span>)
-  <span class="kw">AND</span> started_at < <span class="fn">NOW</span>() - <span class="kw">INTERVAL</span> <span class="str">'2 hours'</span>;
-</div>
-    </div>
 </details>
   </div>
 

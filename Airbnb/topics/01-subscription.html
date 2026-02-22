@@ -718,27 +718,21 @@
     <div class="card">
       <h4 style="color:var(--success);">Functional Requirements</h4>
       <ul>
-        <li><strong>Subscribe/Unsubscribe:</strong> Users can subscribe to any tier, upgrade, downgrade, or cancel at any time with prorated billing.</li>
-        <li><strong>Tier Management:</strong> Admin CRUD for plans with versioning. Existing subscribers grandfathered on price changes.</li>
+        <li><strong>Subscribe/Unsubscribe:</strong> Subscribe to any tier, upgrade, downgrade, or cancel with prorated billing.</li>
         <li><strong>Premium Access Control:</strong> Gate premium listings, discounts, and features by active entitlement.</li>
-        <li><strong>Billing Cycles:</strong> Monthly and annual billing with auto-renewal. Support for coupons and promotional pricing.</li>
-        <li><strong>Free Trials:</strong> 14-day trial with no payment upfront. Convert to paid or cancel at trial end.</li>
-        <li><strong>Family Plans:</strong> Primary subscriber can invite family members who inherit tier benefits.</li>
-        <li><strong>Invoice and Receipts:</strong> Generate PDF invoices, email receipts, and expose billing history via API.</li>
-        <li><strong>Pause Subscription:</strong> Allow up to 3-month pause without losing subscriber status.</li>
+        <li><strong>Billing Cycles:</strong> Monthly/annual auto-renewal via Stripe. Support coupons and free trials.</li>
+        <li><strong>Entitlement Checks:</strong> Every page load verifies subscriber access in &lt;10ms via cached entitlements.</li>
+        <li><strong>Invoices:</strong> Generate PDF invoices, email receipts, expose billing history via API.</li>
       </ul>
     </div>
     <div class="card">
       <h4 style="color:var(--warning);">Non-Functional Requirements</h4>
       <ul>
-        <li><strong>Payment Reliability:</strong> 99.99% success rate on billing operations. Zero double-charges via idempotency.</li>
-        <li><strong>State Consistency:</strong> Subscription state must never diverge between our DB and Stripe. Reconciliation jobs run hourly.</li>
-        <li><strong>Grace Periods:</strong> 7-day grace on failed payments before entitlement revocation. Dunning emails at day 1, 3, 5, 7.</li>
-        <li><strong>GDPR Compliance:</strong> Right to deletion, data portability for billing history, consent management for marketing.</li>
-        <li><strong>Low Latency Entitlements:</strong> Entitlement checks must resolve in &lt;10ms (p99) for every page load and API call.</li>
-        <li><strong>Auditability:</strong> Every state transition, payment event, and entitlement change must be immutably logged.</li>
-        <li><strong>Multi-Currency:</strong> Support 40+ currencies with daily exchange rate updates. Display local pricing.</li>
-        <li><strong>Scalability:</strong> Handle 10x billing spikes on month-start renewal dates without degradation.</li>
+        <li><strong>Zero Double-Charges:</strong> Idempotency on all payment mutations. No duplicate billing ever.</li>
+        <li><strong>State Consistency:</strong> Subscription state must not diverge between our DB and Stripe. Hourly reconciliation.</li>
+        <li><strong>Grace Periods:</strong> 7-day grace on failed payments before entitlement revocation + dunning emails.</li>
+        <li><strong>Auditability:</strong> Every state transition and payment event immutably logged.</li>
+        <li><strong>Scalability:</strong> Handle 10x billing spikes on renewal days without degradation.</li>
       </ul>
     </div>
   </div>

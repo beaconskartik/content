@@ -708,27 +708,22 @@
     <div class="card">
       <h4 style="color: var(--primary);">Functional Requirements</h4>
       <ol>
-        <li><strong>Create Thread</strong> -- Initialize a new conversation with 2-50 participants. Attach booking context.</li>
-        <li><strong>Send Message</strong> -- Post a text message to an existing thread. Supports text, system messages, and rich content.</li>
-        <li><strong>Inbox View</strong> -- Paginated list of user's threads ordered by last activity. Default page size M=20.</li>
-        <li><strong>Show Thread Messages</strong> -- Cursor-based pagination loading messages in reverse chronological order.</li>
-        <li><strong>Find Thread by Participant Group</strong> -- Given a set of user IDs, find an existing thread with the exact same participants (thread deduplication).</li>
-        <li><strong>Thread Attachments</strong> -- Associate booking, special offer, inquiry, or other context with a thread (polymorphic).</li>
-        <li><strong>Read Receipts</strong> -- Track per-user read state. Know when each participant last read the thread.</li>
-        <li><strong>Thread Flags</strong> -- Star, archive, mute, mark action_required per user.</li>
+        <li><strong>Create Thread</strong> -- Initialize conversation with 2-50 participants. Attach booking context.</li>
+        <li><strong>Send Message</strong> -- Post text/rich message to a thread. Idempotent via client_uuid.</li>
+        <li><strong>Inbox View</strong> -- Paginated threads by last activity (top 20). Cursor-based.</li>
+        <li><strong>Thread Messages</strong> -- Reverse-chronological cursor pagination within a thread.</li>
+        <li><strong>Thread Dedup</strong> -- Find existing thread by exact participant set (SHA-256 hash).</li>
+        <li><strong>Read Receipts</strong> -- Per-user read state tracking.</li>
       </ol>
     </div>
     <div class="card">
       <h4 style="color: #1e293b;">Non-Functional Requirements</h4>
       <ol>
-        <li><strong>Message Ordering</strong> -- Messages within a thread must be displayed in consistent chronological order across all clients.</li>
-        <li><strong>Persistence Forever</strong> -- All messages retained indefinitely. No TTL-based deletion.</li>
-        <li><strong>Offline Sync</strong> -- Clients that go offline must be able to catch up on missed messages efficiently when reconnecting.</li>
-        <li><strong>Real-Time Push</strong> -- Online users receive new messages within 200ms via WebSocket. Offline users receive push notifications.</li>
-        <li><strong>Inbox Load &lt;100ms</strong> -- The inbox query (top 20 threads with last message preview) must complete in under 100ms at p99.</li>
-        <li><strong>High Availability</strong> -- 99.9% uptime. Messaging is a critical path for booking flows.</li>
-        <li><strong>Consistency</strong> -- Eventual consistency acceptable across regions, but strong consistency within a region for message ordering.</li>
-        <li><strong>Idempotency</strong> -- Duplicate message sends (retries) must not create duplicate messages.</li>
+        <li><strong>Message Ordering</strong> -- Consistent chronological order within a thread across all clients.</li>
+        <li><strong>Real-Time Push</strong> -- Online: WebSocket delivery &lt;200ms. Offline: push notifications.</li>
+        <li><strong>Inbox &lt;100ms</strong> -- Top 20 threads with preview must load in &lt;100ms p99.</li>
+        <li><strong>Availability</strong> -- 99.9% uptime. Messaging is critical path for bookings.</li>
+        <li><strong>Idempotency</strong> -- Duplicate sends must not create duplicate messages.</li>
       </ol>
     </div>
   </div>

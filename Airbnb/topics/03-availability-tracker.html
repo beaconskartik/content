@@ -238,27 +238,23 @@
   .section li strong { color: var(--text); }
 
   /* ===== COLLAPSIBLE SECTIONS ===== */
-  .section details > summary {
-    cursor: pointer;
-    list-style: none;
-    position: relative;
-    padding-left: 30px;
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
   }
-  .section details > summary::-webkit-details-marker { display: none; }
-  .section details > summary::marker { display: none; content: ''; }
-  .section details > summary::before {
-    content: '▸';
-    position: absolute;
-    left: 0;
-    top: 6px;
-    font-size: 1.3em;
-    color: var(--primary);
-    transition: transform 0.25s ease;
-    font-weight: bold;
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  .section details[open] > summary::before { transform: rotate(90deg); }
-  .section details > summary h2 { display: inline; }
-  .section details > summary .section-label { margin-bottom: 6px; }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 
   /* ===== CARDS ===== */
   .card {
@@ -822,7 +818,10 @@
     <a href="#tradeoffs">Trade-Offs</a>
     <a href="#deep-dives">Deep Dives</a>
     <a href="#interview-tips">Interview Tips</a>
-    <a href="javascript:void(0)" id="toggle-all-btn" style="background: var(--primary); color: #fff; border-color: var(--primary);">Collapse All</a>
+  </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
   </div>
 </nav>
 
@@ -832,8 +831,11 @@
 <!--  1. OVERVIEW                                                  -->
 <!-- ============================================================ -->
 <section class="section" id="overview">
+<details open>
+  <summary>
   <span class="section-label">Section 1</span>
   <h2>System Overview</h2>
+  </summary>
 
   <p>Guests frequently search for specific listings on specific dates only to find them unavailable. Today, the only option is to check back manually and hope dates open up. The <strong>Availability Tracker</strong> introduces a waitlist mechanism: guests register interest in a listing + date range, and the system automatically notifies them when availability changes &mdash; due to booking cancellations, host calendar unblocks, or reservation modifications.</p>
 
@@ -896,14 +898,18 @@
     <strong>Why This Matters at Airbnb Scale</strong>
     <p>With 7M+ active listings and 100M+ nights booked per year, even a small percentage improvement in re-booking cancelled dates translates to hundreds of millions in GMV recovery. This system sits at the intersection of search, bookings, and notifications &mdash; a classic cross-cutting PE design challenge.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  2. REQUIREMENTS                                              -->
 <!-- ============================================================ -->
 <section class="section" id="requirements">
+<details open>
+  <summary>
   <span class="section-label">Section 2</span>
   <h2>Requirements</h2>
+  </summary>
 
   <div class="grid-2">
     <div class="card" style="border-top: 3px solid var(--secondary);">
@@ -941,14 +947,18 @@
       <li>Host-side opt-out of waitlist is a V2 feature</li>
     </ul>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  3. CAPACITY ESTIMATION                                       -->
 <!-- ============================================================ -->
 <section class="section" id="capacity">
+<details>
+  <summary>
   <span class="section-label">Section 3</span>
   <h2>Capacity Estimation</h2>
+  </summary>
 
   <div class="grid-4">
     <div class="metric-box">
@@ -1043,14 +1053,18 @@
     <strong>Key Insight: This is a Write-Heavy, Read-Bursty System</strong>
     <p>The steady-state QPS is modest (the write path is only ~23/s), but availability changes for popular listings trigger burst reads &mdash; one cancellation on a hot listing might match 500+ waitlist entries, all needing notification within the 5-minute SLA. The architecture must handle this burstiness gracefully.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  4. HIGH-LEVEL ARCHITECTURE                                   -->
 <!-- ============================================================ -->
 <section class="section" id="architecture">
+<details>
+  <summary>
   <span class="section-label">Section 4</span>
   <h2>High-Level Architecture</h2>
+  </summary>
 
   <div class="diagram-box">
 <svg viewBox="0 0 1100 680" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', sans-serif" style="width:100%; height:auto;">
@@ -1495,14 +1509,18 @@
       </div>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  5. API DESIGN                                                -->
 <!-- ============================================================ -->
 <section class="section" id="api">
+<details>
+  <summary>
   <span class="section-label">Section 5</span>
   <h2>API Design</h2>
+  </summary>
 
   <h3>Waitlist CRUD Endpoints</h3>
   <div class="table-wrap">
@@ -1604,14 +1622,18 @@
     <strong>Idempotency Key</strong>
     <p>The POST endpoint accepts an <code>Idempotency-Key</code> header. If the client retries with the same key, the server returns the existing entry instead of creating a duplicate. This is essential for mobile clients with flaky connections.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  6. DATA MODEL                                                -->
 <!-- ============================================================ -->
 <section class="section" id="data-model">
+<details>
+  <summary>
   <span class="section-label">Section 6</span>
   <h2>Data Model</h2>
+  </summary>
 
   <h3>Core Tables</h3>
   <div class="er-grid">
@@ -1787,14 +1809,18 @@
   <span class="kw">AND</span> effective_checkout &gt; <span class="var">:freed_checkin</span>    <span class="cm">-- overlap condition</span>
 <span class="kw">ORDER BY</span> priority_tier <span class="kw">ASC</span>, created_at <span class="kw">ASC</span>;  <span class="cm">-- 0=superguest, 1=plus, 2=standard</span></code></pre>
 
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  7. MATCHING ALGORITHM                                        -->
 <!-- ============================================================ -->
 <section class="section" id="matching">
+<details>
+  <summary>
   <span class="section-label">Section 7</span>
   <h2>Matching Algorithm</h2>
+  </summary>
 
   <h3>Date Range Overlap Detection</h3>
   <p>Two date ranges <code>[A_start, A_end)</code> and <code>[B_start, B_end)</code> overlap if and only if:</p>
@@ -1914,14 +1940,18 @@
             <span class="str">"exclusive_window_minutes"</span>: TIER_WINDOWS[tier],
         })</code></pre>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  8. NOTIFICATION STRATEGY                                     -->
 <!-- ============================================================ -->
 <section class="section" id="notification">
+<details>
+  <summary>
   <span class="section-label">Section 8</span>
   <h2>Notification Strategy</h2>
+  </summary>
 
   <h3>The Thundering Herd Problem</h3>
   <div class="card" style="border-top: 3px solid var(--danger);">
@@ -2005,14 +2035,18 @@
     <strong>Edge Case: Re-cancellation</strong>
     <p>User A gets notified, books the listing. Then User A cancels again. The system must fire a <em>new</em> availability event with a new <code>event_id</code>, which re-triggers the matching pipeline. The dedup is per <code>(entry_id, event_id)</code>, so users who were previously notified for the first cancellation can be notified again for this new one.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  9. TRADE-OFFS                                                -->
 <!-- ============================================================ -->
 <section class="section" id="tradeoffs">
+<details>
+  <summary>
   <span class="section-label">Section 9</span>
   <h2>Trade-Offs</h2>
+  </summary>
 
   <h3>Decision Matrix</h3>
   <div class="table-wrap">
@@ -2171,14 +2205,18 @@
     <p style="color: var(--text-muted);">The deciding factors are <strong>(1)</strong> native date-range overlap query support, <strong>(2)</strong> modest data volume (15 GB), and <strong>(3)</strong> low write QPS (23/s). PostgreSQL handles all three effortlessly without the operational complexity of distributed databases. We use Redis as a cache and Kafka + CDC for the async pipeline &mdash; each technology where it excels, rather than forcing one tool to do everything.</p>
   </div>
 
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  10. DEEP DIVES                                               -->
 <!-- ============================================================ -->
 <section class="section" id="deep-dives">
+<details>
+  <summary>
   <span class="section-label">Section 10</span>
   <h2>Deep Dives</h2>
+  </summary>
 
   <h3>1. CDC Pipeline (Debezium)</h3>
   <div class="card" style="border-left: 4px solid var(--secondary);">
@@ -2357,14 +2395,18 @@
     </div>
     <p>The state machine is tracked in Redis with key <code>wl:window:{event_id}</code>. A delayed Kafka message (or Redis keyspace notification) triggers the tier advancement after each window expires. Before advancing to the next tier, the system re-checks availability to avoid notifying users for already-booked dates.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  11. INTERVIEW TIPS                                           -->
 <!-- ============================================================ -->
 <section class="section" id="interview-tips">
+<details>
+  <summary>
   <span class="section-label">Section 11</span>
   <h2>Interview Tips</h2>
+  </summary>
 
   <div class="card-grid">
     <div class="card" style="border-top: 3px solid var(--secondary);">
@@ -2455,6 +2497,7 @@
     <strong>The "One Sentence" Summary</strong>
     <p>"An event-driven waitlist system that uses CDC to detect availability changes, date-range overlap matching to find interested guests, and tiered exclusive booking windows to prevent thundering herd &mdash; all built on PostgreSQL, Kafka, and Redis as a cache, handling 50M active entries with sub-5-minute notification SLA."</p>
   </div>
+</details>
 </section>
 
 </div><!-- end container -->
@@ -2466,51 +2509,13 @@
 </div>
 
 <script>
-/* ===== Collapsible Sections ===== */
-(function(){
-  /* Wrap each section's content in <details>/<summary> */
-  document.querySelectorAll('.section').forEach(function(section) {
-    var label = section.querySelector('.section-label');
-    var h2 = section.querySelector('h2');
-    if (!label || !h2) return;
-
-    var details = document.createElement('details');
-    details.open = true;
-
-    var summary = document.createElement('summary');
-    summary.appendChild(label);
-    summary.appendChild(h2);
-
-    while (section.firstChild) {
-      details.appendChild(section.firstChild);
-    }
-    details.insertBefore(summary, details.firstChild);
-    section.appendChild(details);
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"], .nav-bar a[href^="#"], .nav-links a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
   });
-
-  /* Nav links: auto-expand target section on click */
-  document.querySelectorAll('.nav-links a[href^="#"]').forEach(function(link) {
-    link.addEventListener('click', function() {
-      var id = this.getAttribute('href').slice(1);
-      var section = document.getElementById(id);
-      if (section) {
-        var det = section.querySelector('details');
-        if (det) det.open = true;
-      }
-    });
-  });
-
-  /* Toggle All button */
-  var btn = document.getElementById('toggle-all-btn');
-  if (btn) {
-    var allOpen = true;
-    btn.addEventListener('click', function() {
-      allOpen = !allOpen;
-      document.querySelectorAll('.section details').forEach(function(d) { d.open = allOpen; });
-      btn.textContent = allOpen ? 'Collapse All' : 'Expand All';
-    });
-  }
-})();
+});
 </script>
 
 <script>

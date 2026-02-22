@@ -636,6 +636,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -696,6 +715,10 @@
     <a href="#comparison">Comparison</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </div>
 
 <div class="container">
@@ -704,8 +727,11 @@
 <!--  SECTION 1: OVERVIEW                                          -->
 <!-- ============================================================ -->
 <div class="section" id="overview">
+<details open>
+  <summary>
   <div class="section-label">Section 1</div>
   <h2>System Overview</h2>
+  </summary>
   <p>A <strong>vector database</strong> stores high-dimensional embeddings (produced by ML models) and enables fast <em>approximate nearest neighbor (ANN)</em> search across those embeddings. Unlike traditional databases optimized for exact match or range queries, a vector DB excels at finding the top-K most similar items to a given query vector using distance metrics like cosine similarity, Euclidean distance, or dot product.</p>
 
   <div class="card" style="border-left: 4px solid var(--purple); margin-top: 20px;">
@@ -737,14 +763,18 @@
     <div class="callout-title">Multi-Tenant Design</div>
     <p>Multiple internal teams (Search, Recommendations, Trust & Safety, Pricing) share the same vector DB infrastructure but with <strong>data isolation</strong>. Each tenant operates in its own namespace. The platform manages resource allocation, prevents noisy-neighbor problems, and provides consistent performance guarantees across all tenants.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 2: REQUIREMENTS                                      -->
 <!-- ============================================================ -->
 <div class="section" id="requirements">
+<details open>
+  <summary>
   <div class="section-label">Section 2</div>
   <h2>Requirements</h2>
+  </summary>
 
   <div class="grid-2">
     <div class="card" style="border-top: 3px solid var(--secondary);">
@@ -773,14 +803,18 @@
       </ul>
     </div>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 3: CAPACITY ESTIMATION                               -->
 <!-- ============================================================ -->
 <div class="section" id="capacity">
+<details>
+  <summary>
   <div class="section-label">Section 3</div>
   <h2>Capacity Estimation</h2>
+  </summary>
 
   <div class="metric-row">
     <div class="metric-pill">
@@ -841,14 +875,18 @@
     <div class="callout-title">Memory Is the Bottleneck</div>
     <p>HNSW-based indexes require the full graph structure in memory for optimal performance. At 1B vectors with 768 dimensions, you need <strong>~8 TB of RAM</strong> across the cluster. This is the single largest cost driver. Product quantization (PQ) can reduce memory by 4-16x at the cost of some recall.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 4: VECTOR INDEX ALGORITHMS                           -->
 <!-- ============================================================ -->
 <div class="section" id="algorithms">
+<details>
+  <summary>
   <div class="section-label">Section 4</div>
   <h2>Vector Index Algorithms</h2>
+  </summary>
   <p>Choosing the right ANN index algorithm is the most critical design decision. Each algorithm trades off recall, latency, memory, and insert speed differently.</p>
 
   <style>
@@ -2190,14 +2228,18 @@
     <div class="callout-title">Our Recommendation: HNSW with Optional PQ</div>
     <p>For the primary index, use <strong>HNSW</strong> for its excellent recall and sub-millisecond latency. For large tenants (>50M vectors) or when memory is tight, layer <strong>Product Quantization</strong> on top to compress vectors while keeping the HNSW graph structure. This gives the best balance of speed, recall, and memory efficiency.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 5: ARCHITECTURE                                      -->
 <!-- ============================================================ -->
 <div class="section" id="architecture">
+<details>
+  <summary>
   <div class="section-label">Section 5</div>
   <h2>System Architecture</h2>
+  </summary>
 
   <div class="diagram-box">
   <svg viewBox="0 0 1100 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
@@ -2706,14 +2748,18 @@
     <div class="callout-title">Hybrid Approach</div>
     <p>Use <strong>pre-filtering</strong> when the filter is highly selective (passes &lt;20% of vectors) and <strong>post-filtering</strong> when it is broad (passes >50%). The query planner estimates selectivity from metadata statistics and chooses the optimal strategy automatically.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 6: MULTI-TENANCY                                     -->
 <!-- ============================================================ -->
 <div class="section" id="multi-tenancy">
+<details>
+  <summary>
   <div class="section-label">Section 6</div>
   <h2>Multi-Tenancy Design</h2>
+  </summary>
   <p>The multi-tenancy model determines data isolation, resource sharing, and operational complexity. We evaluate three options and recommend a hybrid approach.</p>
 
   <div class="option-card opt-a">
@@ -2811,14 +2857,18 @@
 <span class="d-warn">Promotion:</span> Tenants auto-promote when vector count exceeds tier threshold
 <span class="d-warn">Resource Quotas:</span> Each tier has CPU, memory, and QPS quotas enforced by the control plane</div>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 7: DATA MODEL                                        -->
 <!-- ============================================================ -->
 <div class="section" id="data-model">
+<details>
+  <summary>
   <div class="section-label">Section 7</div>
   <h2>Data Model</h2>
+  </summary>
 
   <h3>Control Plane (PostgreSQL)</h3>
   <pre><code><span class="cm">-- Tenant registry</span>
@@ -2884,14 +2934,18 @@
     <span class="var">index_type</span>: <span class="typ">Enum</span> { Keyword, Numeric, Geo },
     <span class="var">inverted</span>:   <span class="typ">Map&lt;Value, RoaringBitmap&gt;</span>, <span class="cm">// value -> set of vector offsets</span>
 }</code></pre>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 8: API DESIGN                                        -->
 <!-- ============================================================ -->
 <div class="section" id="api-design">
+<details>
+  <summary>
   <div class="section-label">Section 8</div>
   <h2>API Design</h2>
+  </summary>
 
   <h3>Collection Management</h3>
   <pre><code><span class="cm">// Create a new vector collection</span>
@@ -2991,14 +3045,18 @@
 {
   <span class="str">"filter"</span>: { <span class="str">"category"</span>: { <span class="str">"$eq"</span>: <span class="str">"deprecated"</span> } }
 }</code></pre>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 9: STORAGE ENGINE                                    -->
 <!-- ============================================================ -->
 <div class="section" id="storage-engine">
+<details>
+  <summary>
   <div class="section-label">Section 9</div>
   <h2>Storage Engine</h2>
+  </summary>
 
   <div class="arch-diagram"><span class="d-accent">STORAGE ENGINE INTERNALS</span>
 
@@ -3089,14 +3147,18 @@
 <span class="cm">// SQ8:  768 dims x 1 byte = 768 bytes (4x compression)</span>
 <span class="cm">// PQ96: 96 codes x 1 byte = 96 bytes  (32x compression)</span></code></pre>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 10: SCALING                                          -->
 <!-- ============================================================ -->
 <div class="section" id="scaling">
+<details>
+  <summary>
   <div class="section-label">Section 10</div>
   <h2>Scaling Strategy</h2>
+  </summary>
 
   <h3>Sharding</h3>
   <div class="card">
@@ -3183,14 +3245,18 @@
     <div class="callout-title">Shard Splitting is Expensive</div>
     <p>Splitting an HNSW shard requires building a new graph from scratch for each half. This takes O(N log N) time and significant memory. Plan shard sizes conservatively (target 10-15M vectors per shard) and split proactively during low-traffic windows.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 11: CONSISTENCY MODEL                                -->
 <!-- ============================================================ -->
 <div class="section" id="consistency">
+<details>
+  <summary>
   <div class="section-label">Section 11</div>
   <h2>Consistency Model</h2>
+  </summary>
 
   <div class="grid-2">
     <div class="card" style="border-top: 3px solid var(--primary);">
@@ -3225,14 +3291,18 @@
     </ol>
     <p>This runs during low-traffic windows (2-6 AM) and takes ~30 minutes for a 10M vector shard.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 12: TRADE-OFFS                                       -->
 <!-- ============================================================ -->
 <div class="section" id="tradeoffs">
+<details>
+  <summary>
   <div class="section-label">Section 12</div>
   <h2>Key Trade-offs</h2>
+  </summary>
 
   <div class="table-wrap">
     <table>
@@ -3305,14 +3375,18 @@
       </tbody>
     </table>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 13: COMPARISON WITH EXISTING                         -->
 <!-- ============================================================ -->
 <div class="section" id="comparison">
+<details>
+  <summary>
   <div class="section-label">Section 13</div>
   <h2>Comparison with Existing Solutions</h2>
+  </summary>
 
   <div class="table-wrap">
     <table>
@@ -3415,14 +3489,18 @@
     <div class="callout-title">Build vs Buy Decision</div>
     <p>Building a custom multi-tenant vector database makes sense when: (1) you have <strong>100+ tenants</strong> with diverse requirements, (2) you need <strong>deep integration</strong> with internal ML pipelines, (3) you require <strong>custom tenancy isolation</strong> that no existing solution provides, and (4) you have the engineering team to maintain it. For most organizations, <strong>Milvus or Qdrant + custom routing layer</strong> is the pragmatic choice.</p>
   </div>
+</details>
 </div>
 
 <!-- ============================================================ -->
 <!--  SECTION 14: INTERVIEW TIPS                                   -->
 <!-- ============================================================ -->
 <div class="section" id="interview-tips">
+<details>
+  <summary>
   <div class="section-label">Section 14</div>
   <h2>Interview Tips</h2>
+  </summary>
 
   <div class="callout callout-danger">
     <div class="callout-title">What This Question Tests</div>
@@ -3493,6 +3571,7 @@
       <span class="mp-label">Deep Dives / Q&A</span>
     </div>
   </div>
+</details>
 </div>
 
 </div><!-- /.container -->
@@ -3509,6 +3588,16 @@
     Covers: ANN algorithms (Flat, IVF, HNSW, PQ) &bull; Distributed architecture &bull; Multi-tenancy isolation &bull; Storage engine design &bull; Scaling &amp; consistency
   </p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"], .nav-bar a[href^="#"], .nav-links a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){
