@@ -630,6 +630,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -692,6 +711,10 @@
     <a href="#scalability">Scalability</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
@@ -700,8 +723,9 @@
 <!--  S1 : OVERVIEW                                                -->
 <!-- ============================================================ -->
 <section id="overview" class="section">
+<details open>
   <span class="section-label">Section 1</span>
-  <h2>Overview</h2>
+  <summary><h2>Overview</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -742,14 +766,16 @@
                                                       Enriched response
                                                       (listing summaries)
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S2 : REQUIREMENTS                                            -->
 <!-- ============================================================ -->
 <section id="requirements" class="section">
+<details open>
   <span class="section-label">Section 2</span>
-  <h2>Requirements</h2>
+  <summary><h2>Requirements</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -778,14 +804,16 @@
   <div class="callout">
     <p><strong>Interviewer signal:</strong> Start by clarifying whether the scope includes recommendations (it does not) and whether the read API must return full listing details or just IDs (return enriched summaries).</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S3 : CAPACITY ESTIMATION                                     -->
 <!-- ============================================================ -->
 <section id="capacity" class="section">
+<details>
   <span class="section-label">Section 3</span>
-  <h2>Capacity Estimation</h2>
+  <summary><h2>Capacity Estimation</h2></summary>
 
   <div class="grid-4">
     <div class="metric-box">
@@ -865,14 +893,16 @@
   <div class="callout">
     <p><strong>150 GB fits comfortably in a Redis cluster</strong> with 3-6 shards (each 25-50 GB). Redis sorted sets handle ZADD and ZREVRANGE at O(log N) and O(log N + M), making both writes and reads sub-millisecond at this data size.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S4 : EVENT FLOW                                              -->
 <!-- ============================================================ -->
 <section id="event-flow" class="section">
+<details>
   <span class="section-label">Section 4</span>
-  <h2>Event Flow: Write Path</h2>
+  <summary><h2>Event Flow: Write Path</h2></summary>
   <p>The key architectural decision: how does a "view" event reach storage?</p>
 
   <div class="grid-2">
@@ -958,14 +988,16 @@
       </div>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S5 : STORAGE OPTIONS                                         -->
 <!-- ============================================================ -->
 <section id="storage" class="section">
+<details>
   <span class="section-label">Section 5</span>
-  <h2>Storage Options Comparison</h2>
+  <summary><h2>Storage Options Comparison</h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -1044,14 +1076,16 @@
 <span class="cm">-- Set TTL for 90-day retention</span>
 <span class="kw">EXPIRE</span> <span class="str">user:12345:views</span> <span class="num">7776000</span></code></pre>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S6 : DATA MODEL                                              -->
 <!-- ============================================================ -->
 <section id="data-model" class="section">
+<details>
   <span class="section-label">Section 6</span>
-  <h2>Data Model</h2>
+  <summary><h2>Data Model</h2></summary>
 
   <h3>Primary: Redis Sorted Set (Read/Write Store)</h3>
   <div class="card">
@@ -1110,14 +1144,16 @@
        v
   Redis warm, subsequent reads served from cache
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S7 : API DESIGN                                              -->
 <!-- ============================================================ -->
 <section id="api" class="section">
+<details>
   <span class="section-label">Section 7</span>
-  <h2>API Design</h2>
+  <summary><h2>API Design</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -1172,14 +1208,16 @@
   <div class="callout info">
     <p><strong>Idempotency:</strong> The POST endpoint is naturally idempotent because ZADD with the same <code class="inline">listing_id</code> simply updates the score. Retries and duplicate Kafka messages are safe.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S8 : ENRICHMENT                                              -->
 <!-- ============================================================ -->
 <section id="enrichment" class="section">
+<details>
   <span class="section-label">Section 8</span>
-  <h2>Enrichment: Avoiding the N+1 Problem</h2>
+  <summary><h2>Enrichment: Avoiding the N+1 Problem</h2></summary>
 
   <p>Redis stores only <code class="inline">listing_id</code> and <code class="inline">timestamp</code>. The API must enrich each ID with title, thumbnail, price, and rating. A naive approach issues 20 individual lookups &mdash; the classic N+1 query.</p>
 
@@ -1241,14 +1279,16 @@
   <div class="callout warning">
     <p><strong>N+1 is the #1 pitfall interviewers watch for.</strong> Always mention MGET / batch fetch. If you say "loop through each listing ID and fetch one by one," that is a red flag.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S9 : CROSS-DEVICE & ANONYMOUS                                -->
 <!-- ============================================================ -->
 <section id="cross-device" class="section">
+<details>
   <span class="section-label">Section 9</span>
-  <h2>Cross-Device & Anonymous Users</h2>
+  <summary><h2>Cross-Device & Anonymous Users</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -1310,14 +1350,16 @@
             [B, A, ...]               [B, A, ...]    (same list)
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S10 : TRADE-OFFS TABLE                                       -->
 <!-- ============================================================ -->
 <section id="tradeoffs" class="section">
+<details>
   <span class="section-label">Section 10</span>
-  <h2>Trade-Offs</h2>
+  <summary><h2>Trade-Offs</h2></summary>
 
   <div class="tradeoff">
     <h4>Sync Write vs. Async (Kafka) Write</h4>
@@ -1464,14 +1506,16 @@
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S11 : SCALABILITY                                            -->
 <!-- ============================================================ -->
 <section id="scalability" class="section">
+<details>
   <span class="section-label">Section 11</span>
-  <h2>Scalability & Operations</h2>
+  <summary><h2>Scalability & Operations</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -1828,14 +1872,16 @@
     </table>
   </div>
 
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S12 : INTERVIEW TIPS                                         -->
 <!-- ============================================================ -->
 <section id="interview-tips" class="section">
+<details>
   <span class="section-label">Section 12</span>
-  <h2>Interview Tips</h2>
+  <summary><h2>Interview Tips</h2></summary>
 
   <div class="tip-card">
     <h4>Tip #1: Lead with the Data Structure</h4>
@@ -1886,6 +1932,7 @@
       <li>"What about GDPR deletion?" &mdash; DELETE the Redis key and issue a Cassandra DELETE for the user_id partition.</li>
     </ul>
   </div>
+</details>
 </section>
 
 </div><!-- /container -->
@@ -1897,6 +1944,16 @@
   <p>Recently Viewed Listings &mdash; Airbnb PE System Design Series</p>
   <p style="margin-top: 8px;"><a href="index.html">Back to All Topics</a></p>
 </footer>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

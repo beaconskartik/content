@@ -673,25 +673,19 @@
     <div class="card">
       <h4 style="color:var(--secondary);">&#9989; Functional Requirements</h4>
       <ol>
-        <li><strong>DAG Definition</strong> &mdash; Define jobs as directed acyclic graphs of tasks with typed operators</li>
+        <li><strong>DAG Definition</strong> &mdash; Define jobs as DAGs of tasks with typed operators</li>
         <li><strong>Scheduling</strong> &mdash; Cron-based, one-time, and event-triggered execution</li>
-        <li><strong>Dependency Management</strong> &mdash; Tasks only execute when all upstream dependencies succeed</li>
-        <li><strong>Retry with Backoff</strong> &mdash; Configurable retry count with exponential backoff strategy</li>
-        <li><strong>Job Priority Queues</strong> &mdash; Multiple priority levels with preemption support</li>
-        <li><strong>Monitoring &amp; Alerting</strong> &mdash; Real-time task status, SLA tracking, failure notifications</li>
-        <li><strong>Backfill Support</strong> &mdash; Generate and execute historical DAG runs for a date range</li>
-        <li><strong>Job Versioning</strong> &mdash; Track DAG definition changes, rollback capability</li>
+        <li><strong>Dependency Management</strong> &mdash; Tasks execute only when all upstream deps succeed</li>
+        <li><strong>Retry with Backoff</strong> &mdash; Configurable retries with exponential backoff</li>
+        <li><strong>Priority Queues</strong> &mdash; Multiple priority levels for task ordering</li>
       </ol>
     </div>
     <div class="card">
       <h4 style="color:var(--primary);">&#9888; Non-Functional Requirements</h4>
       <ol>
-        <li><strong>Exactly-once Execution</strong> &mdash; No duplicate task runs even under scheduler failover</li>
+        <li><strong>Exactly-once Execution</strong> &mdash; No duplicate task runs even under failover</li>
         <li><strong>Fault Tolerance</strong> &mdash; Scheduler crash recovery with zero data loss</li>
-        <li><strong>Horizontal Scalability</strong> &mdash; Support 100K+ jobs/day with linear scaling</li>
-        <li><strong>Sub-second Scheduling Latency</strong> &mdash; Time from trigger to task queuing &lt; 1 second</li>
-        <li><strong>Multi-tenant Isolation</strong> &mdash; Resource quotas, priority guarantees per team</li>
-        <li><strong>Observability</strong> &mdash; Full audit trail, execution lineage, performance metrics</li>
+        <li><strong>Scalability</strong> &mdash; 100K+ jobs/day with horizontal scaling</li>
         <li><strong>Availability</strong> &mdash; 99.99% uptime for the scheduling control plane</li>
       </ol>
     </div>
@@ -785,7 +779,7 @@
   <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#127959;</span> High-Level Architecture</h2></summary>
 
   <div class="diagram-box">
-  <svg viewBox="0 0 1100 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+  <svg viewBox="0 0 1300 460" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
     <defs>
       <filter id="shadow2" x="-4%" y="-4%" width="108%" height="112%">
         <feDropShadow dx="1" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
@@ -800,253 +794,191 @@
     </defs>
 
     <!-- ===== TITLE ===== -->
-    <text x="550" y="28" text-anchor="middle" fill="#f59e0b" font-size="15" font-weight="700" letter-spacing="2">DISTRIBUTED JOB SCHEDULER &#8212; SYSTEM ARCHITECTURE</text>
+    <text x="650" y="25" text-anchor="middle" fill="#f59e0b" font-size="15" font-weight="700" letter-spacing="2">DISTRIBUTED JOB SCHEDULER &#8212; SYSTEM ARCHITECTURE</text>
 
     <!-- ======================================================================== -->
-    <!-- ROW 1: UI / API LAYER -->
+    <!-- MAIN PIPELINE (left → right)                                             -->
     <!-- ======================================================================== -->
 
-    <!-- ===== Web UI ===== -->
-    <rect x="80" y="50" width="150" height="65" rx="10" fill="url(#g2b)" filter="url(#shadow2)" opacity="0.92"/>
-    <!-- monitor icon -->
-    <rect x="110" y="60" width="22" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <line x1="121" y1="76" x2="121" y2="82" stroke="#fff" stroke-width="1.5"/>
-    <line x1="114" y1="82" x2="128" y2="82" stroke="#fff" stroke-width="1.5"/>
-    <text x="138" y="74" fill="#fff" font-size="11" font-weight="700">Web UI /</text>
-    <text x="138" y="88" fill="#fff" font-size="11" font-weight="700">Dashboard</text>
-    <text x="155" y="106" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Monitor &amp; manage</text>
+    <!-- ===== 1. CLIENTS (Web UI + CLI/SDK) ===== -->
+    <rect x="20" y="55" width="130" height="100" rx="10" fill="url(#g2b)" filter="url(#shadow2)" opacity="0.92"/>
+    <rect x="48" y="65" width="20" height="14" rx="2" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <line x1="58" y1="79" x2="58" y2="84" stroke="#fff" stroke-width="1.3"/>
+    <line x1="52" y1="84" x2="64" y2="84" stroke="#fff" stroke-width="1.3"/>
+    <text x="73" y="77" fill="#fff" font-size="10" font-weight="700">Web UI /</text>
+    <text x="73" y="89" fill="#fff" font-size="10" font-weight="700">Dashboard</text>
+    <line x1="35" y1="100" x2="135" y2="100" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+    <rect x="40" y="108" width="18" height="13" rx="2" fill="none" stroke="#fff" stroke-width="1.2"/>
+    <text x="44" y="119" fill="#fff" font-size="8" font-weight="700">&gt;_</text>
+    <text x="65" y="119" fill="#fff" font-size="10" font-weight="700">CLI / SDK</text>
+    <text x="85" y="143" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Python / Java</text>
 
-    <!-- ===== API Gateway ===== -->
-    <rect x="420" y="50" width="170" height="65" rx="10" fill="url(#g2a)" filter="url(#shadow2)" opacity="0.92"/>
-    <!-- shield icon -->
-    <path d="M450,60 L450,80 Q450,90 462,94 Q474,90 474,80 L474,60 L462,54 Z" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <polyline points="456,76 460,80 468,68" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <text x="480" y="74" fill="#fff" font-size="12" font-weight="700">API Gateway</text>
-    <text x="480" y="90" fill="rgba(255,255,255,0.9)" font-size="9">REST / gRPC</text>
-    <text x="505" y="106" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="8">Auth, routing, rate limit</text>
+    <!-- Arrow: Clients → API Gateway -->
+    <line x1="150" y1="105" x2="195" y2="105" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- ===== CLI / SDK ===== -->
-    <rect x="800" y="50" width="150" height="65" rx="10" fill="url(#g2b)" filter="url(#shadow2)" opacity="0.92"/>
-    <!-- CLI icon: > prompt -->
-    <rect x="822" y="60" width="26" height="18" rx="3" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <text x="828" y="75" fill="#fff" font-size="11" font-weight="700">&gt;_</text>
-    <text x="854" y="74" fill="#fff" font-size="11" font-weight="700">CLI / SDK</text>
-    <text x="854" y="88" fill="rgba(255,255,255,0.9)" font-size="9">Python / Java</text>
+    <!-- ===== 2. API GATEWAY ===== -->
+    <rect x="200" y="65" width="140" height="80" rx="10" fill="url(#g2a)" filter="url(#shadow2)" opacity="0.92"/>
+    <path d="M226,76 L226,92 Q226,100 236,103 Q246,100 246,92 L246,76 L236,71 Z" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <polyline points="231,90 235,94 241,84" fill="none" stroke="#fff" stroke-width="1.3"/>
+    <text x="252" y="88" fill="#fff" font-size="11" font-weight="700">API Gateway</text>
+    <text x="252" y="102" fill="rgba(255,255,255,0.9)" font-size="8">REST / gRPC</text>
+    <text x="270" y="130" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="7">Auth, routing, rate limit</text>
 
-    <!-- Arrows: UI → Gateway, CLI → Gateway -->
-    <line x1="230" y1="82" x2="415" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="800" y1="82" x2="595" y2="82" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
+    <!-- Arrow: API GW → Scheduler -->
+    <line x1="340" y1="105" x2="390" y2="105" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- ======================================================================== -->
-    <!-- ROW 2: CORE SERVICES -->
-    <!-- ======================================================================== -->
-    <line x1="505" y1="115" x2="505" y2="135" stroke="#94a3b8" stroke-width="1.5"/>
-    <line x1="360" y1="135" x2="660" y2="135" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="360" y1="135" x2="360" y2="152" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="660" y1="135" x2="660" y2="152" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
+    <!-- ===== 3. SCHEDULER ===== -->
+    <rect x="395" y="50" width="170" height="95" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="2" filter="url(#shadow2)"/>
+    <circle cx="425" cy="82" r="10" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
+    <line x1="425" y1="82" x2="425" y2="76" stroke="#7B2FF7" stroke-width="1.5"/>
+    <line x1="425" y1="82" x2="430" y2="85" stroke="#7B2FF7" stroke-width="1.5"/>
+    <circle cx="425" cy="82" r="1.5" fill="#7B2FF7"/>
+    <text x="441" y="81" fill="#7B2FF7" font-size="11" font-weight="700">SCHEDULER</text>
+    <text x="441" y="94" fill="#94a3b8" font-size="8">Leader-elected</text>
+    <rect x="412" y="110" width="56" height="14" rx="7" fill="rgba(123,47,247,0.2)" stroke="#7B2FF7" stroke-width="0.5"/>
+    <text x="440" y="121" text-anchor="middle" fill="#7B2FF7" font-size="7" font-weight="600">tick loop</text>
+    <text x="474" y="121" fill="#94a3b8" font-size="7">dep resolve</text>
+    <text x="474" y="132" fill="#94a3b8" font-size="7">task queue</text>
 
-    <!-- ===== Scheduler ===== -->
-    <rect x="270" y="157" width="180" height="80" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="2" filter="url(#shadow2)"/>
-    <!-- clock icon -->
-    <circle cx="305" cy="185" r="12" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
-    <line x1="305" y1="185" x2="305" y2="177" stroke="#7B2FF7" stroke-width="1.5"/>
-    <line x1="305" y1="185" x2="312" y2="189" stroke="#7B2FF7" stroke-width="1.5"/>
-    <circle cx="305" cy="185" r="1.5" fill="#7B2FF7"/>
-    <text x="322" y="182" fill="#7B2FF7" font-size="12" font-weight="700">SCHEDULER</text>
-    <text x="322" y="196" fill="#94a3b8" font-size="9">Leader-elected</text>
-    <rect x="290" y="210" width="64" height="16" rx="8" fill="rgba(123,47,247,0.2)" stroke="#7B2FF7" stroke-width="0.5"/>
-    <text x="322" y="222" text-anchor="middle" fill="#7B2FF7" font-size="8" font-weight="600">tick loop</text>
-    <text x="362" y="222" fill="#94a3b8" font-size="8">dep resolve</text>
-    <text x="362" y="232" fill="#94a3b8" font-size="8">task queue</text>
+    <!-- Arrow: Scheduler → Executor -->
+    <line x1="565" y1="100" x2="615" y2="100" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- ===== DAG Processor ===== -->
-    <rect x="570" y="157" width="180" height="80" rx="10" fill="#f8fafc" stroke="#00A699" stroke-width="2" filter="url(#shadow2)"/>
-    <!-- DAG/tree icon -->
-    <circle cx="605" cy="178" r="4" fill="#00A699"/>
-    <circle cx="593" cy="195" r="4" fill="#00A699"/>
-    <circle cx="617" cy="195" r="4" fill="#00A699"/>
-    <line x1="605" y1="182" x2="593" y2="191" stroke="#00A699" stroke-width="1.2"/>
-    <line x1="605" y1="182" x2="617" y2="191" stroke="#00A699" stroke-width="1.2"/>
-    <circle cx="605" cy="212" r="3" fill="#00A699" opacity="0.6"/>
-    <line x1="617" y1="199" x2="605" y2="209" stroke="#00A699" stroke-width="1" opacity="0.6"/>
-    <text x="628" y="182" fill="#00A699" font-size="12" font-weight="700">DAG Processor</text>
-    <text x="628" y="196" fill="#94a3b8" font-size="9">Parse &amp; serialize</text>
-    <text x="628" y="210" fill="#94a3b8" font-size="8">Validate, version ctrl</text>
+    <!-- ===== 4. EXECUTOR ===== -->
+    <rect x="620" y="65" width="140" height="80" rx="10" fill="#f8fafc" stroke="#FC642D" stroke-width="1.5" filter="url(#shadow2)"/>
+    <polygon points="648,76 643,90 651,88 646,104 656,86 650,88" fill="none" stroke="#FC642D" stroke-width="1.1"/>
+    <text x="662" y="92" fill="#FC642D" font-size="11" font-weight="700">Executor</text>
+    <text x="662" y="106" fill="#94a3b8" font-size="8">Task dispatch</text>
+    <text x="690" y="130" text-anchor="middle" fill="#94a3b8" font-size="7">Kafka / K8s / Local</text>
 
-    <!-- ======================================================================== -->
-    <!-- ROW 3: METADATA DB (center) -->
-    <!-- ======================================================================== -->
-    <line x1="360" y1="237" x2="360" y2="260" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="660" y1="237" x2="660" y2="260" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <text x="380" y="253" fill="#94a3b8" font-size="8">write/read</text>
-    <text x="620" y="253" fill="#94a3b8" font-size="8">write</text>
+    <!-- Arrow: Executor → Queue -->
+    <line x1="760" y1="105" x2="810" y2="105" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- ===== PostgreSQL DB ===== -->
-    <rect x="230" y="265" width="540" height="60" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="2" filter="url(#shadow2)"/>
-    <!-- DB cylinder -->
-    <ellipse cx="268" cy="282" rx="16" ry="6" fill="#428BF9" opacity="0.3" stroke="#428BF9" stroke-width="1"/>
-    <rect x="252" y="282" width="32" height="20" fill="#f8fafc"/>
-    <line x1="252" y1="282" x2="252" y2="302" stroke="#428BF9" stroke-width="1"/>
-    <line x1="284" y1="282" x2="284" y2="302" stroke="#428BF9" stroke-width="1"/>
-    <ellipse cx="268" cy="302" rx="16" ry="6" fill="none" stroke="#428BF9" stroke-width="1"/>
-    <text x="298" y="288" fill="#428BF9" font-size="13" font-weight="700">PostgreSQL</text>
-    <text x="298" y="304" fill="#94a3b8" font-size="9">Metadata DB + Read Replicas</text>
-    <text x="500" y="298" fill="#94a3b8" font-size="8">dag | task | dag_run | task_instance | task_dependency</text>
+    <!-- ===== 5. MESSAGE QUEUE ===== -->
+    <rect x="815" y="65" width="150" height="80" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow2)"/>
+    <polygon points="843,100 851,91 859,100 851,109" fill="none" stroke="#ef4444" stroke-width="1.3"/>
+    <polygon points="851,94 854,100 851,106 848,100" fill="#ef4444" opacity="0.4"/>
+    <text x="867" y="97" fill="#ef4444" font-size="10" font-weight="700">Kafka</text>
+    <text x="867" y="111" fill="#94a3b8" font-size="8">Task Topics</text>
+    <text x="890" y="130" text-anchor="middle" fill="#94a3b8" font-size="7">Priority topics, DLQ</text>
+
+    <!-- Arrow: Queue → Workers -->
+    <line x1="965" y1="105" x2="1015" y2="105" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
+
+    <!-- ===== 6. WORKER POOL ===== -->
+    <rect x="1020" y="50" width="150" height="110" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5" filter="url(#shadow2)"/>
+    <text x="1095" y="70" text-anchor="middle" fill="#FF5A5F" font-size="10" font-weight="700">Worker Pool</text>
+    <rect x="1035" y="78" width="120" height="18" rx="5" fill="rgba(123,47,247,0.08)" stroke="#7B2FF7" stroke-width="0.5"/>
+    <text x="1095" y="91" text-anchor="middle" fill="#7B2FF7" font-size="8">Worker 1</text>
+    <rect x="1035" y="100" width="120" height="18" rx="5" fill="rgba(123,47,247,0.08)" stroke="#7B2FF7" stroke-width="0.5"/>
+    <text x="1095" y="113" text-anchor="middle" fill="#7B2FF7" font-size="8">Worker 2</text>
+    <rect x="1035" y="122" width="120" height="18" rx="5" fill="rgba(123,47,247,0.08)" stroke="#7B2FF7" stroke-width="0.5"/>
+    <text x="1095" y="135" text-anchor="middle" fill="#7B2FF7" font-size="8">Worker N</text>
+    <text x="1095" y="153" text-anchor="middle" fill="#94a3b8" font-size="7">Heartbeat, Execute</text>
 
     <!-- ======================================================================== -->
-    <!-- ROW 4: EXECUTION LAYER -->
-    <!-- ======================================================================== -->
-    <line x1="500" y1="325" x2="500" y2="345" stroke="#94a3b8" stroke-width="1.5"/>
-    <line x1="300" y1="345" x2="750" y2="345" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="300" y1="345" x2="300" y2="363" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="530" y1="345" x2="530" y2="363" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="750" y1="345" x2="750" y2="363" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-
-    <!-- ===== Message Queue (Redis) ===== -->
-    <rect x="200" y="368" width="180" height="65" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow2)"/>
-    <!-- Redis diamond -->
-    <polygon points="240,392 250,382 260,392 250,402" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-    <polygon points="250,386 254,392 250,398 246,392" fill="#ef4444" opacity="0.4"/>
-    <text x="268" y="392" fill="#ef4444" font-size="11" font-weight="700">Message Queue</text>
-    <text x="268" y="406" fill="#94a3b8" font-size="9">Redis / RabbitMQ</text>
-    <text x="268" y="420" fill="#94a3b8" font-size="8">Priority queues, DLQ</text>
-
-    <!-- ===== Executor ===== -->
-    <rect x="440" y="368" width="170" height="65" rx="10" fill="#f8fafc" stroke="#FC642D" stroke-width="1.5" filter="url(#shadow2)"/>
-    <!-- dispatch/bolt icon -->
-    <polygon points="472,378 466,395 476,392 470,412 482,390 474,393" fill="none" stroke="#FC642D" stroke-width="1.2"/>
-    <text x="488" y="392" fill="#FC642D" font-size="11" font-weight="700">Executor</text>
-    <text x="488" y="406" fill="#94a3b8" font-size="9">Task dispatch</text>
-    <text x="488" y="420" fill="#94a3b8" font-size="8">Celery / K8s / Local</text>
-
-    <!-- Arrow Executor → Queue -->
-    <line x1="440" y1="400" x2="385" y2="400" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <text x="412" y="394" fill="#94a3b8" font-size="7">push tasks</text>
-
-    <!-- ===== Event Bus (Kafka) ===== -->
-    <rect x="670" y="368" width="170" height="65" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow2)"/>
-    <!-- Kafka icon: 3 circles with lines -->
-    <circle cx="702" cy="390" r="4.5" fill="#ef4444"/>
-    <circle cx="702" cy="406" r="4.5" fill="#ef4444"/>
-    <circle cx="718" cy="398" r="4.5" fill="#ef4444"/>
-    <line x1="706" y1="390" x2="714" y2="398" stroke="#ef4444" stroke-width="1.2"/>
-    <line x1="706" y1="406" x2="714" y2="398" stroke="#ef4444" stroke-width="1.2"/>
-    <text x="728" y="392" fill="#ef4444" font-size="11" font-weight="700">Event Bus</text>
-    <text x="728" y="406" fill="#94a3b8" font-size="9">Kafka</text>
-    <text x="728" y="420" fill="#94a3b8" font-size="8">Triggers, callbacks, audit</text>
-
-    <!-- ======================================================================== -->
-    <!-- ROW 5: WORKERS -->
-    <!-- ======================================================================== -->
-    <line x1="290" y1="433" x2="290" y2="455" stroke="#94a3b8" stroke-width="1.5"/>
-    <line x1="200" y1="455" x2="430" y2="455" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="200" y1="455" x2="200" y2="472" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="315" y1="455" x2="315" y2="472" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="430" y1="455" x2="430" y2="472" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <text x="260" y="450" fill="#94a3b8" font-size="8">pull tasks</text>
-
-    <!-- Worker 1 -->
-    <rect x="145" y="477" width="110" height="60" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5" filter="url(#shadow2)"/>
-    <circle cx="172" cy="496" r="8" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
-    <circle cx="172" cy="496" r="3" fill="#7B2FF7"/>
-    <line x1="172" y1="485" x2="172" y2="488" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="172" y1="504" x2="172" y2="507" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="161" y1="496" x2="164" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="180" y1="496" x2="183" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <text x="188" y="498" fill="#FF5A5F" font-size="10" font-weight="700">Worker 1</text>
-    <text x="168" y="524" fill="#94a3b8" font-size="8">Heartbeat, Execute</text>
-
-    <!-- Worker 2 -->
-    <rect x="260" y="477" width="110" height="60" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5" filter="url(#shadow2)"/>
-    <circle cx="287" cy="496" r="8" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
-    <circle cx="287" cy="496" r="3" fill="#7B2FF7"/>
-    <line x1="287" y1="485" x2="287" y2="488" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="287" y1="504" x2="287" y2="507" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="276" y1="496" x2="279" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="295" y1="496" x2="298" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <text x="303" y="498" fill="#FF5A5F" font-size="10" font-weight="700">Worker 2</text>
-    <text x="283" y="524" fill="#94a3b8" font-size="8">Heartbeat, Execute</text>
-
-    <!-- Worker N -->
-    <rect x="375" y="477" width="110" height="60" rx="10" fill="#f8fafc" stroke="#7B2FF7" stroke-width="1.5" filter="url(#shadow2)"/>
-    <circle cx="402" cy="496" r="8" fill="none" stroke="#7B2FF7" stroke-width="1.5"/>
-    <circle cx="402" cy="496" r="3" fill="#7B2FF7"/>
-    <line x1="402" y1="485" x2="402" y2="488" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="402" y1="504" x2="402" y2="507" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="391" y1="496" x2="394" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <line x1="410" y1="496" x2="413" y2="496" stroke="#7B2FF7" stroke-width="2"/>
-    <text x="418" y="498" fill="#FF5A5F" font-size="10" font-weight="700">Worker N</text>
-    <text x="398" y="524" fill="#94a3b8" font-size="8">Heartbeat, Execute</text>
-
-    <!-- ======================================================================== -->
-    <!-- ROW 6: STORAGE (bottom) -->
+    <!-- SECOND ROW: SUPPORTING SERVICES                                          -->
     <!-- ======================================================================== -->
 
-    <!-- Workers → S3 -->
-    <line x1="200" y1="537" x2="200" y2="555" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="315" y1="537" x2="315" y2="555" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="430" y1="537" x2="430" y2="555" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="200" y1="555" x2="430" y2="555" stroke="#94a3b8" stroke-width="1"/>
-    <line x1="315" y1="555" x2="315" y2="570" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <text x="335" y="566" fill="#94a3b8" font-size="8">push logs</text>
+    <!-- Arrow: API GW → DAG Processor (vertical) -->
+    <line x1="270" y1="145" x2="270" y2="200" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- ===== S3 Log Storage ===== -->
-    <rect x="230" y="575" width="170" height="40" rx="10" fill="#f8fafc" stroke="#4caf50" stroke-width="1.5" filter="url(#shadow2)"/>
-    <!-- S3 bucket icon -->
-    <path d="M256,582 L250,606 Q258,612 266,606 L260,582 Z" fill="none" stroke="#4caf50" stroke-width="1.5"/>
-    <text x="274" y="594" fill="#4caf50" font-size="11" font-weight="700">S3 Log Storage</text>
-    <text x="274" y="608" fill="#94a3b8" font-size="8">stdout/stderr, artifacts</text>
+    <!-- ===== 7. DAG PROCESSOR ===== -->
+    <rect x="200" y="205" width="140" height="65" rx="10" fill="#f8fafc" stroke="#00A699" stroke-width="2" filter="url(#shadow2)"/>
+    <circle cx="228" cy="226" r="3.5" fill="#00A699"/>
+    <circle cx="220" cy="240" r="3.5" fill="#00A699"/>
+    <circle cx="236" cy="240" r="3.5" fill="#00A699"/>
+    <line x1="228" y1="229" x2="220" y2="237" stroke="#00A699" stroke-width="1"/>
+    <line x1="228" y1="229" x2="236" y2="237" stroke="#00A699" stroke-width="1"/>
+    <text x="246" y="230" fill="#00A699" font-size="10" font-weight="700">DAG Processor</text>
+    <text x="246" y="244" fill="#94a3b8" font-size="8">Parse &amp; serialize</text>
+    <text x="246" y="256" fill="#94a3b8" font-size="7">Validate, version ctrl</text>
 
-    <!-- Workers → PG status (dashed back to PG) -->
-    <line x1="485" y1="507" x2="540" y2="507" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
-    <line x1="540" y1="507" x2="540" y2="325" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#ah2)"/>
-    <text x="546" y="430" fill="#94a3b8" font-size="7" transform="rotate(90,546,430)">status update</text>
+    <!-- Arrow: DAG Proc → PostgreSQL (horizontal) -->
+    <line x1="340" y1="237" x2="390" y2="237" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
+    <text x="365" y="231" text-anchor="middle" fill="#94a3b8" font-size="7">write</text>
 
-    <!-- ===== EVENT BUS → ALERTING ===== -->
-    <rect x="700" y="477" width="170" height="55" rx="10" fill="#f8fafc" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow2)"/>
-    <!-- bell icon -->
-    <path d="M730,490 Q730,480 740,480 Q750,480 750,490 L752,500 L728,500 Z" fill="none" stroke="#f59e0b" stroke-width="1.2"/>
-    <line x1="736" y1="502" x2="744" y2="502" stroke="#f59e0b" stroke-width="1.5"/>
-    <circle cx="740" cy="505" r="2" fill="#f59e0b"/>
-    <text x="758" y="496" fill="#f59e0b" font-size="11" font-weight="700">Alerting</text>
-    <text x="758" y="510" fill="#94a3b8" font-size="9">PagerDuty, Slack</text>
-    <text x="758" y="522" fill="#94a3b8" font-size="8">SLA breach, failures</text>
+    <!-- Arrow: Scheduler → PostgreSQL (vertical) -->
+    <line x1="480" y1="145" x2="480" y2="200" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
 
-    <!-- Arrow: Kafka → Alerting -->
-    <line x1="755" y1="433" x2="755" y2="472" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah2d)"/>
-    <text x="762" y="456" fill="#ef4444" font-size="7">events</text>
+    <!-- ===== 8. POSTGRESQL ===== -->
+    <rect x="395" y="205" width="375" height="55" rx="10" fill="#f8fafc" stroke="#428BF9" stroke-width="2" filter="url(#shadow2)"/>
+    <ellipse cx="425" cy="222" rx="13" ry="5" fill="#428BF9" opacity="0.3" stroke="#428BF9" stroke-width="1"/>
+    <rect x="412" y="222" width="26" height="16" fill="#f8fafc"/>
+    <line x1="412" y1="222" x2="412" y2="238" stroke="#428BF9" stroke-width="1"/>
+    <line x1="438" y1="222" x2="438" y2="238" stroke="#428BF9" stroke-width="1"/>
+    <ellipse cx="425" cy="238" rx="13" ry="5" fill="none" stroke="#428BF9" stroke-width="1"/>
+    <text x="450" y="228" fill="#428BF9" font-size="12" font-weight="700">PostgreSQL</text>
+    <text x="450" y="244" fill="#94a3b8" font-size="8">Metadata DB + Read Replicas</text>
+    <text x="620" y="244" fill="#94a3b8" font-size="7">dag | task | dag_run | task_instance</text>
+
+    <!-- Workers → S3 (vertical) -->
+    <line x1="1095" y1="160" x2="1095" y2="295" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah2)"/>
+
+    <!-- ===== 9. S3 LOG STORAGE ===== -->
+    <rect x="1030" y="300" width="130" height="45" rx="10" fill="#f8fafc" stroke="#4caf50" stroke-width="1.5" filter="url(#shadow2)"/>
+    <path d="M1052,307 L1048,337 Q1054,342 1060,337 L1056,307 Z" fill="none" stroke="#4caf50" stroke-width="1.2"/>
+    <text x="1068" y="320" fill="#4caf50" font-size="10" font-weight="700">S3 Log Storage</text>
+    <text x="1068" y="334" fill="#94a3b8" font-size="7">stdout/stderr, artifacts</text>
+
+    <!-- Workers → PostgreSQL (dashed status update, routed below main row) -->
+    <polyline points="1020,155 1020,185 770,185 770,205" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#ah2)"/>
+
+    <!-- ======================================================================== -->
+    <!-- THIRD ROW: EVENT LAYER                                                   -->
+    <!-- ======================================================================== -->
+
+    <!-- Arrow: PostgreSQL → Event Bus (vertical) -->
+    <line x1="500" y1="260" x2="500" y2="325" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah2d)"/>
+
+    <!-- ===== 10. EVENT BUS ===== -->
+    <rect x="430" y="330" width="140" height="55" rx="10" fill="#f8fafc" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow2)"/>
+    <circle cx="456" cy="349" r="3.5" fill="#ef4444"/>
+    <circle cx="456" cy="362" r="3.5" fill="#ef4444"/>
+    <circle cx="468" cy="355" r="3.5" fill="#ef4444"/>
+    <line x1="459" y1="349" x2="465" y2="355" stroke="#ef4444" stroke-width="1"/>
+    <line x1="459" y1="362" x2="465" y2="355" stroke="#ef4444" stroke-width="1"/>
+    <text x="478" y="352" fill="#ef4444" font-size="10" font-weight="700">Event Bus</text>
+    <text x="478" y="365" fill="#94a3b8" font-size="8">Kafka</text>
+    <text x="478" y="378" fill="#94a3b8" font-size="7">Triggers, callbacks, audit</text>
+
+    <!-- Arrow: Event Bus → Alerting -->
+    <line x1="570" y1="357" x2="615" y2="357" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah2d)"/>
+
+    <!-- ===== 11. ALERTING ===== -->
+    <rect x="620" y="330" width="140" height="55" rx="10" fill="#f8fafc" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow2)"/>
+    <path d="M646,342 Q646,334 654,334 Q662,334 662,342 L664,349 L644,349 Z" fill="none" stroke="#f59e0b" stroke-width="1"/>
+    <circle cx="654" cy="352" r="1.5" fill="#f59e0b"/>
+    <text x="670" y="348" fill="#f59e0b" font-size="10" font-weight="700">Alerting</text>
+    <text x="670" y="362" fill="#94a3b8" font-size="8">PagerDuty, Slack</text>
+    <text x="670" y="374" fill="#94a3b8" font-size="7">SLA breach, failures</text>
 
     <!-- ===== LEGEND ===== -->
-    <rect x="890" y="540" width="195" height="70" rx="8" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
-    <text x="905" y="558" fill="#e2e8f0" font-size="9" font-weight="700">LEGEND</text>
-    <line x1="905" y1="570" x2="930" y2="570" stroke="#94a3b8" stroke-width="1.5"/>
-    <text x="936" y="574" fill="#94a3b8" font-size="8">Sync flow</text>
-    <line x1="905" y1="585" x2="930" y2="585" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="936" y="589" fill="#94a3b8" font-size="8">Async / event</text>
-    <circle cx="912" cy="600" r="4" fill="#428BF9"/>
-    <text x="920" y="603" fill="#94a3b8" font-size="8">PostgreSQL (metadata)</text>
+    <rect x="1030" y="385" width="195" height="65" rx="8" fill="rgba(30,41,59,0.9)" stroke="#334155" stroke-width="1"/>
+    <text x="1045" y="402" fill="#e2e8f0" font-size="9" font-weight="700">LEGEND</text>
+    <line x1="1045" y1="414" x2="1070" y2="414" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="1076" y="418" fill="#94a3b8" font-size="8">Sync flow</text>
+    <line x1="1045" y1="429" x2="1070" y2="429" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <text x="1076" y="433" fill="#94a3b8" font-size="8">Async / event</text>
+    <circle cx="1052" cy="444" r="4" fill="#428BF9"/>
+    <text x="1060" y="447" fill="#94a3b8" font-size="8">PostgreSQL (metadata)</text>
 
-    <!-- ===== NUMBERED STEP CIRCLES ===== -->
-    <!-- Step 1: User defines DAG via Web UI / CLI / SDK → API Gateway -->
-    <circle cx="323" cy="72" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="323" y="76" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">1</text>
-    <!-- Step 2: API Gateway → Scheduler Service (store DAG in PostgreSQL) -->
-    <circle cx="505" cy="128" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="505" y="132" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">2</text>
-    <!-- Step 3: Scheduler tick loop reads PostgreSQL -->
-    <circle cx="295" cy="168" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="295" y="172" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">3</text>
-    <!-- Step 4: Scheduler creates DAG Run + Task Instances in PostgreSQL -->
-    <circle cx="375" cy="250" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="375" y="254" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">4</text>
-    <!-- Step 5: Scheduler pushes ready tasks to Message Queue -->
-    <circle cx="300" cy="355" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="300" y="359" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">5</text>
-    <!-- Step 6: Workers pull tasks from queue and execute -->
-    <circle cx="260" cy="462" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="260" y="466" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">6</text>
-    <!-- Step 7: Workers write logs to S3 -->
-    <circle cx="225" cy="575" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="225" y="579" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">7</text>
-    <!-- Step 8: Workers update task status in PostgreSQL -->
-    <circle cx="552" cy="507" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="552" y="511" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">8</text>
-    <!-- Step 9: Scheduler detects completion → schedules downstream tasks -->
-    <circle cx="450" cy="168" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="450" y="172" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">9</text>
-    <!-- Step 10: Event Bus (Kafka) → Alerting Service -->
-    <circle cx="755" cy="448" r="10" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="755" y="452" fill="#fff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+    <!-- ===== NUMBERED STEP CIRCLES (every circle on a visible arrow) ===== -->
+    <!-- Step 1: Clients → API Gateway -->
+    <circle cx="173" cy="105" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="173" y="109" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">1</text>
+    <!-- Step 2: API Gateway → Scheduler -->
+    <circle cx="365" cy="105" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="365" y="109" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">2</text>
+    <!-- Step 3: Scheduler ↔ PostgreSQL -->
+    <circle cx="480" cy="172" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="480" y="176" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">3</text>
+    <!-- Step 4: Scheduler → Executor -->
+    <circle cx="590" cy="100" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="590" y="104" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">4</text>
+    <!-- Step 5: Executor → Message Queue -->
+    <circle cx="785" cy="105" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="785" y="109" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">5</text>
+    <!-- Step 6: Queue → Workers -->
+    <circle cx="990" cy="105" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="990" y="109" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">6</text>
+    <!-- Step 7: Workers → S3 + status → PG -->
+    <circle cx="1095" cy="230" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="1095" y="234" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">7</text>
+    <!-- Step 8: Event Bus → Alerting -->
+    <circle cx="593" cy="357" r="9" fill="#FF5A5F" stroke="#fff" stroke-width="1.5"/><text x="593" y="361" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">8</text>
   </svg>
   </div>
 
@@ -1070,46 +1002,36 @@
           </tr>
           <tr style="border-bottom:1px solid var(--card-border); background:rgba(255,255,255,0.02);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">2</td>
-            <td style="padding:8px 12px;">API Gateway &rarr; Scheduler Service (store DAG definition in PostgreSQL)</td>
+            <td style="padding:8px 12px;">API Gateway &rarr; Scheduler &amp; DAG Processor</td>
             <td style="padding:8px 12px; color:var(--text-muted);">DAG parsed, validated, serialized to metadata DB</td>
           </tr>
           <tr style="border-bottom:1px solid var(--card-border);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">3</td>
-            <td style="padding:8px 12px;">Scheduler tick loop reads PostgreSQL (find DAGs due for execution)</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Leader-elected process, periodic polling</td>
+            <td style="padding:8px 12px;">Scheduler &harr; PostgreSQL (tick loop reads PG, creates DAG Runs + Task Instances)</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Leader-elected, row-level locking, dependency resolution</td>
           </tr>
           <tr style="border-bottom:1px solid var(--card-border); background:rgba(255,255,255,0.02);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">4</td>
-            <td style="padding:8px 12px;">Scheduler creates DAG Run + Task Instances in PostgreSQL</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Row-level locking, dependency resolution</td>
+            <td style="padding:8px 12px;">Scheduler dispatches ready tasks &rarr; Executor</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Kafka / K8s / Local executor selection</td>
           </tr>
           <tr style="border-bottom:1px solid var(--card-border);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">5</td>
-            <td style="padding:8px 12px;">Scheduler pushes ready tasks to Message Queue</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Redis / RabbitMQ, priority queues</td>
+            <td style="padding:8px 12px;">Executor pushes tasks to Message Queue</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Kafka, priority queues, DLQ</td>
           </tr>
           <tr style="border-bottom:1px solid var(--card-border); background:rgba(255,255,255,0.02);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">6</td>
-            <td style="padding:8px 12px;">Workers pull tasks from queue and execute</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Celery / K8s executor, heartbeat-monitored</td>
+            <td style="padding:8px 12px;">Workers pull tasks from Queue and execute</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Heartbeat-monitored, concurrent execution</td>
           </tr>
           <tr style="border-bottom:1px solid var(--card-border);">
             <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">7</td>
-            <td style="padding:8px 12px;">Workers write logs to S3 (stdout / stderr)</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Durable log storage, hot/cold tiering</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--card-border); background:rgba(255,255,255,0.02);">
-            <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">8</td>
-            <td style="padding:8px 12px;">Workers update task status in PostgreSQL (SUCCESS / FAILED)</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Async status callback via dashed path</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--card-border);">
-            <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">9</td>
-            <td style="padding:8px 12px;">Scheduler detects completion &rarr; schedules downstream tasks</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Dependency graph traversal, re-enters tick loop</td>
+            <td style="padding:8px 12px;">Workers write logs to S3, update task status in PostgreSQL</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Durable logs to S3; async status callback to PG via dashed path</td>
           </tr>
           <tr>
-            <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">10</td>
+            <td style="padding:8px 12px; text-align:center; font-weight:800; color:var(--primary);">8</td>
             <td style="padding:8px 12px;">Event Bus (Kafka) &rarr; Alerting Service (on failure / SLA breach)</td>
             <td style="padding:8px 12px; color:var(--text-muted);">PagerDuty, Slack notifications</td>
           </tr>
@@ -1122,10 +1044,10 @@
   <div class="card" style="margin-top:18px; border-left:4px solid var(--success);">
     <h4 style="color:var(--success);">&#9989; Happy Path</h4>
     <p style="margin-top:8px; line-height:1.8;">
-      <strong>Define DAG</strong> &rarr; Scheduler picks up on tick loop &rarr; tasks queued to message broker &rarr; workers pull and execute &rarr; logs stored in S3 &rarr; status updated in PostgreSQL &rarr; downstream tasks triggered automatically.
+      <strong>Define DAG</strong> &rarr; Scheduler picks up on tick loop &rarr; tasks queued to Kafka &rarr; workers pull and execute &rarr; logs stored in S3 &rarr; status updated in PostgreSQL &rarr; downstream tasks triggered automatically.
     </p>
     <p style="margin-top:6px; color:var(--text-muted); font-size:0.9em;">
-      Steps <strong>1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 6 &rarr; 7 &rarr; 8 &rarr; 9</strong> (repeat for downstream). Alerting via step <strong>10</strong> only fires on failure/SLA breach.
+      Steps <strong>1 &rarr; 2 &rarr; 3 &rarr; 4 &rarr; 5 &rarr; 6 &rarr; 7</strong> (repeat for downstream). Alerting via step <strong>8</strong> only on failure/SLA breach.
     </p>
   </div>
 
@@ -1165,7 +1087,7 @@
           <tr>
             <td style="padding:8px 12px; font-weight:600;">Poison Task (Repeated Failure)</td>
             <td style="padding:8px 12px; color:var(--text-muted);">Task fails on every retry, blocks downstream</td>
-            <td style="padding:8px 12px; color:var(--text-muted);">Dead Letter Queue (DLQ) after max retries; alert via step 10</td>
+            <td style="padding:8px 12px; color:var(--text-muted);">Dead Letter Queue (DLQ) after max retries; alert via step 8</td>
           </tr>
         </tbody>
       </table>
@@ -1178,17 +1100,16 @@
       <ul>
         <li><strong>Scheduler</strong> &mdash; Leader-elected process that runs the tick loop, checks for DAGs due for execution, resolves dependencies, and enqueues ready tasks</li>
         <li><strong>DAG Processor</strong> &mdash; Parses DAG definition files (Python/YAML), validates structure, serializes to metadata DB</li>
-        <li><strong>Executor</strong> &mdash; Dispatches tasks to the appropriate execution backend (Celery, Kubernetes, Local)</li>
-        <li><strong>Worker Pool</strong> &mdash; Stateless processes that pull tasks from the queue, execute them, report status, and push logs</li>
+        <li><strong>Executor</strong> &mdash; Dispatches tasks to the appropriate execution backend (Kafka consumers, Kubernetes, Local)</li>
+        <li><strong>Worker Pool</strong> &mdash; Stateless processes that consume tasks from Kafka, execute them, report status, and push logs</li>
       </ul>
     </div>
     <div class="card">
       <h4>&#128451; Storage Layer</h4>
       <ul>
         <li><strong>Metadata DB (PostgreSQL)</strong> &mdash; Source of truth for DAG definitions, run states, task instance states. Uses row-level locking for consistency</li>
-        <li><strong>Message Queue (Redis/RabbitMQ)</strong> &mdash; Priority-based task queue. Decouples scheduler from workers. Supports dead letter queues</li>
+        <li><strong>Kafka</strong> &mdash; Unified messaging backbone: priority task topics (decouples scheduler from workers, DLQ), event-triggered scheduling, status callbacks, and audit logging</li>
         <li><strong>Log Storage (S3)</strong> &mdash; Durable log storage for task stdout/stderr. Hot tier (30d) in fast storage, cold archive for compliance</li>
-        <li><strong>Event Bus (Kafka)</strong> &mdash; Event-triggered scheduling, status callbacks, audit logging</li>
       </ul>
     </div>
   </div>
@@ -1214,12 +1135,8 @@
     <span class="comp">| id           PK  |</span>       <span class="comp">| id             PK  |</span>       <span class="comp">| task_id         FK  |</span>
     <span class="comp">| name             |</span>       <span class="comp">| dag_id         FK  |</span>       <span class="comp">| upstream_task_id FK |</span>
     <span class="comp">| schedule_expr    |</span>       <span class="comp">| operator_type      |</span>       <span class="comp">+---------------------+</span>
-    <span class="comp">| owner            |</span>       <span class="comp">| params (JSONB)     |</span>
-    <span class="comp">| config (JSONB)   |</span>       <span class="comp">| retries            |</span>
-    <span class="comp">| is_paused        |</span>       <span class="comp">| retry_delay_sec    |</span>
-    <span class="comp">| concurrency      |</span>       <span class="comp">| priority_weight    |</span>
-    <span class="comp">| version          |</span>       <span class="comp">| pool               |</span>
-    <span class="comp">| created_at       |</span>       <span class="comp">| timeout_sec        |</span>
+    <span class="comp">| owner            |</span>       <span class="comp">| retries            |</span>
+    <span class="comp">| is_paused        |</span>       <span class="comp">| priority_weight    |</span>
     <span class="comp">+--------+---------+</span>       <span class="comp">+----------+---------+</span>
              <span class="flow">|</span>                            <span class="flow">|</span>
              <span class="flow">|</span> <span class="label">1:N</span>                        <span class="flow">|</span> <span class="label">1:N</span>
@@ -1232,12 +1149,7 @@
     <span class="comp">| execution_date   |</span>       <span class="comp">| task_id        FK  |</span>
     <span class="comp">| state            |</span>       <span class="comp">| state              |</span>
     <span class="comp">| run_type         |</span>       <span class="comp">| try_number         |</span>
-    <span class="comp">| started_at       |</span>       <span class="comp">| started_at         |</span>
-    <span class="comp">| ended_at         |</span>       <span class="comp">| ended_at           |</span>
-    <span class="comp">| external_trigger |</span>       <span class="comp">| worker_id          |</span>
-    <span class="comp">+------------------+</span>       <span class="comp">| log_url            |</span>
-                               <span class="comp">| max_tries          |</span>
-                               <span class="comp">| queued_at          |</span>
+    <span class="comp">+------------------+</span>       <span class="comp">| worker_id          |</span>
                                <span class="comp">+--------------------+</span></div>
 
   <h3>Schema DDL</h3>
@@ -1479,6 +1391,93 @@
                                                          <span class="arrow">v</span>
                                                    <span class="state">[ SCHEDULED ]</span> <span class="action"> (retry loop)</span></div>
 
+  <h3>State Transition Walkthrough</h3>
+  <p>The table below traces exactly <strong>who</strong> changes each state, <strong>what</strong> triggers the transition, and the <strong>DB update</strong> that persists it.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Triggered By</th>
+          <th>What Happens</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>&mdash;</td>
+          <td><span class="badge badge-blue">NONE</span></td>
+          <td>Scheduler</td>
+          <td>DAG run created &rarr; scheduler inserts one <span class="inline-code">task_instance</span> row per task with state = <span class="inline-code">none</span></td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td><span class="badge badge-blue">NONE</span></td>
+          <td><span class="badge badge-blue">SCHEDULED</span></td>
+          <td>Scheduler</td>
+          <td>Topological sort identifies root tasks (in-degree = 0) &rarr; sets their state to <span class="inline-code">scheduled</span>. Non-root tasks stay in <span class="inline-code">none</span> until all upstreams succeed.</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td><span class="badge badge-blue">SCHEDULED</span></td>
+          <td><span class="badge badge-purple">QUEUED</span></td>
+          <td>Scheduler</td>
+          <td>Tick loop finds <span class="inline-code">scheduled</span> tasks with all deps met + concurrency OK &rarr; updates state to <span class="inline-code">queued</span>, sets <span class="inline-code">queued_at</span>, publishes task message to Kafka topic.</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td><span class="badge badge-purple">QUEUED</span></td>
+          <td><span class="badge badge-orange">RUNNING</span></td>
+          <td>Worker</td>
+          <td>Worker consumes task from Kafka &rarr; updates state to <span class="inline-code">running</span>, sets <span class="inline-code">started_at</span> and <span class="inline-code">worker_id</span>. Begins heartbeating.</td>
+        </tr>
+        <tr>
+          <td><strong>5a</strong></td>
+          <td><span class="badge badge-orange">RUNNING</span></td>
+          <td><span class="badge badge-green">SUCCESS</span></td>
+          <td>Worker</td>
+          <td>Task completes without error &rarr; worker updates state to <span class="inline-code">success</span>, sets <span class="inline-code">ended_at</span>. Scheduler then evaluates downstream tasks (back to step 2 for them).</td>
+        </tr>
+        <tr>
+          <td><strong>5b</strong></td>
+          <td><span class="badge badge-orange">RUNNING</span></td>
+          <td><span class="badge badge-red">FAILED</span></td>
+          <td>Worker</td>
+          <td>Task throws exception or exceeds timeout &rarr; worker updates state to <span class="inline-code">failed</span>, records error. If retries remaining &rarr; goes to step 6. Otherwise terminal failure &rarr; DLQ + alert.</td>
+        </tr>
+        <tr>
+          <td><strong>5c</strong></td>
+          <td><span class="badge badge-orange">RUNNING</span></td>
+          <td><span class="badge badge-blue">SKIPPED</span></td>
+          <td>Worker</td>
+          <td>Branch operator decides this path is not needed &rarr; state set to <span class="inline-code">skipped</span>. Downstream tasks of the skipped branch are also skipped.</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td><span class="badge badge-red">FAILED</span></td>
+          <td><span class="badge badge-orange">UP_FOR_RETRY</span></td>
+          <td>Scheduler</td>
+          <td>Retry count not exhausted &rarr; scheduler sets state to <span class="inline-code">up_for_retry</span>, computes backoff delay, sets <span class="inline-code">next_retry_at</span>.</td>
+        </tr>
+        <tr>
+          <td><strong>7</strong></td>
+          <td><span class="badge badge-orange">UP_FOR_RETRY</span></td>
+          <td><span class="badge badge-blue">SCHEDULED</span></td>
+          <td>Scheduler</td>
+          <td>Backoff delay elapsed &rarr; scheduler sets state back to <span class="inline-code">scheduled</span>, increments <span class="inline-code">try_number</span>. Flow resumes from step 3.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip-box tip-box-info">
+    <span class="tip-icon">&#128270;</span>
+    <div><strong>Key invariant:</strong> Every state transition is a <strong>single UPDATE to PostgreSQL</strong> guarded by the current state (<span class="inline-code">WHERE state = 'old_state'</span>). This prevents race conditions &mdash; if two processes try to transition the same task, only one succeeds. The metadata DB is always the source of truth; Kafka is a delivery mechanism, not a state store.</div>
+  </div>
+
   <h3>Executor Comparison</h3>
 
   <div class="table-wrap">
@@ -1495,8 +1494,8 @@
       </thead>
       <tbody>
         <tr>
-          <td><strong>CeleryExecutor</strong></td>
-          <td>Distributed workers via message queue (Redis/RabbitMQ)</td>
+          <td><strong>KafkaExecutor</strong></td>
+          <td>Distributed workers via Kafka message queue</td>
           <td>Process-level</td>
           <td>Pre-provisioned worker pool, manual scaling</td>
           <td>Low (~50ms dispatch)</td>
@@ -1519,8 +1518,8 @@
           <td>Development, small deployments</td>
         </tr>
         <tr>
-          <td><strong>CeleryKubernetesExecutor</strong></td>
-          <td>Hybrid: Celery default + K8s for specific tasks</td>
+          <td><strong>KafkaKubernetesExecutor</strong></td>
+          <td>Hybrid: Kafka default + K8s for specific tasks</td>
           <td>Mixed</td>
           <td>Best of both worlds</td>
           <td>Variable</td>
@@ -1532,9 +1531,9 @@
 
   <div class="card-grid">
     <div class="card">
-      <h4 style="color:var(--blue);">&#128230; CeleryExecutor Deep Dive</h4>
+      <h4 style="color:var(--blue);">&#128230; KafkaExecutor Deep Dive</h4>
       <pre><code><span class="code-label">Architecture</span>
-<span class="cm">Scheduler</span> <span class="op">--&gt;</span> <span class="cm">Redis Queue (priority)</span> <span class="op">--&gt;</span> <span class="cm">Worker Pool</span>
+<span class="cm">Scheduler</span> <span class="op">--&gt;</span> <span class="cm">Kafka Topic (priority)</span> <span class="op">--&gt;</span> <span class="cm">Worker Pool</span>
                   <span class="op">|</span>                            <span class="op">|</span>
           <span class="cm">priority_0 (critical)</span>        <span class="cm">Worker heartbeat</span>
           <span class="cm">priority_1 (high)</span>            <span class="cm">every 10s to DB</span>
@@ -1542,10 +1541,10 @@
           <span class="cm">priority_3 (low)</span>
           <span class="cm">dead_letter_queue</span></code></pre>
       <ul>
-        <li>Workers pre-fetch tasks from queue</li>
-        <li>Configurable concurrency per worker</li>
-        <li>Requires persistent worker fleet</li>
-        <li>Failed tasks automatically re-queued</li>
+        <li>Workers consume from Kafka topic partitions</li>
+        <li>Consumer groups for automatic load balancing</li>
+        <li>Configurable concurrency per consumer</li>
+        <li>Failed tasks retried via DLQ topic</li>
       </ul>
     </div>
     <div class="card">
@@ -1676,7 +1675,7 @@
        <span class="cm">→</span> execution_date, final_try_number
        <span class="cm">→</span> error_message, failed_at timestamp
 
-    <span class="cm">2.</span> <span class="fn">PUSH</span> entry to Redis list <span class="str">'dlq:tasks'</span>
+    <span class="cm">2.</span> <span class="fn">PUSH</span> entry to Kafka DLQ topic <span class="str">'dlq.tasks'</span>
 
     <span class="cm">3.</span> <span class="fn">ALERT_ONCALL</span>(
          severity: <span class="str">'P2'</span>,
@@ -1722,7 +1721,7 @@
     </div>
     <div class="card">
       <h4 style="color:var(--secondary);">&#128200; Worker Auto-Scaling</h4>
-      <p>Scale workers dynamically based on queue depth:</p>
+      <p>Scale workers dynamically based on consumer lag:</p>
       <pre><code><span class="code-label">Pseudocode</span>
 <span class="cm">// Compute desired worker count based on queue pressure</span>
 
@@ -1739,7 +1738,7 @@
     <span class="kw">RETURN</span> <span class="fn">CLAMP</span>(desired, min_workers, max_workers)
 
 <span class="cm">// K8s HPA integration:</span>
-<span class="cm">// Scale when custom metric celery_queue_length / workers &gt; 5</span></code></pre>
+<span class="cm">// Scale when custom metric kafka_consumer_lag / workers &gt; 5</span></code></pre>
     </div>
   </div>
 
@@ -1755,12 +1754,12 @@
       </ul>
     </div>
     <div class="card">
-      <h4 style="color:var(--accent);">&#128640; Task Queue Partitioning</h4>
+      <h4 style="color:var(--accent);">&#128640; Kafka Topic Partitioning</h4>
       <ul>
-        <li><strong>Priority queues</strong> &mdash; Separate Redis lists per priority level (0=critical, 1=high, 2=normal, 3=low)</li>
-        <li><strong>Pool queues</strong> &mdash; Dedicated queues per resource pool (e.g., <span class="inline-code">queue:pool:gpu</span>, <span class="inline-code">queue:pool:cpu</span>)</li>
-        <li><strong>Tenant queues</strong> &mdash; Optionally isolate tenants into separate queues with weighted fair scheduling</li>
-        <li><strong>Queue monitoring</strong> &mdash; Track queue depth, consumer lag, and age of oldest message for alerting</li>
+        <li><strong>Priority queues</strong> &mdash; Separate Kafka topics per priority level (0=critical, 1=high, 2=normal, 3=low)</li>
+        <li><strong>Pool topics</strong> &mdash; Dedicated Kafka topics per resource pool (e.g., <span class="inline-code">tasks.pool.gpu</span>, <span class="inline-code">tasks.pool.cpu</span>)</li>
+        <li><strong>Tenant topics</strong> &mdash; Optionally isolate tenants into separate Kafka topics with weighted fair scheduling</li>
+        <li><strong>Topic monitoring</strong> &mdash; Track consumer lag, partition offsets, and age of oldest message for alerting</li>
       </ul>
     </div>
   </div>
@@ -1780,7 +1779,7 @@
              <span class="flow">|</span>                          <span class="flow">|</span>                          <span class="flow">|</span>
              <span class="flow">v</span>                          <span class="flow">v</span>                          <span class="flow">v</span>
   <span class="comp">+------------------+</span>   <span class="comp">+--------------------+</span>   <span class="comp">+--------------------+</span>
-  <span class="comp">| Queue: priority-0|</span>   <span class="comp">| Queue: priority-1  |</span>   <span class="comp">| Queue: priority-2  |</span>
+  <span class="comp">| Topic: priority-0|</span>   <span class="comp">| Topic: priority-1  |</span>   <span class="comp">| Topic: priority-2  |</span>
   <span class="comp">| (critical tasks) |</span>   <span class="comp">| (high priority)    |</span>   <span class="comp">| (normal priority)  |</span>
   <span class="comp">+--------+---------+</span>   <span class="comp">+---------+----------+</span>   <span class="comp">+---------+----------+</span>
            <span class="flow">|</span>                         <span class="flow">|</span>                          <span class="flow">|</span>
@@ -1812,20 +1811,20 @@
       <p style="margin-top:10px;color:var(--text-muted);font-size:0.88em;"><strong>Risk:</strong> Head-of-line blocking if a worker is slow. Requires health tracking of every worker.</p>
     </div>
     <div class="side con">
-      <h4 style="color:var(--blue);">Pull Model (Workers pull from queue)</h4>
+      <h4 style="color:var(--blue);">Pull Model (Workers consume from Kafka)</h4>
       <ul>
         <li>Natural load balancing - busy workers pull less</li>
-        <li>Simpler failure handling - unacked messages re-queue</li>
+        <li>Simpler failure handling - uncommitted offsets re-consumed</li>
         <li>Workers are stateless and interchangeable</li>
         <li>Easier to scale horizontally</li>
       </ul>
-      <p style="margin-top:10px;color:var(--text-muted);font-size:0.88em;"><strong>Risk:</strong> Less control over task placement. Priority inversion possible without careful queue design.</p>
+      <p style="margin-top:10px;color:var(--text-muted);font-size:0.88em;"><strong>Risk:</strong> Less control over task placement. Priority inversion possible without careful topic/partition design.</p>
     </div>
   </div>
 
   <div class="tip-box tip-box-purple">
     <span class="tip-icon">&#128161;</span>
-    <div><strong>Recommendation:</strong> Use the <strong>pull model</strong> (Celery-style) for most workloads. It is simpler, more fault-tolerant, and naturally load-balanced. Reserve push semantics for resource-constrained tasks (GPU, high-memory) where placement matters.</div>
+    <div><strong>Recommendation:</strong> Use the <strong>pull model</strong> (Kafka consumer) for most workloads. It is simpler, more fault-tolerant, and naturally load-balanced. Reserve push semantics for resource-constrained tasks (GPU, high-memory) where placement matters.</div>
   </div>
 
   <h3>2. PostgreSQL vs Distributed DB for Metadata</h3>
@@ -1852,14 +1851,14 @@
     </div>
   </div>
 
-  <h3>3. CeleryExecutor vs KubernetesExecutor</h3>
+  <h3>3. KafkaExecutor vs KubernetesExecutor</h3>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Dimension</th>
-          <th>CeleryExecutor</th>
+          <th>KafkaExecutor</th>
           <th>KubernetesExecutor</th>
         </tr>
       </thead>
@@ -1896,7 +1895,7 @@
         </tr>
         <tr>
           <td><strong>Operational burden</strong></td>
-          <td>Moderate (manage Celery + broker)</td>
+          <td>Moderate (manage Kafka cluster)</td>
           <td>Moderate (manage K8s cluster)</td>
         </tr>
       </tbody>
@@ -2125,7 +2124,7 @@ dag_config = {
           </tr>
           <tr>
             <td><strong>Trade-off articulation</strong></td>
-            <td>Push vs pull, centralized vs decentralized, Celery vs K8s - with reasoned opinions</td>
+            <td>Push vs pull, centralized vs decentralized, Kafka vs K8s - with reasoned opinions</td>
             <td><span class="badge badge-red">PE</span></td>
           </tr>
         </tbody>
@@ -2138,9 +2137,9 @@ dag_config = {
       <h4 style="color:var(--warning);">&#128172; Common Follow-up Questions</h4>
       <ol>
         <li><strong>"How do you handle a scheduler crash mid-tick?"</strong><br>
-          All state is in PostgreSQL. New leader resumes from DB state. In-flight task instances in <span class="inline-code">queued</span> state are already in the message queue and workers will complete them. The new scheduler discovers <span class="inline-code">running</span> dag_runs and continues monitoring.</li>
-        <li><strong>"What if the message queue loses messages?"</strong><br>
-          Scheduler tick loop will re-discover <span class="inline-code">scheduled</span> tasks whose dependencies are met and re-enqueue them. The DB is the source of truth, not the queue.</li>
+          All state is in PostgreSQL. New leader resumes from DB state. In-flight task instances in <span class="inline-code">queued</span> state are already in Kafka and workers will complete them. The new scheduler discovers <span class="inline-code">running</span> dag_runs and continues monitoring.</li>
+        <li><strong>"What if Kafka loses messages?"</strong><br>
+          Scheduler tick loop will re-discover <span class="inline-code">scheduled</span> tasks whose dependencies are met and re-enqueue them. The DB is the source of truth, not Kafka.</li>
         <li><strong>"How do you prevent the same task from running twice?"</strong><br>
           UNIQUE constraint on (dag_run_id, task_id). <span class="inline-code">FOR UPDATE SKIP LOCKED</span> prevents concurrent schedulers from claiming the same task. Worker-side idempotency key: (dag_id, task_key, execution_date, try_number).</li>
         <li><strong>"How would you implement cross-DAG dependencies?"</strong><br>
@@ -2153,7 +2152,7 @@ dag_config = {
         <li><strong style="color:var(--success);">L4 (Mid-level):</strong> Defines DAG model, basic scheduler loop, task states. Misses concurrency control and fault tolerance details.</li>
         <li><strong style="color:var(--blue);">L5 (Senior):</strong> Covers executor types, retry mechanism, dependency resolution. Discusses scheduler HA at a high level. Basic capacity estimates.</li>
         <li><strong style="color:var(--purple);">L6 (Staff):</strong> Deep dives on exactly-once semantics, <span class="inline-code">SKIP LOCKED</span>, zombie detection, pool-based concurrency. Discusses scaling strategy and sharding. Covers backfill mechanism.</li>
-        <li><strong style="color:var(--primary);">L7 (Principal):</strong> All of the above plus: dynamic DAG generation, multi-tenant isolation, SLA framework, DAG versioning, cost/efficiency trade-offs (Celery vs K8s), dead letter queue design, operational runbooks. Can articulate why Airbnb needs each component and what breaks without it.</li>
+        <li><strong style="color:var(--primary);">L7 (Principal):</strong> All of the above plus: dynamic DAG generation, multi-tenant isolation, SLA framework, DAG versioning, cost/efficiency trade-offs (Kafka vs K8s), dead letter queue design, operational runbooks. Can articulate why Airbnb needs each component and what breaks without it.</li>
       </ul>
 
       <div class="tip-box tip-box-success" style="margin-top:16px;">
@@ -2183,7 +2182,7 @@ dag_config = {
         <tr>
           <td><span class="metric">5-10 min</span></td>
           <td>High-Level Design</td>
-          <td>Draw the 6 components (Scheduler, Executor, Workers, MetadataDB, Queue, LogStore). Show data flow.</td>
+          <td>Draw the 6 components (Scheduler, Executor, Workers, MetadataDB, Kafka, LogStore). Show data flow.</td>
         </tr>
         <tr>
           <td><span class="metric">10-20 min</span></td>

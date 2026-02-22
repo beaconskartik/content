@@ -552,6 +552,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -611,6 +630,10 @@
     <a href="#followup">Follow-up Questions</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
@@ -620,7 +643,8 @@
 <!-- ============================================================ -->
 <section class="section" id="overview">
   <span class="section-label">Section 1</span>
-  <h2>System Overview</h2>
+<details open>
+  <summary><h2>System Overview</h2></summary>
 
   <p>The Airbnb Data Instrumentation System is a <strong style="color:var(--text);">time-series metrics platform</strong> that collects user activities -- searches, bookings, clicks, page views -- from all client platforms (web, iOS, Android) and serves periodic aggregate metrics for internal consumption by product, engineering, and business intelligence teams.</p>
 
@@ -649,6 +673,7 @@
     <li><strong>Eventual consistency is acceptable</strong> -- a few seconds of lag between event emission and query availability is fine for analytics</li>
     <li><strong>Long retention</strong> -- raw events stored for 10 years for compliance, auditing, and reprocessing</li>
   </ul>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -656,7 +681,8 @@
 <!-- ============================================================ -->
 <section class="section" id="requirements">
   <span class="section-label">Section 2</span>
-  <h2>Requirements &amp; Capacity Estimation</h2>
+<details open>
+  <summary><h2>Requirements &amp; Capacity Estimation</h2></summary>
 
   <h3>Functional Requirements</h3>
   <ol>
@@ -747,6 +773,7 @@
   <div class="callout callout-warn">
     <strong>Key Insight:</strong> The read rate is so low (~0.012 QPS) that virtually any storage system can handle it. The entire design is dominated by the write path -- how to ingest 864M events/day reliably, store 3.15 PB over 10 years cheaply, and pre-aggregate data so that even complex queries complete fast.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -754,7 +781,8 @@
 <!-- ============================================================ -->
 <section class="section" id="data-model">
   <span class="section-label">Section 3</span>
-  <h2>Raw Event Data Model</h2>
+<details>
+  <summary><h2>Raw Event Data Model</h2></summary>
 
   <p>Every user activity generates an event with these core fields:</p>
 
@@ -975,6 +1003,7 @@
   <div class="callout callout-info">
     <strong>PE Decision:</strong> Use a hybrid approach. TSDB (InfluxDB/TimescaleDB) for hot data (last 30 days) with minute granularity. Cold storage (S3/HDFS in Parquet format) for historical data with hourly/daily rollups. This balances query speed for recent data against cost efficiency for archival storage.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -982,7 +1011,8 @@
 <!-- ============================================================ -->
 <section class="section" id="ingestion">
   <span class="section-label">Section 4</span>
-  <h2>Ingestion Framework</h2>
+<details>
+  <summary><h2>Ingestion Framework</h2></summary>
 
   <p>The ingestion pipeline must handle 10K-100K events/sec from heterogeneous clients without blocking user interactions or losing critical events.</p>
 
@@ -1113,6 +1143,7 @@
   <div class="callout">
     <strong>At-least-once delivery is sufficient for analytics.</strong> Duplicate events inflate counts marginally (acceptable for dashboards). If exact-once is needed (e.g., billing), use Kafka Transactions + idempotent consumer with event_id deduplication window. For general analytics, at-least-once with approximate counting is the standard industry practice.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -1120,7 +1151,8 @@
 <!-- ============================================================ -->
 <section class="section" id="storage">
   <span class="section-label">Section 5</span>
-  <h2>Storage Solutions Deep Dive</h2>
+<details>
+  <summary><h2>Storage Solutions Deep Dive</h2></summary>
 
   <p>Storage is the most critical decision in this system. We need to balance write throughput, query flexibility, cost, and a 10-year retention requirement across 3.15 PB of data.</p>
 
@@ -1268,6 +1300,7 @@
     <strong>Cold (1-10 years):</strong> S3 Parquet + Presto -- daily rollups, cents per TB<br>
     <strong>Archive (raw events, 10 years):</strong> S3 Glacier -- for compliance and reprocessing
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -1275,7 +1308,8 @@
 <!-- ============================================================ -->
 <section class="section" id="aggregation">
   <span class="section-label">Section 6</span>
-  <h2>Aggregation Pipeline</h2>
+<details>
+  <summary><h2>Aggregation Pipeline</h2></summary>
 
   <p>Raw events are too voluminous to query directly at scale. Pre-aggregation converts 864M daily events into ~72K aggregate rows, making queries 10,000x faster.</p>
 
@@ -1517,6 +1551,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -1524,7 +1559,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="query-api">
   <span class="section-label">Section 7</span>
-  <h2>Query API</h2>
+<details>
+  <summary><h2>Query API</h2></summary>
 
   <p>The Query Service exposes a RESTful API that routes queries to the appropriate storage tier based on the requested time range.</p>
 
@@ -1650,6 +1686,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -1657,7 +1694,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="architecture">
   <span class="section-label">Section 8</span>
-  <h2>High-Level Architecture Diagram</h2>
+<details>
+  <summary><h2>High-Level Architecture Diagram</h2></summary>
 
   <div class="diagram-box" style="background:rgba(0,0,0,0.05);border-radius:12px;padding:20px;overflow-x:auto;margin:20px 0;">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" font-family="'Segoe UI', system-ui, sans-serif" style="min-width:950px;width:100%;">
@@ -2048,6 +2086,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
     <strong>Data Flow Summary:</strong>
     Clients emit events via SDK batches to the Ingestion Service fleet. After validation and enrichment, events are produced to Kafka. From Kafka, three parallel consumers operate: (1) Flink for real-time minute aggregation into the TSDB, (2) S3 Sink for raw event archival, and (3) nightly Spark jobs that recompute authoritative aggregates from S3 and backfill the TSDB. The Query Service routes requests to the appropriate tier based on time range.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -2055,7 +2094,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="retention">
   <span class="section-label">Section 9</span>
-  <h2>Retention &amp; Rollup Strategy</h2>
+<details>
+  <summary><h2>Retention &amp; Rollup Strategy</h2></summary>
 
   <p>The key insight: as data ages, we need less granularity. Trading precision for storage efficiency dramatically reduces the 3.15 PB requirement.</p>
 
@@ -2166,6 +2206,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
   <div class="callout">
     <strong>Cost Insight:</strong> The entire system costs roughly $22K/month. The dominant cost is S3 Glacier for 10-year raw event retention. If raw events can be deleted after 1 year (keeping only aggregates), cost drops to ~$10K/month. This is a key trade-off to discuss with stakeholders.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -2173,7 +2214,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="tradeoffs">
   <span class="section-label">Section 10</span>
-  <h2>Trade-offs &amp; Design Decisions</h2>
+<details>
+  <summary><h2>Trade-offs &amp; Design Decisions</h2></summary>
 
   <div class="table-wrapper">
     <table>
@@ -2229,6 +2271,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
   <div class="callout callout-warn">
     <strong>Lambda vs Kappa Architecture:</strong> In a Kappa architecture, you eliminate the batch layer entirely and use only stream processing (Flink) with replay from Kafka for corrections. This is simpler to maintain but requires Kafka retention equal to your reprocessing window (potentially weeks). For this system, Lambda is preferred because the 10-year retention requirement means we already need S3, and batch reprocessing from S3 is both cheaper and more reliable than replaying years of Kafka data.
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -2236,7 +2279,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="followup">
   <span class="section-label">Section 11</span>
-  <h2>Follow-up Questions &amp; Deep Dives</h2>
+<details>
+  <summary><h2>Follow-up Questions &amp; Deep Dives</h2></summary>
 
   <h3>Q1: What if read QPS jumps to real-time (e.g., listing impressions on PDP)?</h3>
 
@@ -2334,6 +2378,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
     </div>
     <p style="margin-top:12px;">The interview question "9:05-9:08 AM" implies minute-level granularity is required. This is the sweet spot: 60x fewer rows than second-level, but precise enough for most operational queries.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
@@ -2341,7 +2386,8 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
 <!-- ============================================================ -->
 <section class="section" id="interview-tips">
   <span class="section-label">Section 12</span>
-  <h2>Interview Tips &amp; Level Calibration</h2>
+<details>
+  <summary><h2>Interview Tips &amp; Level Calibration</h2></summary>
 
   <h3>Calibration by Engineering Level</h3>
 
@@ -2489,6 +2535,7 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
     <h4>Principal Engineer Differentiator</h4>
     <p>At the PE level, the interviewer expects you to reason about the <strong style="color:var(--text);">system's operational lifecycle</strong>, not just its initial design. How do you monitor pipeline lag? How do you detect data quality regressions? How do you handle schema evolution when a new team wants to add a "currency" dimension? How do you manage the cost trajectory as data grows year over year? How do you run A/B tests on the instrumentation pipeline itself? These operational concerns separate a PE-level answer from a Staff-level one.</p>
   </div>
+</details>
 </section>
 
 </div>
@@ -2500,6 +2547,16 @@ hourly_agg.write.mode(<span class="str">"overwrite"</span>).parquet(<span class=
   <p><a href="index.html">&#8592; Back to All Topics</a> &nbsp;|&nbsp; <a href="../index.html">Airbnb System Design Home</a></p>
   <p style="margin-top: 8px;">Topic 06: Data Instrumentation System &nbsp;|&nbsp; Principal Engineer Level</p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

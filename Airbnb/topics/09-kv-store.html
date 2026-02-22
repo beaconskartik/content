@@ -41,7 +41,7 @@
   /* ── Navigation ── */
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: rgba(22, 33, 62, 0.92);
+    background: rgba(248, 250, 252, 0.95);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--card-border);
     padding: 0.8rem 2rem;
@@ -80,7 +80,7 @@
     margin-top: 60px;
     padding: 5rem 2rem 3rem;
     text-align: center;
-    background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #1a1a3e 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
     position: relative;
     overflow: hidden;
   }
@@ -108,17 +108,22 @@
   .hero h1 {
     font-size: 3.2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #fff 0%, var(--text) 50%, var(--secondary) 100%);
+    background: linear-gradient(135deg, var(--purple), var(--blue), var(--secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 1rem;
     letter-spacing: -1px;
   }
   .hero p {
     font-size: 1.2rem;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.9);
     max-width: 700px;
     margin: 0 auto 2rem;
+  }
+  .hero code {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
   }
   .hero-stats {
     display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
@@ -131,18 +136,14 @@
     font-size: 2rem;
     font-weight: 800;
     display: block;
+    color: #ffffff;
   }
   .hero-stat .lbl {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.75);
     text-transform: uppercase;
     letter-spacing: 1px;
   }
-  .hero-stat:nth-child(1) .val { color: var(--primary); }
-  .hero-stat:nth-child(2) .val { color: #ffffff; }
-  .hero-stat:nth-child(3) .val { color: var(--accent); }
-  .hero-stat:nth-child(4) .val { color: var(--purple); }
-  .hero-stat:nth-child(5) .val { color: var(--blue); }
 
   /* ── Main Content ── */
   .container {
@@ -193,7 +194,7 @@
   .card h3 {
     font-size: 1.2rem;
     margin-bottom: 0.8rem;
-    color: #fff;
+    color: var(--text);
     display: flex; align-items: center; gap: 10px;
   }
   .card p, .card li {
@@ -274,11 +275,11 @@
   }
   thead th {
     background: #f8fafc;
-    color: #fff;
+    color: var(--purple);
     padding: 12px 16px;
     text-align: left;
     font-weight: 600;
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 2px solid #e5e7eb;
     white-space: nowrap;
   }
   tbody td {
@@ -286,7 +287,7 @@
     border-bottom: 1px solid var(--card-border);
     color: var(--text-muted);
   }
-  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody tr:hover { background: rgba(123,47,247,0.04); }
 
   /* ── Diagram boxes ── */
   .diagram {
@@ -375,7 +376,7 @@
   .flow-step .step-title {
     font-weight: 700;
     font-size: 0.9rem;
-    color: #fff;
+    color: var(--text);
     margin-bottom: 0.3rem;
   }
   .flow-step .step-desc {
@@ -423,7 +424,7 @@
   }
   .tip-content strong {
     display: block;
-    color: #fff;
+    color: var(--text);
     margin-bottom: 2px;
     font-size: 0.95rem;
   }
@@ -508,15 +509,15 @@
   .hl-orange { color: var(--accent); font-weight: 600; }
 
   code {
-    background: #f8fafc;
+    background: rgba(123,47,247,0.1);
     padding: 2px 8px;
     border-radius: 6px;
     font-family: 'Cascadia Code', 'Consolas', monospace;
     font-size: 0.88em;
-    color: #ffffff;
+    color: var(--purple);
   }
 
-  strong { color: #fff; }
+  strong { color: var(--text); }
   /* ===== RESPONSIVE ===== */
   @media (max-width: 768px) {
     .hero { padding: 36px 16px 30px; }
@@ -590,6 +591,50 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary .section-header h2 { display: inline; }
+  details summary .section-header::before {
+    content: '\25B6';
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    font-size: 0.5em;
+    color: var(--text-muted);
+  }
+  details[open] summary .section-header::before {
+    transform: rotate(90deg);
+  }
+  .toggle-controls {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .toggle-controls button {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .toggle-controls button:hover {
+    color: var(--purple);
+    border-color: var(--purple);
+    background: rgba(123,47,247,0.1);
+  }
 </style>
 </head>
 <body>
@@ -612,6 +657,10 @@
     <a href="#multi-dc">Multi-DC</a>
     <a href="#ops">Ops</a>
     <a href="#tips">Tips</a>
+  </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
   </div>
 </nav>
 
@@ -648,10 +697,13 @@
 
 <!-- ════════════════════════════ 1. OVERVIEW ════════════════════════════ -->
 <section id="overview" class="section">
+  <details open>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--primary), var(--accent));">1</span>
     <h2>System Overview</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>What We Are Building</h3>
@@ -664,22 +716,20 @@
 
   <div class="card">
     <h3>API Contract</h3>
-    <div class="code-block">
-      <span class="code-label">API</span>
+    <div class="code-block"><span class="code-label">API</span>
 <span class="cm">// Core operations</span>
 <span class="type">Response</span> <span class="fn">get</span>(<span class="type">String</span> key)
-    <span class="cm">// Returns: { value, version, timestamp } or NOT_FOUND</span>
+  <span class="cm">// Returns: { value, version, timestamp } or NOT_FOUND</span>
 
 <span class="type">Response</span> <span class="fn">put</span>(<span class="type">String</span> key, <span class="type">byte[]</span> value)
-    <span class="cm">// Returns: { ack, version } or ERROR</span>
+  <span class="cm">// Returns: { ack, version } or ERROR</span>
 
 <span class="cm">// Optional (discuss if time permits)</span>
 <span class="type">Response</span> <span class="fn">delete</span>(<span class="type">String</span> key)
-    <span class="cm">// Tombstone-based soft delete</span>
+  <span class="cm">// Tombstone-based soft delete</span>
 
 <span class="cm">// Keys:   UTF-8 strings, max 256 bytes</span>
-<span class="cm">// Values: opaque byte arrays, max 1MB (typically ~1KB)</span>
-    </div>
+<span class="cm">// Values: opaque byte arrays, max 1MB (typically ~1KB)</span></div>
   </div>
 
   <div class="diagram-box">
@@ -1265,14 +1315,18 @@
     </table>
   </div>
 
+  </details>
 </section>
 
 <!-- ════════════════════════════ 2. REQUIREMENTS ════════════════════════════ -->
 <section id="requirements" class="section">
+  <details open>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--secondary), #00d4aa);">2</span>
     <h2>Requirements</h2>
   </div>
+  </summary>
 
   <div class="grid-2">
     <div class="card">
@@ -1310,14 +1364,18 @@
       6) <strong>Data model?</strong> (Flat K/V, no nesting, no relations)
     </p>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 3. CAPACITY ESTIMATION ════════════════════════════ -->
 <section id="capacity" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--accent), #ff8534);">3</span>
     <h2>Capacity Estimation</h2>
   </div>
+  </summary>
 
   <div class="grid-4">
     <div class="metric-block">
@@ -1378,14 +1436,18 @@ Bloom filters         = ~10 bits/key &times; 333M keys/node = <span class="num">
       <strong>Count:</strong> ~30-40 nodes (with headroom) across 3 racks minimum
     </p>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 4. PARTITIONING ════════════════════════════ -->
 <section id="partitioning" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--purple), #9b5eff);">4</span>
     <h2>Partitioning &amp; Consistent Hashing</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>The Problem: Why Not <code>hash(key) % N</code>?</h3>
@@ -1507,14 +1569,18 @@ vnode #2184   &rarr; Node-1    |  vnode #4369  &rarr; Node-2
       </p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 5. REPLICATION & CONSISTENCY ════════════════════════════ -->
 <section id="replication" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--blue), #5fa3ff);">5</span>
     <h2>Replication &amp; Consistency</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>Replication Factor (RF=3)</h3>
@@ -1624,14 +1690,18 @@ Option 2: <span class="kw">Application-level merge</span> &mdash; return both to
       </div>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 6. PRIMARY/SECONDARY vs CONSENSUS ════════════════════════════ -->
 <section id="consensus" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--warning), #ffb84d);">6</span>
     <h2>Primary/Secondary vs Consensus vs Gossip</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>Replication Topology Comparison</h3>
@@ -1718,14 +1788,18 @@ Option 2: <span class="kw">Application-level merge</span> &mdash; return both to
       <strong>Metadata operations (ring membership, vnode mapping):</strong> Use a small Raft cluster (3-5 nodes) for strong consistency. Membership changes are rare and <em>must</em> be consistent to prevent data loss.
     </p>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 7. STORAGE ENGINE ════════════════════════════ -->
 <section id="storage" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--success), #34d399);">7</span>
     <h2>Storage Engine</h2>
   </div>
+  </summary>
 
   <div class="vs-container">
     <div class="card" style="border-color: #e5e7eb;">
@@ -1849,14 +1923,18 @@ Option 2: <span class="kw">Application-level merge</span> &mdash; return both to
     MANIFEST-000001      <span class="cm">&larr; Tracks which SSTables exist at each level</span>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 8. ERROR CASES ════════════════════════════ -->
 <section id="errors" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--danger), #ff6b6b);">8</span>
     <h2>Error Cases &amp; Failure Handling</h2>
   </div>
+  </summary>
 
   <div class="grid-2">
     <div class="card" style="border-left: 4px solid var(--primary);">
@@ -1943,14 +2021,18 @@ Option 2: <span class="kw">Application-level merge</span> &mdash; return both to
              on other nodes with hints.         Merkle trees compared.    complete.
     </pre>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 9. SCALING OUT ════════════════════════════ -->
 <section id="scaling" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">9</span>
     <h2>Scaling Out</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>Adding Nodes: Consistent Hashing Advantage</h3>
@@ -2015,14 +2097,18 @@ Data to move         = 30TB &times; 30/31 = <span class="num">~29 TB</span>  (96
       </div>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 10. LATENCY NUMBERS ════════════════════════════ -->
 <section id="latency" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--accent), var(--warning));">10</span>
     <h2>Latency Numbers Every Engineer Should Know</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>Hardware Latency Reference</h3>
@@ -2155,14 +2241,18 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
                                     Total: <span class="str">~6-7 ms</span>  <span class="hl-green">STILL WITHIN BUDGET</span>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 11. MULTI-DATACENTER ════════════════════════════ -->
 <section id="multi-dc" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, #6366f1, #818cf8);">11</span>
     <h2>Multi-Datacenter Replication</h2>
   </div>
+  </summary>
 
   <div class="card">
     <h3>Architecture: Active-Active Multi-DC</h3>
@@ -2217,14 +2307,18 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
       <li><strong>Conflict window:</strong> Writes that were in-flight (committed locally but not yet replicated cross-DC) at the moment of failure may cause conflicts. These are resolved by LWW or application merge on recovery.</li>
     </ul>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 12. OPERATIONAL ════════════════════════════ -->
 <section id="ops" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, #ec4899, #f472b6);">12</span>
     <h2>Operational Excellence</h2>
   </div>
+  </summary>
 
   <div class="grid-3">
     <div class="card">
@@ -2262,14 +2356,18 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ════════════════════════════ 13. INTERVIEW TIPS ════════════════════════════ -->
 <section id="tips" class="section">
+  <details>
+  <summary>
   <div class="section-header">
     <span class="section-num" style="background: linear-gradient(135deg, var(--primary), var(--purple));">13</span>
     <h2>Interview Tips &amp; Talking Points</h2>
   </div>
+  </summary>
 
   <div class="card">
     <div class="tip-item">
@@ -2280,7 +2378,7 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
       </div>
     </div>
     <div class="tip-item">
-      <div class="tip-icon" style="background: rgba(255,255,255,0.15); color: #ffffff;">2</div>
+      <div class="tip-icon" style="background: rgba(123,47,247,0.15); color: var(--purple);">2</div>
       <div class="tip-content">
         <strong>Don't Just Name-Drop &mdash; Explain the "Why"</strong>
         <p>Saying "use consistent hashing" is worth 1 point. Explaining <em>why</em> naive mod-N fails and how consistent hashing solves the rebalancing problem is worth 10 points. Show you understand the mechanism, not just the vocabulary.</p>
@@ -2336,7 +2434,7 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
       </div>
     </div>
     <div class="tip-item">
-      <div class="tip-icon" style="background: rgba(255,255,255,0.15); color: #ffffff;">10</div>
+      <div class="tip-icon" style="background: rgba(123,47,247,0.15); color: var(--purple);">10</div>
       <div class="tip-content">
         <strong>End with Operational Concerns</strong>
         <p>If time allows, mention monitoring (p99 latency, replication lag), rollout strategy (canary, rolling restart), and data verification (checksums, Merkle trees). This signals PE-level ownership: you don't just design systems, you run them.</p>
@@ -2416,6 +2514,7 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
       </table>
     </div>
   </div>
+  </details>
 </section>
 
 </div><!-- /container -->
@@ -2432,6 +2531,18 @@ Client &rarr; Network RTT to coordinator     <span class="num">0.5 ms</span>
 </footer>
 
 <script>
+// Auto-open collapsed section when clicking nav link
+document.querySelectorAll('nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) {
+      var details = section.querySelector('details');
+      if (details) details.open = true;
+    }
+  });
+});
+
 (function(){
   document.querySelectorAll(".diagram-box").forEach(function(box){
     var svg=box.querySelector("svg");

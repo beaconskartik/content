@@ -716,6 +716,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -774,13 +793,18 @@
     <a href="#tradeoffs">Trade-Offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ===== SECTION 1: OVERVIEW ===== -->
 <section id="overview">
-  <h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#128269;</span> Overview</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#128269;</span> Overview</h2></summary>
 
   <p>The autocomplete system is the <strong>very first interaction</strong> most users have with Airbnb's search stack. When a user types into the search bar, the system must return ranked suggestions within a tight latency budget. The challenge is serving suggestions across <strong>multiple verticals</strong> (locations, listings, experiences, help articles) while keeping tail latency under 100ms, supporting 50+ locales including CJK languages, and gracefully handling A/B experiments over CDN-cached responses.</p>
 
@@ -850,11 +874,13 @@
       <span class="step-label">Merged<br>Response</span>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 2: API DESIGN ===== -->
 <section id="api-design">
-  <h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128268;</span> API Design</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128268;</span> API Design</h2></summary>
 
   <h3>GET /api/v1/autocomplete</h3>
   <p>Single endpoint that serves all verticals. The API is designed to be CDN-cacheable by making the cache key a composite of the query parameters.</p>
@@ -968,11 +994,13 @@
     <strong>Why the <code>terms</code> Array?</strong>
     For CJK languages (Chinese, Japanese, Korean), there are no whitespace word boundaries. The <code>terms</code> array provides the server-side tokenization result so the client can correctly bold-highlight matching segments. For Japanese, "&#26481;&#20140;" input might tokenize to ["&#26481;&#20140;"] while "&#26481;&#20140;&#12479;&#12527;&#12540;" tokenizes to ["&#26481;&#20140;", "&#12479;&#12527;&#12540;"]. Without this, the client would need its own tokenizer.
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 3: LATENCY REQUIREMENTS ===== -->
 <section id="latency">
-  <h2><span class="icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#9201;</span> Latency Requirements</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#9201;</span> Latency Requirements</h2></summary>
 
   <p>Autocomplete is the most latency-sensitive read path at Airbnb. Users perceive &gt;100ms delays as "laggy" -- the system must feel instantaneous. The latency budget includes network round trip to the nearest edge/origin, index lookup, ranking, and serialization.</p>
 
@@ -1081,11 +1109,13 @@
     <strong>CDN Caching is Critical</strong>
     With 60-80% CDN hit rate on common prefixes, the majority of requests never touch origin servers. This is how we achieve sub-50ms p50 -- most popular queries like "new y", "par", "lon" are served directly from edge cache with &lt;16ms total latency. The CDN cache key is: <code>{locale}:{country}:{normalized_input}:{num_results}</code>.
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 4: INDEX SIZE ===== -->
 <section id="index-size">
-  <h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#128202;</span> Index Size Estimation</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#128202;</span> Index Size Estimation</h2></summary>
 
   <p>A critical insight for this problem: the total index size is manageable enough to fit on a single machine, which dramatically simplifies the architecture. Let's do the math.</p>
 
@@ -1148,11 +1178,13 @@
   <span class="str">"listing_count"</span>:     <span class="num">12450</span>,
   <span class="str">"updated_at"</span>:        <span class="str">"2025-01-15T08:00:00Z"</span>
 <span class="sym">}</span></code><span class="code-label">Index Document</span></pre>
+  </details>
 </section>
 
 <!-- ===== SECTION 5: ARCHITECTURE OPTIONS ===== -->
 <section id="architecture">
-  <h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#127959;</span> Architecture Options</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#127959;</span> Architecture Options</h2></summary>
 
   <p>There are three viable approaches for the core autocomplete index. Each has distinct trade-offs around latency, operational complexity, and feature richness. A strong answer discusses all three and makes a justified choice.</p>
 
@@ -1626,11 +1658,13 @@
     </div>
   </div>
 
+  </details>
 </section>
 
 <!-- ===== SECTION 6: CACHING ===== -->
 <section id="caching">
-  <h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#128230;</span> Caching Strategy</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#128230;</span> Caching Strategy</h2></summary>
 
   <p>Caching is the single most impactful optimization for autocomplete. The distribution of search prefixes follows a power law: a small number of popular prefixes ("new y", "paris", "london", "tokyo") account for the majority of traffic.</p>
 
@@ -1726,11 +1760,13 @@
       <li><strong>Airbnb's approach:</strong> Typically option 1 or 3. Accept the cache fragmentation cost for the statistical rigor of clean experiments.</li>
     </ol>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 7: RANKING ===== -->
 <section id="ranking">
-  <h2><span class="icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#127942;</span> Ranking Model</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#127942;</span> Ranking Model</h2></summary>
 
   <p>Ranking is what separates a "working" autocomplete from a great one. The system must merge suggestions from multiple verticals and rank them in a way that maximizes user intent satisfaction. This is a multi-signal scoring problem.</p>
 
@@ -1822,11 +1858,13 @@
     <p>In practice, location suggestions dominate the autocomplete dropdown. When a user types "paris", they almost always mean the city, not a listing called "Paris Apartment". The system allocates ~5-6 of 8 slots to locations by default. Listings and experiences only appear when they have very high-confidence prefix matches <em>and</em> the location results are weak (e.g., typing a specific listing name like "Treehouse in Ubud").</p>
     <p style="margin-bottom:0;">This is controlled by a <strong>category budget</strong> system: each category has a max slot allocation that can be tuned per-experiment. The final ranking merges all categories, but categories with exhausted budgets are filtered out before the merge.</p>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 8: DATA PIPELINE ===== -->
 <section id="data-pipeline">
-  <h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128640;</span> Data Pipeline</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128640;</span> Data Pipeline</h2></summary>
 
   <p>The autocomplete index is built from multiple source systems and must be kept fresh without disrupting serving. This requires both batch (nightly) and streaming (real-time) pipelines.</p>
 
@@ -1963,11 +2001,13 @@
       </tbody>
     </table>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 9: SCALING ===== -->
 <section id="scaling">
-  <h2><span class="icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">&#128640;</span> Scaling &amp; Fan-Out</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">&#128640;</span> Scaling &amp; Fan-Out</h2></summary>
 
   <p>While the index fits a single machine, the system needs replication for availability, multi-region deployment for latency, and fan-out to multiple backends when serving cross-vertical suggestions.</p>
 
@@ -2090,11 +2130,13 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 10: TRADE-OFFS ===== -->
 <section id="tradeoffs">
-  <h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#9878;</span> Trade-Offs Table</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#9878;</span> Trade-Offs Table</h2></summary>
 
   <p>Every design decision in this system involves trade-offs. A PE-level candidate should be able to articulate these clearly and justify their choices.</p>
 
@@ -2169,11 +2211,13 @@
       </tbody>
     </table>
   </div>
+  </details>
 </section>
 
 <!-- ===== SECTION 11: INTERVIEW TIPS ===== -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#127919;</span> Interview Tips &amp; Calibration</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#127919;</span> Interview Tips &amp; Calibration</h2></summary>
 
   <div class="interview-box">
     <h3>What Makes a STRONG YES</h3>
@@ -2365,6 +2409,7 @@
     <strong>Final Advice</strong>
     <p style="margin-bottom:0;">The autocomplete problem is deceptively simple on the surface -- "just build a Trie" -- but the depth comes from CDN caching semantics, cross-vertical ranking, i18n tokenization, and operational concerns (pipeline, validation, rollback). The best candidates treat this as a <strong>product-engineering hybrid problem</strong>: they think about what the user sees in the dropdown, not just the data structures behind it.</p>
   </div>
+  </details>
 </section>
 
 </div><!-- end container -->
@@ -2375,6 +2420,16 @@
   <p style="margin-top: 10px;">Autocomplete / Type-Ahead System &mdash; Airbnb PE-Level System Design Reference</p>
   <p style="margin-top: 5px; font-size: 0.8em; color: var(--text-muted);">Covers indexing, API design, latency management, ranking, CDN caching, data pipeline, and scaling</p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

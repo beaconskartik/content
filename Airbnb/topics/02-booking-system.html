@@ -428,6 +428,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -481,6 +500,10 @@
     <a href="#scalability">Scalability</a>
     <a href="#interview">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
@@ -489,10 +512,11 @@
 <!-- SECTION 1: OVERVIEW                                                 -->
 <!-- ================================================================== -->
 <section id="overview">
-  <h2>
+<details open>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">&#127968;</span>
     Overview
-  </h2>
+  </h2></summary>
   <p>
     The Airbnb Booking System is the transactional heart of the platform. It orchestrates the entire lifecycle from the moment a guest searches for a listing through reservation, stay, and post-checkout. At 10M DAU and millions of active listings across 220+ countries, this system must deliver sub-200ms search latency, guarantee zero double-bookings, and maintain 99.99% uptime -- all while handling complex pricing models (seasonal rates, cleaning fees, service fees, multi-currency) and coordinating with payment processors, notification systems, and host calendars in real time.
   </p>
@@ -519,16 +543,18 @@
     <strong>&#128161; Why This Problem Is PE-Level</strong>
     The booking system sits at the intersection of distributed transactions (no double booking), financial correctness (payments), search relevance, and multi-region availability. A strong answer must address consistency vs. availability trade-offs across every layer.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 2: REQUIREMENTS                                             -->
 <!-- ================================================================== -->
 <section id="requirements">
-  <h2>
+<details open>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">&#128203;</span>
     Requirements
-  </h2>
+  </h2></summary>
 
   <h3>Functional Requirements</h3>
   <div class="table-wrap">
@@ -588,16 +614,18 @@
     <strong>&#9888;&#65039; Idempotency is Critical</strong>
     Mobile clients on unreliable networks will retry booking requests. Without idempotency keys, a single tap could produce duplicate charges. Every mutating API must accept a client-generated <code>idempotency_key</code> (UUID v4) and return the cached result on replay.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 3: CAPACITY ESTIMATES                                       -->
 <!-- ================================================================== -->
 <section id="capacity">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128202;</span>
     Capacity Estimates
-  </h2>
+  </h2></summary>
 
   <h3>Traffic Estimates</h3>
   <div class="card">
@@ -667,16 +695,18 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 4: HIGH-LEVEL ARCHITECTURE                                  -->
 <!-- ================================================================== -->
 <section id="architecture">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#127959;&#65039;</span>
     High-Level Architecture
-  </h2>
+  </h2></summary>
 
   <p>We adopt a <strong>microservices architecture</strong> with <strong>CQRS</strong> (Command Query Responsibility Segregation) to independently scale the read-heavy search path and the write-heavy booking path. An event bus (Kafka) decouples services and enables eventual consistency for non-critical paths.</p>
 
@@ -1272,16 +1302,18 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
     <strong>&#128161; PE Insight: Why CQRS Here?</strong>
     The read:write ratio is ~33:1. Search and history reads have fundamentally different data shapes (denormalized, ranked) than the normalized write model. CQRS lets us optimize each independently: PostgreSQL for ACID writes, Elasticsearch for search, Cassandra for time-series history. The trade-off is eventual consistency on the read side (acceptable for search results, not for availability checks which hit the write DB directly).
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 5: API DESIGN                                               -->
 <!-- ================================================================== -->
 <section id="api">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">&#128279;</span>
     API Design
-  </h2>
+  </h2></summary>
 
   <h3>1. Search Listings</h3>
 <pre><code><span class="comment">// GET /api/v1/search/listings</span>
@@ -1437,16 +1469,18 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
   }
 }
 </code></pre>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 6: DATA MODEL                                               -->
 <!-- ================================================================== -->
 <section id="data-model">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#128451;&#65039;</span>
     Data Model
-  </h2>
+  </h2></summary>
 
   <p>The relational schema uses PostgreSQL for ACID guarantees on the booking path. Each table is designed for the specific access patterns of the booking system, with carefully chosen indexes to support both OLTP workloads and the availability check hot path.</p>
 
@@ -1582,16 +1616,18 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
     <strong>&#128161; PE Insight: Availability Table Design</strong>
     The <code>availability</code> table uses one row per listing per date (day-level granularity). This enables <code>SELECT FOR UPDATE WHERE listing_id = ? AND date BETWEEN ? AND ? AND is_available = true</code> as the atomic availability check. The <code>version</code> column supports optimistic locking as an alternative. The UNIQUE constraint on <code>(listing_id, date)</code> serves as a database-level guard against double-booking even if application logic has bugs.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 7: BOOKING FLOW                                             -->
 <!-- ================================================================== -->
 <section id="booking-flow">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#128260;</span>
     Booking Flow &amp; State Machine
-  </h2>
+  </h2></summary>
 
   <h3>Booking State Machine</h3>
   <div class="flow-steps">
@@ -1755,16 +1791,18 @@ lock_key = <span class="string">"booking_lock:lst_abc123:2025-07-01:2025-07-04"<
     <strong>&#128161; PE Recommendation</strong>
     Use <strong>pessimistic locking (SELECT FOR UPDATE)</strong> as the primary mechanism -- it is battle-tested, simple, and PostgreSQL handles deadlock detection. Keep the critical section tight: lock dates, insert booking, mark unavailable, commit. Move payment authorization <em>after</em> the commit (two-phase approach: reserve first, then charge). For the rare ultra-popular listings, add a distributed lock as a coarse-grained guard to reduce DB lock contention.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 8: SEARCH DEEP DIVE                                         -->
 <!-- ================================================================== -->
 <section id="search">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">&#128269;</span>
     Search Deep Dive
-  </h2>
+  </h2></summary>
 
   <h3>Elasticsearch Integration</h3>
   <p>Search is powered by Elasticsearch for its native support of geo-queries, full-text search, and complex aggregations. The search index is a <strong>denormalized projection</strong> of listing data, kept in sync via Change Data Capture (CDC) from PostgreSQL.</p>
@@ -1875,16 +1913,18 @@ Typical Lag: &lt; 2 seconds (P99 &lt; 5 seconds)
     <strong>&#128161; Availability in Search vs. Booking</strong>
     Search uses Elasticsearch's <code>date_range</code> field for approximate availability filtering -- this is eventually consistent (CDC lag ~2s). When a guest proceeds to book, the Booking Service performs a <strong>real-time check</strong> against PostgreSQL with <code>SELECT FOR UPDATE</code>. This two-tier approach balances search speed (ES) with booking correctness (PG). Occasionally a guest sees a listing as available in search but gets a "dates unavailable" error at booking time -- this is an acceptable UX trade-off at scale.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 9: TRADE-OFFS                                               -->
 <!-- ================================================================== -->
 <section id="tradeoffs">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">&#9878;&#65039;</span>
     Trade-offs
-  </h2>
+  </h2></summary>
 
   <h3>1. SQL vs. NoSQL for Bookings</h3>
   <div class="compare-grid">
@@ -1987,16 +2027,18 @@ Typical Lag: &lt; 2 seconds (P99 &lt; 5 seconds)
   <div class="tip-box tip">
     <strong>Verdict:</strong> At Airbnb's scale (10M DAU), microservices are necessary. The 33:1 read:write ratio demands independent scaling. But start with a "modular monolith" for new features and extract services only when the scaling or team-boundary need is clear. Premature decomposition is the root of many operational nightmares.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 10: SCALABILITY                                             -->
 <!-- ================================================================== -->
 <section id="scalability">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(16,185,129,0.15); color:var(--success);">&#128640;</span>
     Scalability &amp; Reliability
-  </h2>
+  </h2></summary>
 
   <h3>Database Sharding Strategy</h3>
   <div class="card">
@@ -2100,16 +2142,18 @@ shard_id = hash(listing_id) % num_shards
   Booking Reads: Served from local replica (eventual consistency)
   Failover: Manual promotion of EU PG replica to primary (~30s RTO)
 </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 11: INTERVIEW TIPS                                          -->
 <!-- ================================================================== -->
 <section id="interview">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">&#127891;</span>
     Interview Tips
-  </h2>
+  </h2></summary>
 
   <h3>4-Phase Framework</h3>
   <div class="card-grid">
@@ -2201,6 +2245,7 @@ shard_id = hash(listing_id) % num_shards
     <strong>&#128161; The PE Differentiator</strong>
     At the Principal Engineer level, interviewers expect you to <strong>drive the discussion proactively</strong>. Do not wait for prompts. Identify the hardest problem (double-booking), propose multiple solutions (pessimistic, optimistic, distributed lock), compare them on correctness/throughput/complexity axes, and justify your choice with the specific workload characteristics. Then extend to failure scenarios: "What if Redis goes down? What if the DB leader fails mid-transaction?" This demonstrates systems thinking -- the ability to reason about emergent behavior across distributed components.
   </div>
+</details>
 </section>
 
 </div><!-- /container -->
@@ -2209,6 +2254,16 @@ shard_id = hash(listing_id) % num_shards
   <p>Airbnb Booking System &mdash; Principal Engineer System Design Reference</p>
   <p style="margin-top:8px;"><a href="index.html">&#8592; Back to All Topics</a></p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

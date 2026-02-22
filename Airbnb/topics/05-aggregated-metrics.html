@@ -488,6 +488,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -522,13 +541,18 @@
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ==================== SECTION 1: OVERVIEW ==================== -->
 <section id="overview">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(255,90,95,0.2),rgba(252,100,45,0.15)); color:var(--primary);">&#128202;</span> Overview</h2>
+<details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(255,90,95,0.2),rgba(252,100,45,0.15)); color:var(--primary);">&#128202;</span> Overview</h2></summary>
 
   <p>Airbnb hosts manage one or more listings. Each listing has a nightly state: <strong>booked</strong>, <strong>unbooked</strong> (available but not reserved), or <strong>offline</strong> (host blocked the dates). Hosts need a dashboard showing how their properties are performing -- occupancy rate, average nightly rate, and Revenue Per Available Room (RevPAR) -- broken down by day, week, and month.</p>
 
@@ -574,11 +598,13 @@
     <div class="tip-title">Interview Signal</div>
     <p>The interviewer is testing whether you recognize this as a <strong>data consistency problem</strong>, not a math problem. Candidates who jump straight to "just compute the formulas" miss the core challenge: the data feeding those formulas is unreliable, mutable, and scattered across multiple services.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 2: REQUIREMENTS ==================== -->
 <section id="requirements">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(0,166,153,0.2),rgba(0,166,153,0.15)); color:var(--secondary);">&#128203;</span> Requirements</h2>
+<details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(0,166,153,0.2),rgba(0,166,153,0.15)); color:var(--secondary);">&#128203;</span> Requirements</h2></summary>
 
   <h3>Functional Requirements</h3>
   <div class="card">
@@ -656,11 +682,13 @@
     <div class="tip-title">Scoping Note</div>
     <p>In the interview, clarify: "Do we need real-time streaming updates or is near-real-time (sub-hour) acceptable?" The answer significantly changes the architecture. For Airbnb's use case, sub-hour freshness is sufficient -- hosts don't need second-by-second dashboards.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 3: CAPACITY ==================== -->
 <section id="capacity">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(66,139,249,0.2),rgba(66,139,249,0.08)); color:var(--blue);">&#128290;</span> Capacity Estimates</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(66,139,249,0.2),rgba(66,139,249,0.08)); color:var(--blue);">&#128290;</span> Capacity Estimates</h2></summary>
 
   <div class="metric-grid">
     <div class="metric-card">
@@ -726,11 +754,13 @@
 <span class="comment">-- Peak: ~250 writes/sec (3x burst)</span>
 <span class="comment">-- Very manageable for a single-writer database</span></pre>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 4: TWO APPROACHES ==================== -->
 <section id="approaches">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#9878;</span> Two Solution Approaches</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#9878;</span> Two Solution Approaches</h2></summary>
 
   <div class="tip-box tip-interview">
     <div class="tip-title">Critical Interview Moment</div>
@@ -1305,11 +1335,13 @@
       <p>For Airbnb's scale, the transactional outbox provides the best balance. The booking service writes the booking record AND an event record in the same database transaction. A relay process (CDC on the outbox table) publishes events to Kafka. This eliminates dual-write inconsistency while maintaining clean business event schemas.</p>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 5: DATA MODEL ==================== -->
 <section id="data-model">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(252,100,45,0.2),rgba(252,100,45,0.08)); color:var(--accent);">&#128451;</span> Data Model</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(252,100,45,0.2),rgba(252,100,45,0.08)); color:var(--accent);">&#128451;</span> Data Model</h2></summary>
 
   <h3>Core Tables</h3>
 
@@ -1416,11 +1448,13 @@
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 6: API DESIGN ==================== -->
 <section id="api">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.06)); color:var(--warning);">&#128268;</span> API Design</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(245,158,11,0.06)); color:var(--warning);">&#128268;</span> API Design</h2></summary>
 
   <h3>Primary Dashboard Endpoint</h3>
   <div class="card">
@@ -1506,11 +1540,13 @@
 <span class="comment">Response: Array of daily states with revenue per night</span>
 <span class="comment">Used for: calendar heatmap view, drilling into specific days</span></pre>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 7: CONSISTENCY ==================== -->
 <section id="consistency">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.06)); color:var(--danger);">&#128274;</span> Consistency Handling</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.06)); color:var(--danger);">&#128274;</span> Consistency Handling</h2></summary>
 
   <div class="tip-box tip-danger">
     <div class="tip-title">This Is the Hardest Part of the Design</div>
@@ -1681,11 +1717,13 @@ Timeline (midnight boundary):
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 8: SURGING ==================== -->
 <section id="surging">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(252,100,45,0.2),rgba(252,100,45,0.08)); color:var(--accent);">&#128293;</span> Follow-up: Surging Feature</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(252,100,45,0.2),rgba(252,100,45,0.08)); color:var(--accent);">&#128293;</span> Follow-up: Surging Feature</h2></summary>
 
   <div class="tip-box tip-interview">
     <div class="tip-title">Interview Follow-up Question</div>
@@ -1751,11 +1789,13 @@ Timeline (midnight boundary):
     <h4>Recommended Hybrid</h4>
     <p>Use <strong>Option A</strong> for real-time surge detection (fixed granularity like geohash-6), and <strong>Option B</strong> for ad-hoc analytics queries (e.g., "what's the vacancy rate in this custom polygon?"). The fixed-geo counters handle the 30-minute SLA easily. The indexed approach is reserved for flexible queries that do not have real-time requirements.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 9: GDPR ==================== -->
 <section id="gdpr">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#128737;</span> Follow-up: GDPR Compliance</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#128737;</span> Follow-up: GDPR Compliance</h2></summary>
 
   <div class="tip-box tip-interview">
     <div class="tip-title">Interview Follow-up Question</div>
@@ -1820,11 +1860,13 @@ Timeline (midnight boundary):
       <p>In the online approach, GDPR deletion must touch every storage layer (metrics store, blocklist, change log, any caches). There is no "natural reset" like the batch approach. Missing any layer means PII persists beyond the 30-day deadline -- a compliance violation.</p>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 10: TRADE-OFFS ==================== -->
 <section id="tradeoffs">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.06)); color:var(--success);">&#9878;</span> Trade-offs Comparison</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.06)); color:var(--success);">&#9878;</span> Trade-offs Comparison</h2></summary>
 
   <h3>Approach A vs Approach B</h3>
   <div class="card">
@@ -1945,11 +1987,13 @@ Timeline (midnight boundary):
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 11: INTERVIEW TIPS ==================== -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#127891;</span> Interview Tips &amp; Calibration</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg,rgba(123,47,247,0.2),rgba(123,47,247,0.08)); color:var(--purple);">&#127891;</span> Interview Tips &amp; Calibration</h2></summary>
 
   <h3>Level Calibration</h3>
   <div class="card">
@@ -2078,6 +2122,7 @@ Timeline (midnight boundary):
     <div class="tip-title">The One Sentence That Gets You to "Strong Yes"</div>
     <p>"The core challenge here is not computing occupancy rate -- it is maintaining a derived data store that stays consistent with multiple upstream sources of truth, even when events are missed, duplicated, or arrive out of order, and when past data can change retroactively." If you communicate this framing early, the interviewer knows you understand the problem at a PE level.</p>
   </div>
+</details>
 </section>
 
 </div>
@@ -2087,6 +2132,16 @@ Timeline (midnight boundary):
   <p><a href="index.html">&#8592; All Topics</a> &nbsp;|&nbsp; <a href="../index.html">Airbnb System Design Home</a></p>
   <p style="margin-top: 8px;">Topic 5 of 18 -- Aggregated Listing Metrics -- Principal Engineer Interview Prep</p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

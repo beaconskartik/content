@@ -507,6 +507,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -563,13 +582,18 @@
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ==================== SECTION 1: OVERVIEW ==================== -->
 <section id="overview">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--accent));">&#9992;</span> System Overview</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--accent));">&#9992;</span> System Overview</h2></summary>
 
   <p>Design a <strong>flight search aggregator</strong> like Kayak, Google Flights, or Skyscanner. The system takes an <strong>origin + destination</strong> pair and returns a <strong>list of flight routes sorted by price</strong>, progressing from direct flights to 1-stop and 2-stop itineraries. The ultimate query is: <em>"Book a trip for a family of 3, max 2 stops, sorted by price."</em></p>
 
@@ -628,11 +652,13 @@
                                       +------------------------------------------+
     </pre>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 2: REQUIREMENTS ==================== -->
 <section id="requirements">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--blue));">&#128203;</span> Requirements</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--blue));">&#128203;</span> Requirements</h2></summary>
 
   <h3>Functional Requirements</h3>
   <div class="card-grid">
@@ -702,11 +728,13 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 3: CAPACITY ==================== -->
 <section id="capacity">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--accent), var(--warning));">&#128290;</span> Capacity Estimation</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--accent), var(--warning));">&#128290;</span> Capacity Estimation</h2></summary>
 
   <h3>Scale Parameters</h3>
   <div class="metric-grid">
@@ -850,11 +878,13 @@
       <div class="bar-track"><div class="bar-fill" style="width:80%; background:linear-gradient(90deg, var(--success), var(--secondary));">~80% (popular routes)</div></div>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 4: DATA SCHEMA ==================== -->
 <section id="data-schema">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--purple));">&#128451;</span> Data Schema</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--purple));">&#128451;</span> Data Schema</h2></summary>
 
   <h3>Core Tables</h3>
   <pre>
@@ -962,11 +992,13 @@
     <div class="tip-title" style="color:var(--success);">&#128161; PE Insight: Separate by Volatility</div>
     <p>A principal-level answer separates these three data types into different storage tiers. Schedules go in a read-optimized RDBMS with aggressive caching. Fares sit in an in-memory store (Redis) with 15-min refresh. Availability is either queried live from airline GDS systems or held in a sub-minute-TTL cache. This separation is what enables the system to serve fast results while maintaining freshness where it matters.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 5: SEARCH ALGORITHMS ==================== -->
 <section id="search-algorithms">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--blue));">&#128300;</span> Search Algorithms</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--blue));">&#128300;</span> Search Algorithms</h2></summary>
 
   <h3>Approach 1: SQL-Based Search (Relational)</h3>
 
@@ -1234,11 +1266,13 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 6: ONLINE VS OFFLINE ==================== -->
 <section id="online-offline">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--accent));">&#9889;</span> Online vs Offline Computation</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--accent));">&#9889;</span> Online vs Offline Computation</h2></summary>
 
   <p>This is the <strong>most critical architecture decision</strong> in the flight search system and the trade-off the interviewer is testing for. The question is: do you compute routes at query time (online), pre-compute them (offline), or use a hybrid approach?</p>
 
@@ -1381,11 +1415,13 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 7: HIGH-LEVEL ARCHITECTURE ==================== -->
 <section id="architecture">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--secondary));">&#127959;</span> High-Level Architecture</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--secondary));">&#127959;</span> High-Level Architecture</h2></summary>
 
   <div class="diagram-box">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" font-family="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" style="width:100%;max-width:1100px;">
@@ -2045,11 +2081,13 @@
     <span class="keyword">return</span> merge_and_rank(fast_results)
     </pre>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 8: SCALING ==================== -->
 <section id="scaling">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--success), var(--secondary));">&#128640;</span> Scaling Strategies</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--success), var(--secondary));">&#128640;</span> Scaling Strategies</h2></summary>
 
   <h3>Read Scaling</h3>
   <div class="card-grid">
@@ -2127,11 +2165,13 @@
                   +------------+              +------------+
     </pre>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 9: BOOKING FLOW ==================== -->
 <section id="booking-flow">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--danger));">&#128179;</span> Booking Flow &amp; Race Conditions</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--danger));">&#128179;</span> Booking Flow &amp; Race Conditions</h2></summary>
 
   <h3>End-to-End Booking Flow</h3>
   <div class="flow-steps">
@@ -2269,11 +2309,13 @@
       <li><strong>Payment:</strong> Stripe/payment processor handles its own idempotency with our key</li>
     </ul>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 10: TRADE-OFFS ==================== -->
 <section id="tradeoffs">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--danger), var(--warning));">&#9878;</span> Trade-offs Table</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--danger), var(--warning));">&#9878;</span> Trade-offs Table</h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -2336,11 +2378,13 @@
     <div class="tip-title" style="color:var(--purple);">&#127919; Trade-off Discussion Framework</div>
     <p>For each trade-off, articulate: (1) <strong>What are we optimizing for?</strong> (latency, freshness, cost, correctness), (2) <strong>What are we sacrificing?</strong>, (3) <strong>Is the sacrifice acceptable given our requirements?</strong> For flight search, the interviewer expects you to favor speed over perfect freshness for search results, but require correctness at booking time.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== SECTION 11: INTERVIEW TIPS ==================== -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--primary));">&#127919;</span> Interview Calibration &amp; Tips</h2>
+  <details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--primary));">&#127919;</span> Interview Calibration &amp; Tips</h2></summary>
 
   <h3>Evaluation Rubric</h3>
   <div class="calibration-grid">
@@ -2533,6 +2577,7 @@
     <div class="tip-title" style="color:var(--success);">&#128161; The One-Liner That Shows Depth</div>
     <p>"The flight search problem is fundamentally a <strong>bounded-depth shortest-path problem on a weighted directed graph</strong>, where the graph has ~10K nodes and ~50K edges, and the challenge is that edge weights (prices) change 1M times per hour while we need sub-3-second query latency." -- If you can deliver this framing in the first 2 minutes, you've signaled PE-level understanding immediately.</p>
   </div>
+  </details>
 </section>
 
 </div><!-- /container -->
@@ -2543,6 +2588,16 @@
   <p style="margin-top:8px;">Part of the <a href="index.html">Airbnb System Design Interview Collection</a></p>
   <p style="margin-top:8px; font-size:0.8em; color:var(--text-muted);">Covers: Kayak, Google Flights, Skyscanner, Hopper, and similar flight search aggregators</p>
 </footer>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

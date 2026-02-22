@@ -571,6 +571,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -623,7 +642,10 @@
     <a href="#scalability">Scalability</a>
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
-    <a href="javascript:void(0)" id="toggle-all-btn" style="background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600;">Collapse All</a>
+  </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
   </div>
 </nav>
 
@@ -633,10 +655,11 @@
 <!-- SECTION 2: OVERVIEW                                                -->
 <!-- ================================================================== -->
 <section id="overview">
-  <h2>
+<details open>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(255,90,95,0.2), rgba(255,90,95,0.15)); color: var(--primary);">&#128172;</span>
     Overview
-  </h2>
+  </h2></summary>
 
   <p>Airbnb's messaging system is fundamentally different from a generic chat application. Every conversation is <strong>contextual</strong> -- it is tied to a specific booking, inquiry, or listing interaction between a host (plus optional co-hosts) and a group of guests. A single thread may involve 2 to 50 participants: one host, several co-hosts who manage the property, and a group of guests traveling together.</p>
 
@@ -668,16 +691,18 @@
     </div>
   </div>
 
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 3: REQUIREMENTS                                            -->
 <!-- ================================================================== -->
 <section id="requirements">
-  <h2>
+<details open>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(0,166,153,0.2), rgba(0,166,153,0.15)); color: #ffffff;">&#9989;</span>
     Requirements
-  </h2>
+  </h2></summary>
 
   <div class="card-grid">
     <div class="card">
@@ -712,16 +737,18 @@
     <strong>Interview Insight: Scope carefully.</strong>
     The interviewer wants to see you prioritize. Focus on the data model first (Part 1), then client sync (Part 2), then scalability (Part 3). Do NOT jump to WebSockets or caching before you have the tables and indexes right. The data model is where candidates pass or fail this question.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 4: CAPACITY ESTIMATES                                      -->
 <!-- ================================================================== -->
 <section id="capacity">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(252,100,45,0.2), rgba(252,100,45,0.08)); color: var(--accent);">&#128202;</span>
     Capacity Estimates
-  </h2>
+  </h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -811,16 +838,18 @@
     <strong>Why these numbers matter:</strong>
     At ~58 msg/sec write throughput and ~12 inbox QPS, this is a <strong>read-moderate, write-moderate</strong> system. It does not require the extreme write throughput of WhatsApp (~100K msg/sec). The critical bottleneck is the <strong>inbox query</strong> -- joining user_threads with threads to get the top-20 most recent conversations with preview, which must complete in &lt;100ms. This drives our index design.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 5: DATA MODEL (CRITICAL)                                   -->
 <!-- ================================================================== -->
 <section id="data-model">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(123,47,247,0.2), rgba(123,47,247,0.08)); color: var(--purple);">&#128451;</span>
     Data Model
-  </h2>
+  </h2></summary>
 
   <div class="tip-box danger">
     <strong>THIS IS THE CRITICAL SECTION.</strong>
@@ -988,16 +1017,18 @@
       <li><strong>Simpler consistency</strong> -- Deleting a thread means deleting messages from one partition, not tracking references across many.</li>
     </ul>
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 6: INDEXES AND QUERY PERFORMANCE                           -->
 <!-- ================================================================== -->
 <section id="indexes">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(66,139,249,0.2), rgba(66,139,249,0.08)); color: var(--blue);">&#9889;</span>
     Indexes &amp; Query Performance
-  </h2>
+  </h2></summary>
 
   <div class="tip-box warning">
     <strong>Interview Critical: Indexes are what separate "Good" from "Strong Yes."</strong>
@@ -1132,16 +1163,18 @@
       <li><strong>Mark as read:</strong> O(log N) single row update on (thread_id, user_id) PK</li>
     </ul>
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 7: API DESIGN                                              -->
 <!-- ================================================================== -->
 <section id="api">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(0,166,153,0.2), rgba(0,166,153,0.15)); color: #ffffff;">&#128279;</span>
     API Design
-  </h2>
+  </h2></summary>
 
   <!-- API 1: Create Thread -->
   <div class="card">
@@ -1289,16 +1322,18 @@
   <span class="string">"last_read_message_id"</span>: <span class="number">99002</span>
 }</code></pre>
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 8: CLIENT-SIDE SYNC                                        -->
 <!-- ================================================================== -->
 <section id="client-sync">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(252,100,45,0.2), rgba(252,100,45,0.08)); color: var(--accent);">&#128241;</span>
     Client-Side Sync
-  </h2>
+  </h2></summary>
 
   <p>When a user opens the Airbnb app after being offline, the client needs to efficiently sync all missed messages and thread state changes. There are two fundamental approaches, and choosing between them is a key interview differentiator.</p>
 
@@ -1448,16 +1483,18 @@
     <strong>Interview Recommendation:</strong>
     Start with Pull-based sync as the default (simpler, fewer writes). Then mention Push-based as an optimization for users with many threads or for per-device sync. The interviewer wants to see that you understand both patterns and can articulate the trade-offs. WebSocket is the real-time layer on TOP of either sync approach -- it does not replace sync.
   </div>
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 9: SCALABILITY                                             -->
 <!-- ================================================================== -->
 <section id="scalability">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.06)); color: var(--success);">&#128640;</span>
     Scalability
-  </h2>
+  </h2></summary>
 
   <h3>Sharding Strategy</h3>
   <div class="table-wrap">
@@ -1941,16 +1978,18 @@
     </table>
   </div>
 
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 10: TRADE-OFFS TABLE                                       -->
 <!-- ================================================================== -->
 <section id="tradeoffs">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.06)); color: var(--warning);">&#9878;</span>
     Trade-offs
-  </h2>
+  </h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -2139,16 +2178,18 @@
     <p>The deciding factors are <strong>(1)</strong> the inbox query requires JOIN semantics, <strong>(2)</strong> the send-message path requires multi-row ACID transactions, and <strong>(3)</strong> Airbnb's scale (58 msg/sec) is well within SQL capacity. NoSQL databases solve problems that don't exist here. Use the right tool: SQL for the relational data model, Redis for caching, Kafka for async event delivery.</p>
   </div>
 
+</details>
 </section>
 
 <!-- ================================================================== -->
 <!-- SECTION 11: INTERVIEW TIPS                                         -->
 <!-- ================================================================== -->
 <section id="interview-tips">
-  <h2>
+<details>
+  <summary><h2>
     <span class="section-icon" style="background: linear-gradient(135deg, rgba(255,90,95,0.2), rgba(255,90,95,0.15)); color: var(--primary);">&#127919;</span>
     Interview Tips &amp; Calibration
-  </h2>
+  </h2></summary>
 
   <h3>Scoring Rubric</h3>
   <p>Based on the Airbnb interview calibration framework, here is how candidates are evaluated on this question:</p>
@@ -2370,6 +2411,7 @@
     <strong>Final Interview Tip:</strong>
     The strongest signal you can give is demonstrating that you understand WHY each table exists, not just WHAT it contains. Every table should be justified by a specific query or access pattern. If you can walk the interviewer through the full send-message lifecycle -- from API call to database writes to WebSocket delivery to inbox cache update -- and explain the runtime at each step, you will get a Strong Yes.
   </div>
+</details>
 </section>
 
 </div>
@@ -2381,48 +2423,13 @@
 </div>
 
 <script>
-/* ===== Collapsible Sections ===== */
-(function(){
-  document.querySelectorAll('.container > section').forEach(function(section) {
-    var h2 = section.querySelector(':scope > h2');
-    if (!h2) return;
-
-    var details = document.createElement('details');
-    details.open = true;
-
-    var summary = document.createElement('summary');
-    summary.appendChild(h2);
-
-    while (section.firstChild) {
-      details.appendChild(section.firstChild);
-    }
-    details.insertBefore(summary, details.firstChild);
-    section.appendChild(details);
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
   });
-
-  /* Nav links: auto-expand target section on click */
-  document.querySelectorAll('.toc-grid a[href^="#"]').forEach(function(link) {
-    link.addEventListener('click', function() {
-      var id = this.getAttribute('href').slice(1);
-      var section = document.getElementById(id);
-      if (section) {
-        var det = section.querySelector('details');
-        if (det) det.open = true;
-      }
-    });
-  });
-
-  /* Toggle All button */
-  var btn = document.getElementById('toggle-all-btn');
-  if (btn) {
-    var allOpen = true;
-    btn.addEventListener('click', function() {
-      allOpen = !allOpen;
-      document.querySelectorAll('.container > section > details').forEach(function(d) { d.open = allOpen; });
-      btn.textContent = allOpen ? 'Collapse All' : 'Expand All';
-    });
-  }
-})();
+});
 </script>
 
 <script>

@@ -542,6 +542,51 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    padding: 0;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6';
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    font-size: 0.5em;
+    color: var(--text-muted);
+  }
+  details[open] summary h2::before {
+    transform: rotate(90deg);
+  }
+  .toggle-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .toggle-controls button {
+    padding: 5px 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.78em;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover {
+    color: var(--purple);
+    border-color: var(--purple);
+    background: rgba(123,47,247,0.1);
+  }
 </style>
 </head>
 <body>
@@ -594,6 +639,10 @@
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <!-- ============================= MAIN CONTENT ============================= -->
@@ -601,10 +650,11 @@
 
 <!-- ============================= 1. OVERVIEW ============================= -->
 <section id="overview">
-  <h2>
+  <details open>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">1</span>
     Overview
-  </h2>
+  </h2></summary>
   <p>
     Design a subscription service for Airbnb that allows guests and hosts to subscribe to monthly or annual plans with tiered pricing. Subscribers gain access to premium listings, booking discounts, priority customer support, and exclusive concierge experiences. The system must handle billing lifecycle management, entitlement gating, multi-currency support, and integrate with third-party payment processors like Stripe.
   </p>
@@ -653,14 +703,16 @@
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ============================= 2. REQUIREMENTS ============================= -->
 <section id="requirements">
-  <h2>
+  <details open>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">2</span>
     Requirements
-  </h2>
+  </h2></summary>
 
   <div class="card-grid">
     <div class="card">
@@ -699,10 +751,11 @@
 
 <!-- ============================= 3. CAPACITY ============================= -->
 <section id="capacity">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">3</span>
     Capacity Estimation
-  </h2>
+  </h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -777,14 +830,16 @@
       <li><strong>Storage is trivial:</strong> Subscription data is small. The real storage concern is the immutable billing event log for audit purposes.</li>
     </ul>
   </div>
+  </details>
 </section>
 
 <!-- ============================= 4. ARCHITECTURE ============================= -->
 <section id="architecture">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(123,47,247,0.15); color:var(--purple);">4</span>
     High-Level Architecture
-  </h2>
+  </h2></summary>
 
   <div class="diagram-box" style="background: rgba(0,0,0,0.05); border-radius: 12px; padding: 20px; overflow-x: auto;">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650" font-family="Segoe UI, sans-serif" style="width:100%; height:auto;">
@@ -1078,51 +1133,6 @@
     </table>
   </div>
 
-  <!-- ===== HAPPY PATH ===== -->
-  <h3>Happy Path: Subscription Success Flow</h3>
-  <div class="card" style="border-left: 3px solid var(--success);">
-    <p style="margin-bottom:16px;">The complete success flow when a user subscribes to a plan:</p>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">1</span>
-        <span>User clicks "Subscribe" &rarr; Client sends <code>POST /subscriptions</code> to <strong>API Gateway</strong> (JWT auth verified, rate limit checked)</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#FF5A5F;color:#fff;font-weight:800;font-size:12px;">2</span>
-        <span>API Gateway routes to <strong>Subscription Service</strong> via gRPC &rarr; validates plan, checks eligibility</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#428BF9;color:#fff;font-weight:800;font-size:12px;">3</span>
-        <span>Subscription Service persists subscription in <strong>PostgreSQL</strong> with status = <code>PENDING</code></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">4</span>
-        <span>Subscription Service calls <strong>Stripe API</strong> to create subscription + payment intent &rarr; returns <code>client_secret</code></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#f59e0b;color:#fff;font-weight:800;font-size:12px;">5</span>
-        <span>Stripe confirms payment &rarr; fires <code>payment_intent.succeeded</code> webhook &rarr; handler publishes to <strong>Kafka</strong></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">6</span>
-        <span><strong>Billing Service</strong> consumes event &rarr; creates invoice record, marks payment as <code>PAID</code></span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">7</span>
-        <span><strong>Entitlement Service</strong> consumes event &rarr; activates feature flags, grants access to premium features</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:12px;">8</span>
-        <span>Entitlement Service caches grants in <strong>Redis</strong> with TTL &rarr; all services can check access in &lt;3ms</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:12px;">9</span>
-        <span><strong>Notification Service</strong> consumes event &rarr; sends welcome email with receipt and subscription details</span>
-      </div>
-    </div>
-    <p style="margin-top:16px; color:var(--success); font-weight:600;">Result: User sees confirmation page, receives email, and immediately has access to premium features.</p>
-  </div>
-
   <!-- ===== FAILURE PATHS ===== -->
   <h3>Failure Paths</h3>
   <div class="table-wrap">
@@ -1232,14 +1242,16 @@
     <strong>PE Signal: Service Boundaries</strong>
     A strong answer separates Subscription (lifecycle), Billing (money), and Entitlement (access) into distinct services. This allows independent scaling, separate on-call rotations, and clear ownership. The Subscription Service is the orchestrator; Billing and Entitlement are reactive consumers of its events.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 5. API DESIGN ============================= -->
 <section id="api-design">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">5</span>
     API Design
-  </h2>
+  </h2></summary>
 
   <h3>Subscription CRUD Endpoints</h3>
   <div class="table-wrap">
@@ -1359,52 +1371,20 @@
   <span class="string">"cache_ttl_seconds"</span>: <span class="number">300</span>
 }</code></pre>
 
-  <h3>Stripe Webhook Handler</h3>
-<pre><code><span class="comment">// POST /api/v1/webhooks/stripe</span>
-<span class="comment">// Stripe sends events like: invoice.paid, invoice.payment_failed,</span>
-<span class="comment">// customer.subscription.updated, customer.subscription.deleted</span>
-
-<span class="comment">// Handler pseudocode:</span>
-<span class="keyword">async function</span> <span class="func">handleStripeWebhook</span>(req) {
-  <span class="keyword">const</span> sig = req.headers[<span class="string">'stripe-signature'</span>];
-  <span class="keyword">const</span> event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-
-  <span class="comment">// Idempotency: check if event.id already processed</span>
-  <span class="keyword">if</span> (<span class="keyword">await</span> eventStore.exists(event.id)) <span class="keyword">return</span> { status: <span class="number">200</span> };
-
-  <span class="keyword">switch</span> (event.type) {
-    <span class="keyword">case</span> <span class="string">'invoice.paid'</span>:
-      <span class="keyword">await</span> billingService.recordPayment(event.data.object);
-      <span class="keyword">await</span> kafka.publish(<span class="string">'subscription.payment.succeeded'</span>, event.data);
-      <span class="keyword">break</span>;
-    <span class="keyword">case</span> <span class="string">'invoice.payment_failed'</span>:
-      <span class="keyword">await</span> billingService.recordFailure(event.data.object);
-      <span class="keyword">await</span> kafka.publish(<span class="string">'subscription.payment.failed'</span>, event.data);
-      <span class="keyword">break</span>;
-    <span class="keyword">case</span> <span class="string">'customer.subscription.updated'</span>:
-      <span class="keyword">await</span> subscriptionService.syncState(event.data.object);
-      <span class="keyword">break</span>;
-    <span class="keyword">case</span> <span class="string">'customer.subscription.deleted'</span>:
-      <span class="keyword">await</span> subscriptionService.handleCancellation(event.data.object);
-      <span class="keyword">break</span>;
-  }
-
-  <span class="keyword">await</span> eventStore.markProcessed(event.id);
-  <span class="keyword">return</span> { status: <span class="number">200</span> };
-}</code></pre>
-
   <div class="tip-box danger">
     <strong>Critical: Idempotency-Key Header</strong>
     All mutation endpoints (POST, PATCH, DELETE) require an <code>Idempotency-Key</code> header. This prevents double-charges on network retries. The server stores the idempotency key and its response in Redis with a 24h TTL. If the same key is received again, the cached response is returned without re-executing the operation.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 6. DATA MODEL ============================= -->
 <section id="data-model">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(0,166,153,0.15); color:var(--secondary);">6</span>
     Data Model
-  </h2>
+  </h2></summary>
 
   <h3>plans</h3>
   <div class="table-wrap">
@@ -1527,14 +1507,16 @@
     <strong>PE Signal: Why Plan Versioning?</strong>
     When prices change, existing subscribers should be grandfathered at their original price. The <code>plan_version</code> column in subscriptions captures the exact plan terms at subscription time. The plans table uses soft-deactivation (<code>is_active</code>) so old plans remain queryable for existing subscribers but are hidden from new sign-ups.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 7. STATE MACHINE ============================= -->
 <section id="state-machine">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);">7</span>
     Subscription State Machine
-  </h2>
+  </h2></summary>
 
   <div class="state-machine">
     <div class="states">
@@ -1673,14 +1655,16 @@
     <strong>PE Signal: Why Grace Periods Matter</strong>
     Immediately revoking entitlements on first payment failure leads to terrible UX and increased churn. Most failed payments are recoverable (expired card, insufficient funds on payday). A 7-day grace period with progressive dunning recovers 60-80% of failed payments according to industry data. This is a business-critical design decision.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 8. BILLING DEEP DIVE ============================= -->
 <section id="billing">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(255,90,95,0.15); color:var(--primary);">8</span>
     Billing Deep Dive
-  </h2>
+  </h2></summary>
 
   <h3>Stripe Integration Architecture</h3>
   <div class="card-grid">
@@ -1749,51 +1733,6 @@
   }
 }</code></pre>
 
-  <h3>Failed Payment Retry Strategy</h3>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Retry</th>
-          <th>Day</th>
-          <th>Strategy</th>
-          <th>Notification</th>
-          <th>Recovery Rate</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1st</td>
-          <td>Day 1</td>
-          <td>Stripe Smart Retry (ML-optimized timing)</td>
-          <td>Email + Push: "Payment failed"</td>
-          <td>~40%</td>
-        </tr>
-        <tr>
-          <td>2nd</td>
-          <td>Day 3</td>
-          <td>Retry with updated card info (if Stripe card updater found new details)</td>
-          <td>Email: "Second attempt failed"</td>
-          <td>~25%</td>
-        </tr>
-        <tr>
-          <td>3rd</td>
-          <td>Day 5</td>
-          <td>Retry at optimal time (avoid weekends, use card network hints)</td>
-          <td>Email + Push + In-app banner</td>
-          <td>~15%</td>
-        </tr>
-        <tr>
-          <td>Final</td>
-          <td>Day 7</td>
-          <td>Last attempt. If fails, cancel subscription.</td>
-          <td>Email: "Subscription cancelled"</td>
-          <td>~10%</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
   <h3>Multi-Currency and Tax Handling</h3>
   <div class="card">
     <h4 style="color:var(--secondary);">Currency Strategy</h4>
@@ -1818,14 +1757,16 @@
     <strong>PE Signal: Reconciliation is Non-Negotiable</strong>
     Webhooks can be lost, delayed, or arrive out of order. A reconciliation job must run hourly, pulling subscription state from Stripe's List Subscriptions API and comparing with our DB. Any discrepancy triggers an alert and auto-correction. For financial systems, "trust but verify" is the operating principle.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 9. ENTITLEMENT SYSTEM ============================= -->
 <section id="entitlements">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(66,139,249,0.08); color:var(--blue);">9</span>
     Entitlement System
-  </h2>
+  </h2></summary>
 
   <h3>How Premium Listings are Gated</h3>
   <div class="flow-diagram">
@@ -1944,14 +1885,16 @@ EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="co
       </ul>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ============================= 10. TRADE-OFFS ============================= -->
 <section id="tradeoffs">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(252,100,45,0.15); color:var(--accent);">10</span>
     Trade-offs Analysis
-  </h2>
+  </h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -2044,14 +1987,16 @@ EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="co
     <strong>PE Signal: Vendor Lock-in Mitigation</strong>
     To mitigate Stripe lock-in, design a Payment Provider Adapter interface. The Subscription Service calls <code>PaymentProvider.createSubscription()</code>, not <code>Stripe.createSubscription()</code>. This allows swapping to Adyen, Braintree, or a custom solution without changing business logic. In practice, migrations are rare, but the abstraction costs almost nothing upfront and buys insurance.
   </div>
+  </details>
 </section>
 
 <!-- ============================= 11. INTERVIEW TIPS ============================= -->
 <section id="interview-tips">
-  <h2>
+  <details>
+  <summary><h2>
     <span class="section-icon" style="background:rgba(16,185,129,0.15); color:var(--success);">11</span>
     Interview Tips and Calibration
-  </h2>
+  </h2></summary>
 
   <h3>Key Signals Interviewers Look For</h3>
   <div class="card-grid-3">
@@ -2152,6 +2097,7 @@ EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="co
     <strong>Final PE Advice</strong>
     The subscription problem is deceptively simple on the surface. What separates a principal engineer answer is the depth on <em>failure modes</em>: What happens when payments fail? When webhooks are lost? When Redis is down? When a user upgrades and immediately checks entitlements before the event propagates? Show that you have built and operated these systems, not just designed them on a whiteboard. Every design decision should connect back to a user experience or business outcome.
   </div>
+  </details>
 </section>
 
 </div>
@@ -2163,6 +2109,18 @@ EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="co
 </footer>
 
 <script>
+// Auto-open collapsed section when clicking TOC link
+document.querySelectorAll('.toc a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) {
+      var details = section.querySelector('details');
+      if (details) details.open = true;
+    }
+  });
+});
+
 (function(){
   document.querySelectorAll(".diagram-box").forEach(function(box){
     var svg=box.querySelector("svg");

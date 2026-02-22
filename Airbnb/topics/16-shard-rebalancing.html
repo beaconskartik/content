@@ -560,6 +560,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -596,11 +615,16 @@
     <a href="#monitoring" class="nav-card">Monitoring</a>
     <a href="#interview" class="nav-card">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
   <div class="section" id="overview">
+<details open>
     <span class="section-label label-red">Section 1</span>
-    <h2>Overview: The Problem</h2>
+    <summary><h2>Overview: The Problem</h2></summary>
     <p>Airbnb processes millions of payments daily across a sharded PostgreSQL cluster. Over time, organic growth creates <strong>hot shards</strong> -- two shards now handle 60% of all payment traffic while four others sit nearly idle. We need to add new shards and redistribute data without any downtime, zero data loss, and absolutely no double-charges.</p>
 
     <div class="metric-row">
@@ -1047,12 +1071,14 @@
       <span class="callout-icon">&#9888;</span>
       <div class="callout-text"><strong>Critical Constraint:</strong> A double-charge on a $5,000 booking is a legal liability, a PCI compliance violation, and an instant customer trust destroyer. Every design decision must prevent this scenario.</div>
     </div>
+</details>
   </div>
 
   <!-- ============ 2. REQUIREMENTS ============ -->
   <div class="section" id="requirements">
+<details open>
     <span class="section-label label-teal">Section 2</span>
-    <h2>Requirements</h2>
+    <summary><h2>Requirements</h2></summary>
 
     <div class="grid-2">
       <div class="card card-accent-teal">
@@ -1078,12 +1104,14 @@
         </ul>
       </div>
     </div>
+</details>
   </div>
 
   <!-- ============ 3. WHY SHARDING PAYMENTS IS HARD ============ -->
   <div class="section" id="why-hard">
+<details>
     <span class="section-label label-danger">Section 3</span>
-    <h2>Why Sharding Payments Is Hard</h2>
+    <summary><h2>Why Sharding Payments Is Hard</h2></summary>
     <p>Payment systems are not like social feeds or analytics pipelines. The stakes are fundamentally different.</p>
 
     <div class="grid-3">
@@ -1145,12 +1173,14 @@
         </tbody>
       </table>
     </div>
+</details>
   </div>
 
   <!-- ============ 4. SHARDING STRATEGIES ============ -->
   <div class="section" id="strategies">
+<details>
     <span class="section-label label-purple">Section 4</span>
-    <h2>Sharding Strategies Compared</h2>
+    <summary><h2>Sharding Strategies Compared</h2></summary>
     <p>Choosing the right shard key is the most consequential decision. It determines data locality, query patterns, and how painful rebalancing will be.</p>
 
     <div class="grid-2">
@@ -1220,12 +1250,14 @@
                                 +--------------------------+
 </pre>
     </div>
+</details>
   </div>
 
   <!-- ============ 5. THREE REBALANCING APPROACHES ============ -->
   <div class="section" id="approaches">
+<details>
     <span class="section-label label-orange">Section 5</span>
-    <h2>Three Rebalancing Approaches</h2>
+    <summary><h2>Three Rebalancing Approaches</h2></summary>
 
     <!-- Approach A -->
     <h3>Approach A: Double-Write Migration</h3>
@@ -1390,12 +1422,14 @@
         </tbody>
       </table>
     </div>
+</details>
   </div>
 
   <!-- ============ 6. ROUTING LAYER ============ -->
   <div class="section" id="routing">
+<details>
     <span class="section-label label-blue">Section 6</span>
-    <h2>Routing Layer</h2>
+    <summary><h2>Routing Layer</h2></summary>
     <p>The shard router is the critical intermediary that maps every payment request to the correct physical shard. It must be fast, consistent, and migration-aware.</p>
 
     <div class="flow-diagram">
@@ -1474,12 +1508,14 @@
 }
 </div>
     </div>
+</details>
   </div>
 
   <!-- ============ 7. CONSISTENCY DURING MIGRATION ============ -->
   <div class="section" id="consistency">
+<details>
     <span class="section-label label-danger">Section 7</span>
-    <h2>Consistency During Migration</h2>
+    <summary><h2>Consistency During Migration</h2></summary>
     <p>This is the hardest part. During migration, the same logical data exists (partially) on two physical nodes. We must guarantee that exactly one node is authoritative for writes at any moment.</p>
 
     <div class="grid-2">
@@ -1551,12 +1587,14 @@
 </div>
       <p style="color:var(--text-muted); font-size:0.88rem; margin-top:10px;">The idempotency table is replicated to BOTH source and target shards during migration. Even if a stale router sends a duplicate write, the <code>ON CONFLICT</code> clause prevents double-processing.</p>
     </div>
+</details>
   </div>
 
   <!-- ============ 8. VERIFICATION & ROLLBACK ============ -->
   <div class="section" id="verification">
+<details>
     <span class="section-label label-green">Section 8</span>
-    <h2>Verification & Rollback</h2>
+    <summary><h2>Verification & Rollback</h2></summary>
     <p>Trust but verify. Every migration batch goes through multi-layer verification before being declared complete.</p>
 
     <div class="grid-2">
@@ -1656,12 +1694,14 @@
         </div>
       </div>
     </div>
+</details>
   </div>
 
   <!-- ============ 9. DATA MODEL ============ -->
   <div class="section" id="data-model">
+<details>
     <span class="section-label label-purple">Section 9</span>
-    <h2>Data Model</h2>
+    <summary><h2>Data Model</h2></summary>
 
     <div class="card card-accent-purple">
       <h4>&#128451; shard_routing</h4>
@@ -1742,12 +1782,14 @@
 <span class="kw">CREATE INDEX</span> idx_payment_vshard <span class="kw">ON</span> payment_transactions(vshard_id);
 </div>
     </div>
+</details>
   </div>
 
   <!-- ============ 10. TRADE-OFFS TABLE ============ -->
   <div class="section" id="tradeoffs">
+<details>
     <span class="section-label label-yellow">Section 10</span>
-    <h2>Trade-offs</h2>
+    <summary><h2>Trade-offs</h2></summary>
 
     <div class="card">
       <table>
@@ -1811,12 +1853,14 @@
         </tbody>
       </table>
     </div>
+</details>
   </div>
 
   <!-- ============ 11. MONITORING ============ -->
   <div class="section" id="monitoring">
+<details>
     <span class="section-label label-green">Section 11</span>
-    <h2>Monitoring & Observability</h2>
+    <summary><h2>Monitoring & Observability</h2></summary>
     <p>A migration without observability is a migration in the dark. Every phase must be instrumented.</p>
 
     <div class="grid-2">
@@ -1954,12 +1998,14 @@
   <span class="kw">AND</span> started_at < <span class="fn">NOW</span>() - <span class="kw">INTERVAL</span> <span class="str">'2 hours'</span>;
 </div>
     </div>
+</details>
   </div>
 
   <!-- ============ 12. INTERVIEW TIPS ============ -->
   <div class="section" id="interview">
+<details>
     <span class="section-label label-red">Section 12</span>
-    <h2>Interview Tips</h2>
+    <summary><h2>Interview Tips</h2></summary>
     <p>How to navigate this topic in a PE-level system design interview.</p>
 
     <div class="tip-grid">
@@ -2001,6 +2047,7 @@
       <span class="callout-icon">&#127919;</span>
       <div class="callout-text"><strong>PE-Level Differentiator:</strong> Junior candidates describe sharding. Senior candidates describe migration. PE candidates describe how to <em>prove correctness</em> -- checksums, shadow reads, idempotency invariants, write fences, and formal reasoning about why double-charges are impossible in this design. Lead with the invariants, then show the mechanisms that enforce them.</div>
     </div>
+</details>
   </div>
 
 </div>
@@ -2011,6 +2058,16 @@
   <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 8px;">Topic 16 of 18 | PE-Level Depth</p>
   <a href="index.html" style="display:inline-block; margin-top:16px; color:var(--secondary); text-decoration:none; font-weight:600; padding:10px 28px; border:1px solid rgba(0,166,153,0.3); border-radius:10px; background:rgba(0,166,153,0.15); transition: all 0.3s;">&#8592; Back to All Topics</a>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

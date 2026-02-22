@@ -579,6 +579,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -635,13 +654,18 @@
     <a href="#trade-offs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ==================== 1. OVERVIEW ==================== -->
 <section id="overview">
-  <h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#9888;</span> Overview</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#9888;</span> Overview</h2></summary>
 
   <p>At Airbnb, guests file <strong>damage claims</strong> and <strong>refund requests</strong> after stays. A small but costly fraction of these claims are <strong>fraudulent</strong> &mdash; fabricated damage photos, inflated costs, collusion between guest and host, or serial claimers exploiting the trust system. Today, human agents manually review every claim. The goal is to build a <strong>Fraud Detection Engine</strong> that automatically flags risky claims with a confidence score, routing high-risk cases to specialized fraud investigators while letting low-risk claims proceed through normal workflows.</p>
 
@@ -673,11 +697,13 @@
     <div class="tip-title" style="color: var(--blue);">&#128161; Key Signals the Fraud Team Cares About</div>
     <p><strong>New account</strong> (created recently before claim) | <strong>Guest-host know each other</strong> (shared contacts, IP, payment info) | <strong>Frequent claims</strong> (serial claimer pattern) | <strong>Fabricated photos</strong> (metadata inconsistencies, reverse image search hits) | <strong>Suspicious email domain</strong> (disposable/temporary email providers) | <strong>Booking patterns</strong> (same-day book-and-claim) | <strong>Claim amount anomalies</strong> (far exceeds listing price)</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 2. REQUIREMENTS ==================== -->
 <section id="requirements">
-  <h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#128203;</span> Requirements</h2>
+  <details open>
+  <summary><h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#128203;</span> Requirements</h2></summary>
 
   <div class="comparison">
     <div class="card option-a">
@@ -712,11 +738,13 @@
     <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
     <p>Interviewers expect you to <strong>prioritize the false positive rate</strong> discussion early. At Airbnb, wrongly accusing a guest of fraud is worse than missing some fraud &mdash; it destroys trust. Always frame trade-offs in terms of <em>"What happens to a legitimate guest if we get this wrong?"</em></p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 3. DOMAIN MODEL ==================== -->
 <section id="domain-model">
-  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Domain Model</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Domain Model</h2></summary>
 
   <p>The core domain revolves around four key entities: <strong>Signal</strong>, <strong>Rule</strong>, <strong>Policy</strong>, and <strong>Outcome</strong>. Understanding how they compose is essential to the design.</p>
 
@@ -760,11 +788,13 @@
       <p>The <strong>immutable decision record</strong> for a specific claim evaluation. Contains the score, the flag decision, every signal value at evaluation time, and every rule that fired. This is the <strong>audit trail</strong> &mdash; regulators and agents can trace exactly why a claim was flagged.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 4. RULE REPRESENTATION ==================== -->
 <section id="rule-representation">
-  <h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9881;</span> Rule Representation</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9881;</span> Rule Representation</h2></summary>
 
   <p>A critical design decision: how do non-programmer Fraud team members author and manage rules? Three major options, each with distinct trade-offs:</p>
 
@@ -875,11 +905,13 @@
     <div class="tip-title" style="color: var(--success);">&#9989; Recommended Approach</div>
     <p><strong>Option C (DSL/Weighted Signals)</strong> is the PE-level answer. It provides the best balance of expressiveness, versioning, and extensibility. Build a <strong>form-based UI</strong> that generates the JSON DSL &mdash; Fraud team members pick signals from dropdowns, set thresholds with sliders, and adjust weights. The UI abstracts the DSL complexity while preserving its power. Combine with <strong>Option A (Decision Tables)</strong> as a "simple mode" for straightforward rules.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 5. ARCHITECTURE ==================== -->
 <section id="architecture">
-  <h2><span class="icon" style="background: rgba(0,166,153,0.2); color: #ffffff;">&#128736;</span> Architecture</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(0,166,153,0.2); color: #ffffff;">&#128736;</span> Architecture</h2></summary>
 
   <p>Event-driven architecture with the Fraud Engine subscribing to claim events, enriching them with signals, evaluating policies, and publishing fraud decisions.</p>
 
@@ -1277,11 +1309,13 @@
     <div class="tip-title" style="color: var(--warning);">&#9888; Degraded Mode</div>
     <p>If a signal source is unavailable (e.g., Photo Analysis service is down), the engine should <strong>not block</strong>. Instead: (1) Mark that signal as <span class="inline-code">UNAVAILABLE</span> with confidence 0.0, (2) Evaluate the policy with available signals only, (3) If the resulting score is uncertain (near threshold), queue for <strong>manual review</strong> rather than auto-flag. Log the degraded evaluation for SLA monitoring.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 6. SIGNAL COLLECTION ==================== -->
 <section id="signal-collection">
-  <h2><span class="icon" style="background: rgba(252,100,45,0.2); color: var(--accent);">&#128225;</span> Signal Collection</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(252,100,45,0.2); color: var(--accent);">&#128225;</span> Signal Collection</h2></summary>
 
   <p>Efficiently gathering signals is the performance bottleneck. Different signals have vastly different costs and latencies. The design must optimize for speed while respecting external rate limits.</p>
 
@@ -1406,11 +1440,13 @@
     <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
     <p>Discuss the <strong>cost-optimization tradeoff</strong>: running expensive photo analysis for every claim is wasteful. Show the interviewer you think about operational costs, not just architecture purity. The short-circuit pattern demonstrates fiscal awareness alongside engineering judgment.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 7. MODEL LIFECYCLE ==================== -->
 <section id="model-lifecycle">
-  <h2><span class="icon" style="background: rgba(16,185,129,0.2); color: var(--success);">&#128260;</span> Model Lifecycle</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(16,185,129,0.2); color: var(--success);">&#128260;</span> Model Lifecycle</h2></summary>
 
   <p>Policies (rule bundles + ML models) go through a strict lifecycle with approvals, testing, and gradual rollout. This is critical for safety &mdash; a bad rule can flag thousands of legitimate claims.</p>
 
@@ -1475,11 +1511,13 @@
     <div class="tip-title" style="color: var(--warning);">&#9888; Version Coexistence</div>
     <p>During experiments, <strong>multiple policy versions evaluate the same claim simultaneously</strong>. The production version determines the actual outcome, while the experimental version's results are logged for comparison. The Outcome record stores <span class="inline-code">policy_version</span> so analysis can split by version. This is analogous to how Airbnb runs parallel ML model versions in their search ranking pipeline.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 8. PERFORMANCE METRICS ==================== -->
 <section id="performance-metrics">
-  <h2><span class="icon" style="background: rgba(255,90,95,0.2); color: var(--primary);">&#128202;</span> Performance Metrics</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(255,90,95,0.2); color: var(--primary);">&#128202;</span> Performance Metrics</h2></summary>
 
   <p>Measuring fraud engine quality requires careful attention to the <strong>confusion matrix</strong> and derived metrics. Unlike typical ML systems, the cost of a false positive (accusing a legitimate guest) is disproportionately higher than the cost of a false negative (missing fraud).</p>
 
@@ -1562,11 +1600,13 @@
       <p>When agents review flagged claims, they mark them as <strong>confirmed fraud</strong> or <strong>false positive</strong>. This creates labeled training data. Weekly reports show per-rule false positive rates, enabling the Fraud team to tune weights and thresholds.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 9. EXPERIMENTATION ==================== -->
 <section id="experimentation">
-  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Experimentation</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#128300;</span> Experimentation</h2></summary>
 
   <p>Safe experimentation is essential. A poorly calibrated rule change can flag thousands of legitimate claims overnight. The system supports three modes of experimentation, each with increasing risk exposure.</p>
 
@@ -1630,11 +1670,13 @@
     <div class="tip-title" style="color: var(--blue);">&#128161; Experiment Assignment Consistency</div>
     <p>Use <strong>deterministic hashing</strong> of the claim_id for A/B assignment, not random. This ensures that if a claim is re-evaluated (e.g., after signal update), it stays in the same experiment bucket. Use a salt that changes per experiment to avoid bucket correlation across experiments.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 10. ML INTEGRATION ==================== -->
 <section id="ml-integration">
-  <h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#129302;</span> ML Integration</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(66,139,249,0.2); color: var(--blue);">&#129302;</span> ML Integration</h2></summary>
 
   <p>Rules alone miss subtle patterns. ML models can detect non-obvious correlations. The PE-level answer is a <strong>hybrid ensemble</strong>: rules provide explainability and fast iteration, while ML adds detection power for complex fraud patterns.</p>
 
@@ -1730,11 +1772,13 @@
     <div class="tip-title" style="color: var(--danger);">&#9888; RULE_VETO Ensemble Strategy</div>
     <p>Even when the ML model says "not fraud" (score 0.2), certain rules should <strong>always trigger a flag</strong> &mdash; for example, "guest and host share the same bank account." These are <strong>compliance-mandated rules</strong> that cannot be overridden by ML. The RULE_VETO combiner lets specified rules act as hard overrides regardless of the ML score. This is a critical point for the PE interview: not everything should be data-driven; some rules are policy-driven.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 11. SECURITY ==================== -->
 <section id="security">
-  <h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#128274;</span> Security</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(239,68,68,0.2); color: var(--danger);">&#128274;</span> Security</h2></summary>
 
   <p>The Fraud Engine handles extremely sensitive data and its logic must be protected from both external attackers and internal gaming. Three pillars: access control, data protection, and anti-reverse-engineering.</p>
 
@@ -1776,11 +1820,13 @@
     <div class="tip-title" style="color: var(--warning);">&#9888; Adversarial Robustness</div>
     <p>Fraudsters will adapt. If they realize "new accounts get flagged," they will age accounts before filing claims. The system must track <strong>signal distribution drift</strong> over time. If account_age for fraud claims shifts from &lt;7d to 30-60d, this signals adversarial adaptation and rules need updating. Build a <strong>monthly signal distribution report</strong> for the Fraud team.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 12. TRADE-OFFS ==================== -->
 <section id="trade-offs">
-  <h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9878;</span> Trade-offs</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(245,158,11,0.2); color: var(--warning);">&#9878;</span> Trade-offs</h2></summary>
 
   <div class="table-wrap">
     <table>
@@ -1843,11 +1889,13 @@
     <div class="tip-title" style="color: var(--purple);">&#127908; PE Interview Tip</div>
     <p>The strongest signal in a PE interview is when a candidate <strong>articulates trade-offs unprompted</strong>. Don't just present the "right" answer &mdash; say "We chose X over Y because Z, and the cost of that choice is W, which we mitigate by..." This shows the judgment that distinguishes a PE from a senior engineer.</p>
   </div>
+  </details>
 </section>
 
 <!-- ==================== 13. INTERVIEW TIPS ==================== -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#127919;</span> Interview Calibration</h2>
+  <details>
+  <summary><h2><span class="icon" style="background: rgba(123,47,247,0.2); color: var(--purple);">&#127919;</span> Interview Calibration</h2></summary>
 
   <p>This section maps candidate performance to Airbnb's interview scoring rubric. Use this to calibrate your preparation and ensure you hit the key signals interviewers look for.</p>
 
@@ -1953,6 +2001,7 @@
       <li>Security considerations (RBAC, anti-reverse-engineering) in 3 minutes</li>
     </ul>
   </div>
+  </details>
 </section>
 
 </div>
@@ -1962,6 +2011,16 @@
   <p>Fraud Detection Engine &mdash; PE System Design Deep Dive | <a href="index.html">Back to All Topics</a></p>
   <p style="margin-top: 8px;">Based on Airbnb PE interview preparation. All architectural patterns reflect real-world fraud detection systems at scale.</p>
 </footer>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

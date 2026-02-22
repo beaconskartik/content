@@ -652,6 +652,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -707,14 +726,19 @@
     <a href="#tradeoffs">Trade-offs</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ===== SECTION 1: OVERVIEW ===== -->
 <div class="section" id="overview">
+<details open>
   <span class="section-label">Section 1</span>
-  <h2>System Overview</h2>
+  <summary><h2>System Overview</h2></summary>
   <p>A support ticketing system is the backbone of customer service operations. It tracks every customer interaction from initial contact to resolution, across multiple communication channels, providing full visibility and accountability throughout the process.</p>
 
   <div class="grid-2" style="margin-top: 20px;">
@@ -741,12 +765,14 @@
   <div class="callout info">
     <p><strong>PE Scope Note:</strong> This design covers the full lifecycle from ingestion to resolution. In an interview, focus on the areas the interviewer probes deepest -- email parsing, assignment logic, SLA monitoring, or search -- and be prepared to go two levels deeper on any component.</p>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 2: REQUIREMENTS ===== -->
 <div class="section" id="requirements">
+<details open>
   <span class="section-label">Section 2</span>
-  <h2>Requirements</h2>
+  <summary><h2>Requirements</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -778,12 +804,14 @@
       </ol>
     </div>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 3: CAPACITY ===== -->
 <div class="section" id="capacity">
+<details>
   <span class="section-label">Section 3</span>
-  <h2>Capacity Estimation</h2>
+  <summary><h2>Capacity Estimation</h2></summary>
 
   <div class="grid-4">
     <div class="metric-box">
@@ -830,12 +858,14 @@
   <div class="callout">
     <p><strong>Storage Note:</strong> Attachment storage (screenshots, logs, etc.) stored in S3/Blob Storage separately. Average 2 attachments per ticket at ~500 KB each adds another ~100 GB/year. With 7-year retention, plan for ~700 GB of blob storage.</p>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 4: ARCHITECTURE ===== -->
 <div class="section" id="architecture">
+<details>
   <span class="section-label">Section 4</span>
-  <h2>High-Level Architecture</h2>
+  <summary><h2>High-Level Architecture</h2></summary>
 
   <div class="diagram-box">
   <svg viewBox="0 0 1100 600" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
@@ -1261,12 +1291,14 @@
       </ul>
     </div>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 5: DATA MODEL ===== -->
 <div class="section" id="data-model">
+<details>
   <span class="section-label">Section 5</span>
-  <h2>Data Model</h2>
+  <summary><h2>Data Model</h2></summary>
 
   <h3>tickets</h3>
   <div class="table-wrap">
@@ -1383,12 +1415,14 @@
       </tbody>
     </table>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 6: EMAIL INGESTION ===== -->
 <div class="section" id="email-ingestion">
+<details>
   <span class="section-label">Section 6</span>
-  <h2>Email Ingestion Pipeline</h2>
+  <summary><h2>Email Ingestion Pipeline</h2></summary>
 
   <p>Email is the highest-volume ingestion channel. The pipeline uses SendGrid Inbound Parse to receive emails as structured webhook payloads, then applies threading logic, spam filtering, and normalization before ticket creation.</p>
 
@@ -1494,12 +1528,14 @@
       channel: <span class="str">'EMAIL'</span>, priority: <span class="num">3</span>, attachments: storedAttachments });
   }
 }</code></pre>
+</details>
 </div>
 
 <!-- ===== SECTION 7: ASSIGNMENT ENGINE ===== -->
 <div class="section" id="assignment-engine">
+<details>
   <span class="section-label">Section 7</span>
-  <h2>Assignment Engine</h2>
+  <summary><h2>Assignment Engine</h2></summary>
 
   <p>The assignment engine routes tickets to agents using a pluggable strategy pattern. The strategy is selected based on team configuration, with fallback to the next available strategy if the primary yields no candidate.</p>
 
@@ -1561,12 +1597,14 @@
   <div class="callout warning">
     <p><strong>Race Condition Prevention:</strong> The <code class="inline">FOR UPDATE SKIP LOCKED</code> clause prevents two concurrent assignment operations from selecting the same agent. If the chosen agent's row is locked by another transaction, it is skipped and the next candidate is selected. This is critical at scale with 100K tickets/day.</p>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 8: SLA MONITORING ===== -->
 <div class="section" id="sla-monitoring">
+<details>
   <span class="section-label">Section 8</span>
-  <h2>SLA Monitoring</h2>
+  <summary><h2>SLA Monitoring</h2></summary>
 
   <h3>SLA Matrix by Priority</h3>
   <div class="table-wrap">
@@ -1678,12 +1716,14 @@
     WHERE id = $1`</span>, [ticket.id]);
 }</code></pre>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 9: SEARCH & FILTERING ===== -->
 <div class="section" id="search-filtering">
+<details>
   <span class="section-label">Section 9</span>
-  <h2>Search &amp; Filtering</h2>
+  <summary><h2>Search &amp; Filtering</h2></summary>
 
   <p>Search is powered by Elasticsearch, kept in sync with PostgreSQL via Change Data Capture (CDC) using Debezium. This ensures the search index is eventually consistent (typically within 1-2 seconds) without coupling the write path to ES.</p>
 
@@ -1777,12 +1817,14 @@
       <p>Count of tickets with <code class="inline">resolved_at</code> within today's date range, broken down by priority.</p>
     </div>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 10: TICKET REOPENING ===== -->
 <div class="section" id="ticket-reopening">
+<details>
   <span class="section-label">Section 10</span>
-  <h2>Ticket Reopening</h2>
+  <summary><h2>Ticket Reopening</h2></summary>
 
   <p>Handling updates to resolved or closed tickets requires a carefully designed policy that balances customer convenience with agent workflow efficiency and reporting accuracy.</p>
 
@@ -1874,12 +1916,14 @@
       <span class="lc-branch-label">auto-close after 48hr in RESOLVED with no reply</span>
     </div>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 11: API DESIGN ===== -->
 <div class="section" id="api-design">
+<details>
   <span class="section-label">Section 11</span>
-  <h2>API Design</h2>
+  <summary><h2>API Design</h2></summary>
 
   <h3>Ticket CRUD</h3>
   <div class="table-wrap">
@@ -1991,12 +2035,14 @@
   <span class="str">"source_status"</span>: <span class="str">"CLOSED"</span>,
   <span class="str">"source_merged_into_id"</span>: <span class="num">48285</span>
 }</code></pre>
+</details>
 </div>
 
 <!-- ===== SECTION 12: TRADE-OFFS ===== -->
 <div class="section" id="tradeoffs">
+<details>
   <span class="section-label">Section 12</span>
-  <h2>Trade-offs &amp; Design Decisions</h2>
+  <summary><h2>Trade-offs &amp; Design Decisions</h2></summary>
 
   <div class="tradeoff">
     <h4>PostgreSQL (Primary) + Elasticsearch (Search) vs. Single Database</h4>
@@ -2113,12 +2159,14 @@
     </div>
     <div class="verdict">Verdict: Use both with In-Reply-To as primary. The subject pattern is cheap insurance for edge cases. Conflicts should prefer the header.</div>
   </div>
+</details>
 </div>
 
 <!-- ===== SECTION 13: INTERVIEW TIPS ===== -->
 <div class="section" id="interview-tips">
+<details>
   <span class="section-label">Section 13</span>
-  <h2>Interview Tips</h2>
+  <summary><h2>Interview Tips</h2></summary>
 
   <div class="grid-2">
     <div class="interview-tip">
@@ -2158,6 +2206,7 @@
   <div class="callout" style="margin-top: 20px;">
     <p><strong>Final Advice:</strong> This system is deceptively simple on the surface. The PE-level depth comes from edge cases: What happens when an agent goes offline mid-assignment? How do you handle SLA when a ticket is reassigned? What if a customer replies to a merged ticket? Prepare for these second-order questions.</p>
   </div>
+</details>
 </div>
 
 </div><!-- /container -->
@@ -2168,6 +2217,16 @@
   <p style="color: var(--text-muted); font-size: 0.8em; margin-top: 8px;">Multi-channel ticket lifecycle management with SLA enforcement, intelligent assignment, and audit trail</p>
   <a href="index.html" style="display: inline-block; margin-top: 16px; color: #ffffff; text-decoration: none; font-weight: 600; padding: 8px 20px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background: rgba(255,255,255,0.15);">&#8592; Back to All Topics</a>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

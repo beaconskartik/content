@@ -682,6 +682,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -738,6 +757,10 @@
       <a href="#deep-dives">Deep Dives</a>
       <a href="#interview-tips">Interview Tips</a>
     </div>
+    <div class="toggle-controls">
+      <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+      <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+    </div>
   </div>
 </nav>
 
@@ -749,7 +772,8 @@
 <section class="content-section" id="overview-section">
   <span class="section-anchor" id="overview"></span>
   <span class="section-label label-orange">Section 1</span>
-  <h2>System Overview</h2>
+  <details open>
+  <summary><h2>System Overview</h2></summary>
 
   <p>Airbnb's image ingestion pipeline is a critical media infrastructure component. Hosts upload photos of their properties -- interiors, exteriors, amenities, and neighborhood -- to make their listings attractive to potential guests. The system must ingest these raw uploads, run them through a multi-stage processing pipeline (resize, compress, moderate, watermark), store the resulting variants durably, associate them with the correct listing in the correct order, and serve them globally with sub-100ms latency via a CDN.</p>
 
@@ -1162,6 +1186,7 @@
     </table>
   </div>
 
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1170,7 +1195,8 @@
 <section class="content-section" id="requirements-section">
   <span class="section-anchor" id="requirements"></span>
   <span class="section-label label-green">Section 2</span>
-  <h2>Requirements</h2>
+  <details open>
+  <summary><h2>Requirements</h2></summary>
 
   <div class="card-grid-2">
     <div class="card">
@@ -1205,6 +1231,7 @@
     <div class="callout-title">Scoping Note for Interviews</div>
     <p>In an interview, clarify these up front: (1) Are we designing the video pipeline too? No -- images only. (2) Do we need real-time processing or can it be async? Async with &lt;30s SLA. (3) Who can upload -- hosts only or guests too (e.g., reviews)? Focus on host listing photos. (4) Do we need to handle 360-degree or virtual tour images? Out of scope for now.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1213,7 +1240,8 @@
 <section class="content-section" id="capacity-section">
   <span class="section-anchor" id="capacity"></span>
   <span class="section-label label-blue">Section 3</span>
-  <h2>Capacity Estimation</h2>
+  <details>
+  <summary><h2>Capacity Estimation</h2></summary>
 
   <div class="card">
     <h4>Storage Math</h4>
@@ -1331,6 +1359,7 @@
       <p style="margin-top:12px; font-size:0.82em;">CDN egress dominates costs. This is read-heavy (100K reads/sec vs ~6 writes/sec at peak).</p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1339,7 +1368,8 @@
 <section class="content-section" id="upload-flow-section">
   <span class="section-anchor" id="upload-flow"></span>
   <span class="section-label label-orange">Section 4</span>
-  <h2>Upload Flow (Presigned URLs)</h2>
+  <details>
+  <summary><h2>Upload Flow (Presigned URLs)</h2></summary>
 
   <p>The key architectural decision here is using <strong>presigned URLs</strong> to upload directly to object storage, bypassing the application server for binary data transfer. This is the standard pattern for large file uploads at scale.</p>
 
@@ -1434,6 +1464,7 @@
     <div class="callout-title">Bulk Upload Optimization</div>
     <p>For bulk uploads (e.g., a host uploading 30 photos at once), the client requests multiple presigned URLs in a single API call. The server returns an array of URLs, and the client uploads in parallel (max 5 concurrent to avoid browser connection limits). Each upload triggers its own processing pipeline event independently.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1442,7 +1473,8 @@
 <section class="content-section" id="processing-pipeline-section">
   <span class="section-anchor" id="processing-pipeline"></span>
   <span class="section-label label-purple">Section 5</span>
-  <h2>Processing Pipeline</h2>
+  <details>
+  <summary><h2>Processing Pipeline</h2></summary>
 
   <p>Once the raw image lands in S3, an <strong>event-driven, asynchronous pipeline</strong> performs all transformations. The pipeline must be <strong>idempotent</strong> (safe to retry) and <strong>independently scalable</strong> per stage.</p>
 
@@ -1570,6 +1602,7 @@
   });
 }
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1578,7 +1611,8 @@
 <section class="content-section" id="data-model-section">
   <span class="section-anchor" id="data-model"></span>
   <span class="section-label label-green">Section 6</span>
-  <h2>Data Model</h2>
+  <details>
+  <summary><h2>Data Model</h2></summary>
 
   <h3>Core Tables</h3>
 
@@ -1665,6 +1699,7 @@
       <li>Reordering is an atomic batch update of <code>sort_order</code> values within a transaction</li>
     </ul>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1673,7 +1708,8 @@
 <section class="content-section" id="cdn-strategy-section">
   <span class="section-anchor" id="cdn-strategy"></span>
   <span class="section-label label-blue">Section 7</span>
-  <h2>CDN Strategy</h2>
+  <details>
+  <summary><h2>CDN Strategy</h2></summary>
 
   <p>Image serving is the highest-throughput path in this system (~100K reads/sec). The CDN is the critical serving layer that sits between S3 and the user's browser.</p>
 
@@ -1748,6 +1784,7 @@
     <div class="callout-title">CDN Architecture at Airbnb's Scale</div>
     <p>With ~100K image reads/sec and a 95%+ CDN cache hit ratio, only ~5K requests/sec reach S3 origin. CloudFront's 450+ edge locations ensure sub-100ms delivery globally. For regions with poor CloudFront coverage (e.g., parts of Africa, South Asia), consider a multi-CDN strategy with Cloudflare or Akamai as secondary.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1756,7 +1793,8 @@
 <section class="content-section" id="api-design-section">
   <span class="section-anchor" id="api-design"></span>
   <span class="section-label label-orange">Section 8</span>
-  <h2>API Design</h2>
+  <details>
+  <summary><h2>API Design</h2></summary>
 
   <div class="table-wrapper">
     <table>
@@ -1891,6 +1929,7 @@
 <span class="cm">// - Each file must be under 25MB</span>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1899,7 +1938,8 @@
 <section class="content-section" id="content-moderation-section">
   <span class="section-anchor" id="content-moderation"></span>
   <span class="section-label label-red">Section 9</span>
-  <h2>Content Moderation</h2>
+  <details>
+  <summary><h2>Content Moderation</h2></summary>
 
   <p>Every uploaded image passes through content moderation before being marked as <code>ready</code>. This is a safety-critical component -- serving inappropriate content damages brand trust and may have legal implications.</p>
 
@@ -1969,6 +2009,7 @@
     <div class="callout-title">Moderation Latency vs. Safety Trade-off</div>
     <p>Auto-approved images (confidence &lt; 30%) are visible immediately. Flagged images (30-80%) are a design decision: do we show them while awaiting review, or block until approved? Airbnb's approach is to <strong>show flagged images with a slight delay</strong> (they enter the CDN after 5 minutes, giving the ML pipeline time to complete), balancing host experience with safety. Auto-rejected images are never served.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -1977,7 +2018,8 @@
 <section class="content-section" id="trade-offs-section">
   <span class="section-anchor" id="trade-offs"></span>
   <span class="section-label label-yellow">Section 10</span>
-  <h2>Architecture Trade-offs</h2>
+  <details>
+  <summary><h2>Architecture Trade-offs</h2></summary>
 
   <div class="tradeoff-card">
     <h4>Presigned URL Upload <span class="vs">VS</span> Proxy Upload Through App Server</h4>
@@ -2092,6 +2134,7 @@
       <p style="color: var(--text-muted); font-size: 0.9em;">Client-side compression (e.g., browser-based resize before upload) reduces upload bandwidth but varies across devices and cannot be trusted for quality. Server-side compression ensures consistent quality and allows format-specific optimization (WebP, AVIF). Best approach: light client-side resize for very large images (&gt;15MB) combined with full server-side processing pipeline.</p>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -2100,7 +2143,8 @@
 <section class="content-section" id="deep-dives-section">
   <span class="section-anchor" id="deep-dives"></span>
   <span class="section-label label-purple">Section 11</span>
-  <h2>Deep Dives</h2>
+  <details>
+  <summary><h2>Deep Dives</h2></summary>
 
   <h3>Resumable Uploads (tus Protocol)</h3>
   <div class="card">
@@ -2229,6 +2273,7 @@
     </div>
     <p><strong>Caveat:</strong> At Airbnb's scale, exact duplicates are relatively rare across different hosts. The storage savings (~2-5%) may not justify the added complexity. Perceptual hashing for fraud detection provides more value.</p>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ -->
@@ -2237,7 +2282,8 @@
 <section class="content-section" id="interview-tips-section">
   <span class="section-anchor" id="interview-tips"></span>
   <span class="section-label label-success">Section 12</span>
-  <h2>Interview Tips &amp; Calibration</h2>
+  <details>
+  <summary><h2>Interview Tips &amp; Calibration</h2></summary>
 
   <h3>Level Calibration</h3>
   <div class="card-grid-3">
@@ -2356,6 +2402,7 @@
       <li><strong>Have a clear opinion on eager vs lazy resizing</strong> and be ready to defend it with data (CDN cache hit ratio, cold-start latency, storage cost).</li>
     </ul>
   </div>
+  </details>
 </section>
 
 </div>
@@ -2367,6 +2414,16 @@
   <p><a href="index.html">&#8592; Back to All Topics</a> &nbsp;|&nbsp; Topic 12 of 18</p>
   <p style="margin-top: 8px;">Airbnb System Design Interview Preparation &mdash; Image Ingestion Pipeline</p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

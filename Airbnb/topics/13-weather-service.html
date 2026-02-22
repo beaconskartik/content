@@ -578,6 +578,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -633,13 +652,18 @@
     <a href="#extensions">Extensions</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
 
 <!-- ==================== SECTION 1: OVERVIEW ==================== -->
 <section id="overview">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--secondary));">&#9729;</span> System Overview</h2>
+<details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--secondary));">&#9729;</span> System Overview</h2></summary>
 
   <p>The National Weather Service operates thousands of weather stations across the country. Each station sends a <strong>daily CSV file</strong> containing two datasets: a <strong>10-day forecast</strong> (predicted highs and lows) and the <strong>previous day's actual temperatures</strong>. Our job is to design an HTTP API that makes this data accessible to downstream clients &mdash; weather websites, newspaper weather sections, mobile apps, and other programmatic consumers.</p>
 
@@ -702,11 +726,13 @@
     <div class="tip-title" style="color:var(--success);">Key Insight: Small Data, Big Read Scale</div>
     <p>5,000 stations &times; 365 days &times; 30 years = ~55 million rows. This is a <strong>small dataset</strong> that easily fits in a single PostgreSQL instance. The real scaling challenge is on the <strong>read side</strong> &mdash; millions of API clients hitting the same data. This shifts the architecture toward aggressive caching and CDN strategies rather than database sharding.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 2: REQUIREMENTS ==================== -->
 <section id="requirements">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--blue));">&#128203;</span> Requirements</h2>
+<details open>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--blue));">&#128203;</span> Requirements</h2></summary>
 
   <h3>Functional Requirements</h3>
   <div class="card-grid">
@@ -779,11 +805,13 @@
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 3: DATA INGESTION ==================== -->
 <section id="ingestion">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--accent), var(--primary));">&#128229;</span> Data Ingestion Pipeline</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--accent), var(--primary));">&#128229;</span> Data Ingestion Pipeline</h2></summary>
 
   <p>Every day, each of the ~5,000 weather stations uploads a CSV file containing 10 rows of predicted data (today through 9 days out) and 1 row of actual data (yesterday). The ingestion pipeline must reliably parse, validate, and store this data.</p>
 
@@ -898,11 +926,13 @@
             row.low &lt;= row.high <span class="keyword">and</span>
             self.is_valid_date(row.date)
         )</pre>
+</details>
 </section>
 
 <!-- ==================== SECTION 4: GEO MAPPING ==================== -->
 <section id="geo-mapping">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--blue));">&#127758;</span> Geo Mapping: Zip Code to Station</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--blue));">&#127758;</span> Geo Mapping: Zip Code to Station</h2></summary>
 
   <p>The central challenge: users query by zip code or city, but weather data is organized by station. We need an efficient way to map any US zip code to the nearest weather station(s).</p>
 
@@ -996,11 +1026,13 @@
     <div class="tip-title" style="color:var(--purple);">Why Store Top 3 Stations?</div>
     <p>Storing the nearest 3 stations per zip code provides <strong>built-in fallback</strong>. If station #1 is down or has missing data for a date range, we automatically try station #2, then #3. This makes the API resilient to individual station failures without any extra infrastructure.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 5: DATA MODEL ==================== -->
 <section id="data-model">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--accent));">&#128451;</span> Data Model</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--accent));">&#128451;</span> Data Model</h2></summary>
 
   <p>Five core tables power the system. The schema is designed for <strong>query efficiency</strong> (zip code lookups) and <strong>data integrity</strong> (unique constraints prevent duplicates).</p>
 
@@ -1107,11 +1139,13 @@
     <div class="tip-title" style="color:var(--blue);">Why Separate Actual vs. Predicted Tables?</div>
     <p>The two data types have <strong>different schemas</strong> (predicted data needs <code class="inline-code">date_sent</code> and <code class="inline-code">date_predicted</code>, actual data only needs <code class="inline-code">date_actual</code>) and <strong>different query patterns</strong> (predicted data is queried with "latest prediction" logic, actual data is a simple range scan). Separating them gives cleaner indexes, simpler queries, and independent scaling. A single merged table with nullable columns would be messier and slower.</p>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 6: API DESIGN ==================== -->
 <section id="api-design">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--success));">&#128268;</span> API Design</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--secondary), var(--success));">&#128268;</span> API Design</h2></summary>
 
   <h3>Primary Endpoint</h3>
   <pre><span class="keyword">GET</span> <span class="string">/api/v1/weather</span>
@@ -1268,11 +1302,13 @@
                             | (Popular |             | Cache    |
                             |  zips)   |             |          |
                             +----------+             +----------+</div>
+</details>
 </section>
 
 <!-- ==================== SECTION 7: CACHING ==================== -->
 <section id="caching">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--success), var(--secondary));">&#9889;</span> Caching Strategy</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--success), var(--secondary));">&#9889;</span> Caching Strategy</h2></summary>
 
   <p>With millions of API clients and a dataset that only changes once daily, caching is the <strong>single most impactful optimization</strong>. The trick is understanding what changes when and setting TTLs accordingly.</p>
 
@@ -1395,11 +1431,13 @@
       </tbody>
     </table>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 8: EDGE CASES ==================== -->
 <section id="edge-cases">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--danger), var(--warning));">&#9888;</span> Handling Edge Cases</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--danger), var(--warning));">&#9888;</span> Handling Edge Cases</h2></summary>
 
   <p>Real-world weather data is messy. Stations go offline, data arrives late, readings are wrong. A Principal Engineer must design for every failure mode.</p>
 
@@ -1538,11 +1576,13 @@
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 9: SCALING ==================== -->
 <section id="scaling">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--purple));">&#128640;</span> Scaling Strategy</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--blue), var(--purple));">&#128640;</span> Scaling Strategy</h2></summary>
 
   <p>The beauty of this system: the data is small (~10 GB), but the read traffic is potentially massive (millions of API clients). This is a <strong>read-heavy, write-light</strong> system. Scaling strategy focuses entirely on the read path.</p>
 
@@ -2025,11 +2065,13 @@
       <li><strong>DB is fine:</strong> With CDN + Redis handling 99% of reads, DB sees almost no spike</li>
     </ul>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 10: TRADE-OFFS ==================== -->
 <section id="tradeoffs">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--danger));">&#9878;</span> Trade-offs &amp; Design Decisions</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--warning), var(--danger));">&#9878;</span> Trade-offs &amp; Design Decisions</h2></summary>
 
   <p>Every design decision involves trade-offs. Here are the key decisions and their justifications. In an interview, explicitly stating trade-offs demonstrates principal-level thinking.</p>
 
@@ -2117,11 +2159,13 @@
       <p class="verdict">Verdict: Impractical for a public API at scale. Costs 10-100x more.</p>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 11: EXTENSIONS ==================== -->
 <section id="extensions">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--primary));">&#128161;</span> Extensions &amp; Future Work</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--purple), var(--primary));">&#128161;</span> Extensions &amp; Future Work</h2></summary>
 
   <p>Once the core system is stable, these extensions demonstrate depth of thinking and product intuition.</p>
 
@@ -2181,11 +2225,13 @@
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ==================== SECTION 12: INTERVIEW TIPS ==================== -->
 <section id="interview-tips">
-  <h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--purple));">&#127919;</span> Interview Tips</h2>
+<details>
+  <summary><h2><span class="icon" style="background:linear-gradient(135deg, var(--primary), var(--purple));">&#127919;</span> Interview Tips</h2></summary>
 
   <div class="tip-box tip-interview">
     <div class="tip-title" style="color:var(--purple);">Tip 1: Start with the Data Flow, Not the API</div>
@@ -2297,6 +2343,7 @@
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 </div><!-- /container -->
@@ -2311,6 +2358,16 @@
   </p>
   <p style="margin-top:12px; font-size:0.8em;">Airbnb System Design Interview Collection &mdash; Principal Engineer Level</p>
 </footer>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){

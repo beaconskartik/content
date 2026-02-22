@@ -586,6 +586,25 @@
     overflow: auto;
   }
   .diagram-box.fullscreen .diagram-zoom-controls { opacity: 1; top: 20px; right: 20px; }
+
+  /* ===== COLLAPSIBLE SECTIONS ===== */
+  details { margin-bottom: 0; }
+  details summary { cursor: pointer; list-style: none; user-select: none; padding: 0; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::marker { display: none; content: ''; }
+  details summary h2 { display: inline-flex; }
+  details summary h2::before {
+    content: '\25B6'; display: inline-flex; align-items: center;
+    margin-right: 8px; transition: transform 0.2s; font-size: 0.5em; color: var(--text-muted);
+  }
+  details[open] summary h2::before { transform: rotate(90deg); }
+  .toggle-controls { display: flex; gap: 8px; margin-top: 10px; }
+  .toggle-controls button {
+    padding: 5px 14px; border-radius: 8px; border: 1px solid #e5e7eb;
+    background: var(--card-bg); color: var(--text-muted); font-size: 0.78em;
+    cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .toggle-controls button:hover { color: var(--purple); border-color: var(--purple); background: rgba(123,47,247,0.1); }
 </style>
 </head>
 <body>
@@ -645,6 +664,10 @@
     <a href="#deep-dives">Deep Dives</a>
     <a href="#interview-tips">Interview Tips</a>
   </div>
+  <div class="toggle-controls">
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=true)">Expand All</button>
+    <button onclick="document.querySelectorAll('.container details').forEach(d=>d.open=false)">Collapse All</button>
+  </div>
 </nav>
 
 <div class="container">
@@ -653,8 +676,9 @@
 <!--  S1 - OVERVIEW                                                -->
 <!-- ============================================================ -->
 <section class="section" id="overview">
+<details open>
   <span class="section-label">Section 1</span>
-  <h2>Overview</h2>
+  <summary><h2>Overview</h2></summary>
   <p>Design a notification system that delivers messages across multiple channels -- <strong>Email</strong> (SendGrid / Amazon SES), <strong>SMS</strong> (Twilio), <strong>Push</strong> (Apple APNS / Google FCM), and <strong>In-App</strong> -- to Airbnb's global user base of hundreds of millions of accounts.</p>
 
   <h3>Notification Categories</h3>
@@ -691,14 +715,16 @@
   <div class="callout info">
     <p><strong>Why this matters at Airbnb:</strong> Notifications are the nervous system of the marketplace. A missed booking confirmation destroys trust. A delayed security alert creates liability. A flood of marketing spam drives unsubscribes. The system must balance reliability, latency, user preferences, cost, and regulatory compliance simultaneously.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S2 - REQUIREMENTS                                            -->
 <!-- ============================================================ -->
 <section class="section" id="requirements">
+<details open>
   <span class="section-label">Section 2</span>
-  <h2>Requirements</h2>
+  <summary><h2>Requirements</h2></summary>
 
   <div class="grid-2">
     <div class="card">
@@ -728,14 +754,16 @@
       </ol>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S3 - CAPACITY                                                -->
 <!-- ============================================================ -->
 <section class="section" id="capacity">
+<details>
   <span class="section-label">Section 3</span>
-  <h2>Capacity Estimation</h2>
+  <summary><h2>Capacity Estimation</h2></summary>
 
   <div class="grid-4">
     <div class="metric-box">
@@ -815,14 +843,16 @@
   <div class="callout warning">
     <p><strong>Key insight:</strong> SMS is 2 orders of magnitude more expensive than email. The system must intelligently route to push/email first and only use SMS for critical/P0 notifications or when users have no other reachable channel. This alone can save millions per year.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S4 - HIGH-LEVEL ARCHITECTURE                                 -->
 <!-- ============================================================ -->
 <section class="section" id="architecture">
+<details>
   <span class="section-label">Section 4</span>
-  <h2>High-Level Architecture</h2>
+  <summary><h2>High-Level Architecture</h2></summary>
 
   <div class="arch-diagram">
 <svg viewBox="0 0 1100 640" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
@@ -1320,14 +1350,16 @@
       </ul>
     </div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S5 - DATA MODEL                                              -->
 <!-- ============================================================ -->
 <section class="section" id="data-model">
+<details>
   <span class="section-label">Section 5</span>
-  <h2>Data Model</h2>
+  <summary><h2>Data Model</h2></summary>
 
   <h3>notifications</h3>
   <p>Primary record for every notification sent. Partitioned by <code class="inline">created_at</code> (monthly) for efficient archival.</p>
@@ -1407,14 +1439,16 @@
   <div class="callout">
     <p><strong>Sharding strategy:</strong> The <code class="inline">notifications</code> table is partitioned by time (monthly) and sharded by <code class="inline">user_id</code>. This supports both the write-heavy ingestion path and the user-centric read path (notification inbox). Hot partitions (current month) sit on SSD; older data migrates to cheaper storage.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S6 - API DESIGN                                              -->
 <!-- ============================================================ -->
 <section class="section" id="api-design">
+<details>
   <span class="section-label">Section 6</span>
-  <h2>API Design</h2>
+  <summary><h2>API Design</h2></summary>
 
   <h3>1. Send Single Notification</h3>
   <pre><code><span class="kw">POST</span> <span class="str">/api/v1/notifications/send</span>
@@ -1522,14 +1556,16 @@
     }
   ]
 }</code></pre>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S7 - NOTIFICATION FLOW                                       -->
 <!-- ============================================================ -->
 <section class="section" id="notification-flow">
+<details>
   <span class="section-label">Section 7</span>
-  <h2>Notification Flow</h2>
+  <summary><h2>Notification Flow</h2></summary>
 
   <p>End-to-end flow from event origination to delivery confirmation.</p>
 
@@ -1616,14 +1652,16 @@
                                   | (status updates)    |    delivery / bounce / open / click events
                                   +---------------------+
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S8 - PRIORITY & RATE LIMITING                                -->
 <!-- ============================================================ -->
 <section class="section" id="priority-rate">
+<details>
   <span class="section-label">Section 8</span>
-  <h2>Priority &amp; Rate Limiting</h2>
+  <summary><h2>Priority &amp; Rate Limiting</h2></summary>
 
   <h3>Priority Levels</h3>
   <div class="table-wrap">
@@ -1750,14 +1788,16 @@
         <span class="kw">return await</span> redis.<span class="fn">eval</span>(TOKEN_BUCKET_LUA, <span class="kw">this</span>.key, <span class="kw">this</span>.rate, tokens);
     }
 }</code></pre>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S9 - RELIABILITY                                             -->
 <!-- ============================================================ -->
 <section class="section" id="reliability">
+<details>
   <span class="section-label">Section 9</span>
-  <h2>Reliability</h2>
+  <summary><h2>Reliability</h2></summary>
 
   <h3>Retry Strategy with Exponential Backoff</h3>
   <div class="table-wrap">
@@ -1865,14 +1905,16 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
   <div class="callout danger">
     <p><strong>Multi-provider failover:</strong> For email, maintain active integrations with both SendGrid and Amazon SES. Primary traffic goes to SendGrid (better deliverability tooling). If SendGrid circuit opens, SES takes over. DNS records (SPF/DKIM) must authorize both senders. Keep both warmed up by routing 10% of P3 traffic to SES at all times.</p>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S10 - TEMPLATE ENGINE                                        -->
 <!-- ============================================================ -->
 <section class="section" id="template-engine">
+<details>
   <span class="section-label">Section 10</span>
-  <h2>Template Engine</h2>
+  <summary><h2>Template Engine</h2></summary>
 
   <h3>Handlebars Template System</h3>
   <p>Templates use Handlebars/Mustache syntax with variable substitution and locale-aware formatting helpers.</p>
@@ -1974,14 +2016,16 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
         abGroup: template.ab_test_group
     };
 }</code></pre>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S11 - TRADE-OFFS                                             -->
 <!-- ============================================================ -->
 <section class="section" id="tradeoffs">
+<details>
   <span class="section-label">Section 11</span>
-  <h2>Trade-offs</h2>
+  <summary><h2>Trade-offs</h2></summary>
 
   <div class="tradeoff">
     <h4>1. Push vs Pull Notification Delivery</h4>
@@ -2104,14 +2148,16 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
     </div>
     <div class="verdict"><strong>Decision:</strong> Dual-mode. P0/P1 are immediate (individual sends). P2/P3 are batched into micro-batches of 100-1000 messages, sent at provider-optimal intervals. Marketing campaigns use mega-batches with scheduled send-time optimization.</div>
   </div>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S12 - DEEP DIVES                                             -->
 <!-- ============================================================ -->
 <section class="section" id="deep-dives">
+<details>
   <span class="section-label">Section 12</span>
-  <h2>Deep Dives</h2>
+  <summary><h2>Deep Dives</h2></summary>
 
   <h3>1. Email Deliverability</h3>
   <div class="card">
@@ -2277,14 +2323,16 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
   <span class="str">"channel"</span>: <span class="str">"email"</span>              <span class="cm">// or "all"</span>
 }
 <span class="cm">// Must process immediately (not queued)</span></code></pre>
+</details>
 </section>
 
 <!-- ============================================================ -->
 <!--  S13 - INTERVIEW TIPS                                         -->
 <!-- ============================================================ -->
 <section class="section" id="interview-tips">
+<details>
   <span class="section-label">Section 13</span>
-  <h2>Interview Tips</h2>
+  <summary><h2>Interview Tips</h2></summary>
 
   <h3>Calibration: What Interviewers Look For</h3>
   <div class="grid-3">
@@ -2407,6 +2455,7 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
   <div class="callout">
     <p><strong>Principal-level signal:</strong> Bring up cost optimization unprompted. Calculate that SMS costs 75x more than email per unit. Propose intelligent channel routing: attempt push first (free), then email ($0.0001), only escalate to SMS ($0.0075) for P0 or when other channels are unreachable. This single decision at Airbnb scale saves millions annually.</p>
   </div>
+</details>
 </section>
 
 </div>
@@ -2418,6 +2467,16 @@ cooldownPeriod: <span class="num">30</span> seconds</code></pre>
   <p><a href="index.html">&#8592; Back to All Topics</a> &nbsp;|&nbsp; Topic 14 of 18</p>
   <p style="margin-top: 8px;">Airbnb System Design Interview Preparation -- Multi-Channel Notification System</p>
 </div>
+
+<script>
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+  link.addEventListener('click', function() {
+    var id = this.getAttribute('href').slice(1);
+    var section = document.getElementById(id);
+    if (section) { var d = section.querySelector('details'); if (d) d.open = true; }
+  });
+});
+</script>
 
 <script>
 (function(){
