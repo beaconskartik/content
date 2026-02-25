@@ -668,25 +668,19 @@
   <h3>Key Clarifying Questions</h3>
   <div class="card-grid">
     <div class="card">
-      <h4>&#127919; Scope Questions</h4>
+      <h4>&#127919; Scope Clarifications</h4>
       <ul>
-        <li><strong>Is this 1:1 or group?</strong> -- Group. Up to 50 users per thread.</li>
-        <li><strong>Are threads tied to bookings?</strong> -- Yes, threads can have polymorphic attachments (booking, special offer, inquiry, etc.).</li>
-        <li><strong>Can the same group of people have multiple threads?</strong> -- No. If the exact same participant set exists, we resume that thread (dedup by participant hash).</li>
-        <li><strong>Do messages expire?</strong> -- No. Messages are persisted forever.</li>
-        <li><strong>Do we need real-time delivery?</strong> -- Yes. Push notifications + WebSocket for online users.</li>
-        <li><strong>What about read receipts?</strong> -- Per-user read state tracked via flags in user_threads.</li>
+        <li><strong>Group chat:</strong> 2-50 participants per thread (host + co-hosts + guests).</li>
+        <li><strong>Booking context:</strong> Threads linked to bookings/inquiries via attachments table.</li>
+        <li><strong>Thread dedup:</strong> Same participant set = resume existing thread (hash-based lookup).</li>
+        <li><strong>Messages persist forever.</strong> No TTL. Real-time via WebSocket + push for offline.</li>
       </ul>
     </div>
     <div class="card">
-      <h4>&#128200; Scale Questions</h4>
+      <h4>&#128200; Scale</h4>
       <ul>
-        <li><strong>How many DAU?</strong> -- ~1 million daily active users.</li>
-        <li><strong>Messages per user per day?</strong> -- Average ~5 messages/day across threads.</li>
-        <li><strong>Inbox size?</strong> -- Default paginated view of 20 threads per page.</li>
-        <li><strong>Peak traffic?</strong> -- 3-4x average during booking season.</li>
-        <li><strong>Global distribution?</strong> -- Yes, multi-region with eventual consistency acceptable for messages.</li>
-        <li><strong>Offline support?</strong> -- Yes, clients must sync missed messages when coming online.</li>
+        <li>~1M DAU, ~5 messages/user/day, 20 threads per inbox page.</li>
+        <li>3-4x peak during booking season. Multi-region, eventual consistency for messages.</li>
       </ul>
     </div>
   </div>

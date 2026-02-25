@@ -563,56 +563,32 @@
         <tr><th>#</th><th>Requirement</th><th>Details</th></tr>
       </thead>
       <tbody>
-        <tr><td>FR-1</td><td><strong>Search Listings</strong></td><td>Search by geo-location (lat/lng bounding box or radius), check-in/check-out dates, number of guests, price range, property type, amenities, Superhost, instant book, and more.</td></tr>
-        <tr><td>FR-2</td><td><strong>Create Booking</strong></td><td>Guest selects listing + dates, system verifies availability, calculates total price, creates reservation, and initiates payment. Must be atomic -- no partial bookings.</td></tr>
-        <tr><td>FR-3</td><td><strong>View Booking History</strong></td><td>Paginated list of bookings for guest (my trips) and host (my reservations). Filterable by status, date range, listing.</td></tr>
-        <tr><td>FR-4</td><td><strong>Update Booking</strong></td><td>Modify dates (subject to availability), guest count, or special requests. Triggers price recalculation and differential payment/refund.</td></tr>
-        <tr><td>FR-5</td><td><strong>Cancel Booking</strong></td><td>Guest or host initiates cancellation. Refund amount determined by cancellation policy (Flexible, Moderate, Strict, Super Strict). Calendar dates released.</td></tr>
-        <tr><td>FR-6</td><td><strong>Availability Management</strong></td><td>Hosts set blocked dates, minimum/maximum stay, custom pricing per night. Calendar syncs with external platforms (iCal).</td></tr>
-        <tr><td>FR-7</td><td><strong>Price Calculation</strong></td><td>Nightly rate (may vary per night) x number of nights + cleaning fee + service fee (guest) + host fee + occupancy taxes. Multi-currency with FX at time of booking.</td></tr>
+        <tr><td>FR-1</td><td><strong>Search Listings</strong></td><td>Geo-location + dates + guests + filters (price, type, amenities). Paginated results.</td></tr>
+        <tr><td>FR-2</td><td><strong>Create Booking</strong></td><td>Atomic: verify availability, calculate price, create reservation, initiate payment. No partial bookings.</td></tr>
+        <tr><td>FR-3</td><td><strong>Cancel Booking</strong></td><td>Guest or host cancels. Refund per cancellation policy. Calendar dates released.</td></tr>
+        <tr><td>FR-4</td><td><strong>Availability Mgmt</strong></td><td>Hosts block dates, set custom pricing per night, min/max stay rules.</td></tr>
       </tbody>
     </table>
   </div>
 
   <h3>Non-Functional Requirements</h3>
   <div class="card-grid">
-    <div class="card" style="border-left: 3px solid var(--primary);">
-      <h4 style="color:var(--primary);">&#9889; Latency</h4>
-      <ul>
-        <li>Search P99 &lt; 200ms</li>
-        <li>Booking creation P99 &lt; 500ms</li>
-        <li>History retrieval P99 &lt; 150ms</li>
-      </ul>
-    </div>
-    <div class="card" style="border-left: 3px solid var(--secondary);">
-      <h4 style="color:var(--secondary);">&#128737;&#65039; Availability</h4>
-      <ul>
-        <li>99.99% uptime (52 min downtime/year)</li>
-        <li>Multi-region active-active for search</li>
-        <li>Single-leader for bookings (consistency)</li>
-      </ul>
-    </div>
     <div class="card" style="border-left: 3px solid var(--purple);">
       <h4 style="color:var(--purple);">&#128274; Consistency</h4>
       <ul>
-        <li>Zero double-bookings (strong consistency)</li>
-        <li>Idempotent booking creation (client retries)</li>
+        <li>Zero double-bookings (strong consistency on availability)</li>
+        <li>Idempotent booking creation via client-generated keys</li>
         <li>Exactly-once payment capture</li>
       </ul>
     </div>
-    <div class="card" style="border-left: 3px solid var(--blue);">
-      <h4 style="color:var(--blue);">&#128200; Scale</h4>
+    <div class="card" style="border-left: 3px solid var(--primary);">
+      <h4 style="color:var(--primary);">&#9889; Latency &amp; Scale</h4>
       <ul>
-        <li>10M DAU, 7M+ active listings</li>
-        <li>~50M searches/day</li>
-        <li>~1.5M bookings/day</li>
+        <li>Search P99 &lt; 200ms, Booking P99 &lt; 500ms</li>
+        <li>10M DAU, ~50M searches/day, ~1.5M bookings/day</li>
+        <li>99.99% uptime</li>
       </ul>
     </div>
-  </div>
-
-  <div class="tip-box warning">
-    <strong>&#9888;&#65039; Idempotency is Critical</strong>
-    Mobile clients on unreliable networks will retry booking requests. Without idempotency keys, a single tap could produce duplicate charges. Every mutating API must accept a client-generated <code>idempotency_key</code> (UUID v4) and return the cached result on replay.
   </div>
 </details>
 </section>
@@ -1316,158 +1292,33 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
   </h2></summary>
 
   <h3>1. Search Listings</h3>
-<pre><code><span class="comment">// GET /api/v1/search/listings</span>
-<span class="comment">// Query Parameters (simplified to JSON for clarity)</span>
-
-<span class="keyword">Request:</span>
-{
-  <span class="string">"location"</span>: {
-    <span class="string">"lat"</span>: <span class="number">37.7749</span>,
-    <span class="string">"lng"</span>: <span class="number">-122.4194</span>,
-    <span class="string">"radius_km"</span>: <span class="number">25</span>
-  },
-  <span class="string">"check_in"</span>:  <span class="string">"2025-07-01"</span>,
-  <span class="string">"check_out"</span>: <span class="string">"2025-07-05"</span>,
-  <span class="string">"guests"</span>:    <span class="number">2</span>,
-  <span class="string">"filters"</span>: {
-    <span class="string">"price_min"</span>: <span class="number">50</span>,
-    <span class="string">"price_max"</span>: <span class="number">300</span>,
-    <span class="string">"property_type"</span>: [<span class="string">"entire_home"</span>, <span class="string">"private_room"</span>],
-    <span class="string">"amenities"</span>: [<span class="string">"wifi"</span>, <span class="string">"pool"</span>],
-    <span class="string">"superhost"</span>: <span class="keyword">true</span>,
-    <span class="string">"instant_book"</span>: <span class="keyword">true</span>
-  },
-  <span class="string">"sort"</span>: <span class="string">"relevance"</span>,
-  <span class="string">"page"</span>: <span class="number">1</span>,
-  <span class="string">"page_size"</span>: <span class="number">20</span>
-}
+<pre><code><span class="comment">// GET /api/v1/search/listings?lat=37.77&lng=-122.41&radius_km=25</span>
+<span class="comment">//   &check_in=2025-07-01&check_out=2025-07-05&guests=2&page=1</span>
 
 <span class="keyword">Response:</span> <span class="number">200 OK</span>
-{
-  <span class="string">"results"</span>: [
-    {
-      <span class="string">"listing_id"</span>: <span class="string">"lst_abc123"</span>,
-      <span class="string">"title"</span>: <span class="string">"Sunny Loft in SOMA"</span>,
-      <span class="string">"host"</span>: { <span class="string">"name"</span>: <span class="string">"Alice"</span>, <span class="string">"is_superhost"</span>: <span class="keyword">true</span>, <span class="string">"avatar_url"</span>: <span class="string">"..."</span> },
-      <span class="string">"location"</span>: { <span class="string">"lat"</span>: <span class="number">37.78</span>, <span class="string">"lng"</span>: <span class="number">-122.41</span>, <span class="string">"city"</span>: <span class="string">"San Francisco"</span> },
-      <span class="string">"price"</span>: { <span class="string">"nightly"</span>: <span class="number">149</span>, <span class="string">"total"</span>: <span class="number">695</span>, <span class="string">"currency"</span>: <span class="string">"USD"</span> },
-      <span class="string">"rating"</span>: <span class="number">4.92</span>,
-      <span class="string">"review_count"</span>: <span class="number">287</span>,
-      <span class="string">"thumbnail_url"</span>: <span class="string">"https://cdn.airbnb.com/..."</span>,
-      <span class="string">"instant_book"</span>: <span class="keyword">true</span>
-    }
-  ],
-  <span class="string">"pagination"</span>: { <span class="string">"page"</span>: <span class="number">1</span>, <span class="string">"page_size"</span>: <span class="number">20</span>, <span class="string">"total_results"</span>: <span class="number">342</span> },
-  <span class="string">"search_id"</span>: <span class="string">"srch_xyz789"</span>  <span class="comment">// for analytics attribution</span>
-}
+{ <span class="string">"results"</span>: [{ <span class="string">"listing_id"</span>, <span class="string">"title"</span>, <span class="string">"price"</span>: { <span class="string">"nightly"</span>, <span class="string">"total"</span> }, <span class="string">"rating"</span>, <span class="string">"instant_book"</span> }],
+  <span class="string">"pagination"</span>: { <span class="string">"page"</span>, <span class="string">"total_results"</span> } }
 </code></pre>
 
   <h3>2. Create Booking</h3>
 <pre><code><span class="comment">// POST /api/v1/bookings</span>
+<span class="comment">// Headers: Idempotency-Key: &lt;uuid&gt;</span>
 
 <span class="keyword">Request:</span>
-{
-  <span class="string">"idempotency_key"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
-  <span class="string">"listing_id"</span>:      <span class="string">"lst_abc123"</span>,
-  <span class="string">"check_in"</span>:        <span class="string">"2025-07-01"</span>,
-  <span class="string">"check_out"</span>:       <span class="string">"2025-07-05"</span>,
-  <span class="string">"guests"</span>:          <span class="number">2</span>,
-  <span class="string">"special_requests"</span>: <span class="string">"Late check-in around 10pm"</span>,
-  <span class="string">"payment_method_id"</span>: <span class="string">"pm_stripe_xyz"</span>,
-  <span class="string">"currency"</span>:        <span class="string">"USD"</span>
-}
+{ <span class="string">"listing_id"</span>: <span class="string">"lst_abc123"</span>, <span class="string">"check_in"</span>: <span class="string">"2025-07-01"</span>, <span class="string">"check_out"</span>: <span class="string">"2025-07-05"</span>,
+  <span class="string">"guests"</span>: <span class="number">2</span>, <span class="string">"payment_method_id"</span>: <span class="string">"pm_stripe_xyz"</span> }
 
 <span class="keyword">Response:</span> <span class="number">201 Created</span>
-{
-  <span class="string">"booking_id"</span>:    <span class="string">"bk_def456"</span>,
-  <span class="string">"status"</span>:        <span class="string">"PENDING"</span>,
-  <span class="string">"listing_id"</span>:    <span class="string">"lst_abc123"</span>,
-  <span class="string">"check_in"</span>:      <span class="string">"2025-07-01"</span>,
-  <span class="string">"check_out"</span>:     <span class="string">"2025-07-05"</span>,
-  <span class="string">"nights"</span>:        <span class="number">4</span>,
-  <span class="string">"price_breakdown"</span>: {
-    <span class="string">"nightly_rates"</span>:  [<span class="number">149</span>, <span class="number">149</span>, <span class="number">179</span>, <span class="number">179</span>],
-    <span class="string">"subtotal"</span>:       <span class="number">656</span>,
-    <span class="string">"cleaning_fee"</span>:   <span class="number">75</span>,
-    <span class="string">"service_fee"</span>:    <span class="number">104</span>,
-    <span class="string">"occupancy_tax"</span>:  <span class="number">97</span>,
-    <span class="string">"total"</span>:          <span class="number">932</span>,
-    <span class="string">"currency"</span>:       <span class="string">"USD"</span>
-  },
-  <span class="string">"payment_status"</span>: <span class="string">"AUTHORIZED"</span>,
-  <span class="string">"created_at"</span>:     <span class="string">"2025-06-15T14:30:00Z"</span>
-}
+{ <span class="string">"booking_id"</span>: <span class="string">"bk_def456"</span>, <span class="string">"status"</span>: <span class="string">"PENDING"</span>, <span class="string">"total_cents"</span>: <span class="number">93200</span>,
+  <span class="string">"payment_status"</span>: <span class="string">"AUTHORIZED"</span> }
 </code></pre>
 
-  <h3>3. Booking History</h3>
-<pre><code><span class="comment">// GET /api/v1/users/{user_id}/bookings?status=upcoming&page=1&page_size=10</span>
-
-<span class="keyword">Response:</span> <span class="number">200 OK</span>
-{
-  <span class="string">"bookings"</span>: [
-    {
-      <span class="string">"booking_id"</span>: <span class="string">"bk_def456"</span>,
-      <span class="string">"status"</span>:     <span class="string">"CONFIRMED"</span>,
-      <span class="string">"listing"</span>: {
-        <span class="string">"id"</span>: <span class="string">"lst_abc123"</span>,
-        <span class="string">"title"</span>: <span class="string">"Sunny Loft in SOMA"</span>,
-        <span class="string">"thumbnail"</span>: <span class="string">"https://cdn.airbnb.com/..."</span>,
-        <span class="string">"city"</span>: <span class="string">"San Francisco"</span>
-      },
-      <span class="string">"check_in"</span>:   <span class="string">"2025-07-01"</span>,
-      <span class="string">"check_out"</span>:  <span class="string">"2025-07-05"</span>,
-      <span class="string">"total_price"</span>: <span class="number">932</span>,
-      <span class="string">"currency"</span>:   <span class="string">"USD"</span>
-    }
-  ],
-  <span class="string">"pagination"</span>: { <span class="string">"page"</span>: <span class="number">1</span>, <span class="string">"total_pages"</span>: <span class="number">3</span> }
-}
-</code></pre>
-
-  <h3>4. Update Booking</h3>
-<pre><code><span class="comment">// PATCH /api/v1/bookings/{booking_id}</span>
-
-<span class="keyword">Request:</span>
-{
-  <span class="string">"idempotency_key"</span>: <span class="string">"660e8400-e29b-41d4-a716-446655440001"</span>,
-  <span class="string">"check_in"</span>:  <span class="string">"2025-07-02"</span>,   <span class="comment">// shifting one day later</span>
-  <span class="string">"check_out"</span>: <span class="string">"2025-07-06"</span>,
-  <span class="string">"guests"</span>:    <span class="number">3</span>
-}
-
-<span class="keyword">Response:</span> <span class="number">200 OK</span>
-{
-  <span class="string">"booking_id"</span>:     <span class="string">"bk_def456"</span>,
-  <span class="string">"status"</span>:         <span class="string">"CONFIRMED"</span>,
-  <span class="string">"previous_total"</span>: <span class="number">932</span>,
-  <span class="string">"new_total"</span>:      <span class="number">978</span>,
-  <span class="string">"difference"</span>:     <span class="number">46</span>,
-  <span class="string">"payment_action"</span>: <span class="string">"ADDITIONAL_CHARGE"</span>
-}
-</code></pre>
-
-  <h3>5. Cancel Booking</h3>
+  <h3>3. Cancel Booking</h3>
 <pre><code><span class="comment">// POST /api/v1/bookings/{booking_id}/cancel</span>
+<span class="comment">// Headers: Idempotency-Key: &lt;uuid&gt;</span>
 
-<span class="keyword">Request:</span>
-{
-  <span class="string">"idempotency_key"</span>: <span class="string">"770e8400-e29b-41d4-a716-446655440002"</span>,
-  <span class="string">"reason"</span>: <span class="string">"change_of_plans"</span>
-}
-
-<span class="keyword">Response:</span> <span class="number">200 OK</span>
-{
-  <span class="string">"booking_id"</span>:        <span class="string">"bk_def456"</span>,
-  <span class="string">"status"</span>:            <span class="string">"CANCELLED"</span>,
-  <span class="string">"cancellation_policy"</span>: <span class="string">"MODERATE"</span>,
-  <span class="string">"refund"</span>: {
-    <span class="string">"amount"</span>:    <span class="number">832</span>,
-    <span class="string">"penalty"</span>:   <span class="number">100</span>,
-    <span class="string">"currency"</span>:  <span class="string">"USD"</span>,
-    <span class="string">"method"</span>:    <span class="string">"original_payment"</span>,
-    <span class="string">"eta_days"</span>:  <span class="number">5</span>
-  }
-}
+<span class="keyword">Request:</span>  { <span class="string">"reason"</span>: <span class="string">"change_of_plans"</span> }
+<span class="keyword">Response:</span> { <span class="string">"status"</span>: <span class="string">"CANCELLED"</span>, <span class="string">"refund_cents"</span>: <span class="number">83200</span>, <span class="string">"penalty_cents"</span>: <span class="number">10000</span> }
 </code></pre>
 </details>
 </section>
@@ -1482,63 +1333,16 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
     Data Model
   </h2></summary>
 
-  <p>The relational schema uses PostgreSQL for ACID guarantees on the booking path. Each table is designed for the specific access patterns of the booking system, with carefully chosen indexes to support both OLTP workloads and the availability check hot path.</p>
-
   <div class="er-grid">
-    <!-- Users Table -->
-    <div class="er-table">
-      <div class="er-header" style="color:var(--primary);">&#128100; users</div>
-      <div class="er-row"><span class="er-col er-pk">id</span><span class="er-type">UUID PK</span></div>
-      <div class="er-row"><span class="er-col">email</span><span class="er-type">VARCHAR(255) UNIQUE</span></div>
-      <div class="er-row"><span class="er-col">full_name</span><span class="er-type">VARCHAR(200)</span></div>
-      <div class="er-row"><span class="er-col">phone</span><span class="er-type">VARCHAR(20)</span></div>
-      <div class="er-row"><span class="er-col">avatar_url</span><span class="er-type">TEXT</span></div>
-      <div class="er-row"><span class="er-col">is_superhost</span><span class="er-type">BOOLEAN DEFAULT false</span></div>
-      <div class="er-row"><span class="er-col">identity_verified</span><span class="er-type">BOOLEAN DEFAULT false</span></div>
-      <div class="er-row"><span class="er-col">preferred_currency</span><span class="er-type">CHAR(3) DEFAULT 'USD'</span></div>
-      <div class="er-row"><span class="er-col">created_at</span><span class="er-type">TIMESTAMPTZ</span></div>
-      <div class="er-row"><span class="er-col">updated_at</span><span class="er-type">TIMESTAMPTZ</span></div>
-    </div>
-
-    <!-- Listings Table -->
-    <div class="er-table">
-      <div class="er-header" style="color:var(--secondary);">&#127968; listings</div>
-      <div class="er-row"><span class="er-col er-pk">id</span><span class="er-type">UUID PK</span></div>
-      <div class="er-row"><span class="er-col er-fk">host_id</span><span class="er-type">UUID FK &rarr; users</span></div>
-      <div class="er-row"><span class="er-col">title</span><span class="er-type">VARCHAR(200)</span></div>
-      <div class="er-row"><span class="er-col">description</span><span class="er-type">TEXT</span></div>
-      <div class="er-row"><span class="er-col">property_type</span><span class="er-type">ENUM(entire_home, private_room, shared_room)</span></div>
-      <div class="er-row"><span class="er-col">latitude</span><span class="er-type">DECIMAL(10,7)</span></div>
-      <div class="er-row"><span class="er-col">longitude</span><span class="er-type">DECIMAL(10,7)</span></div>
-      <div class="er-row"><span class="er-col">city</span><span class="er-type">VARCHAR(100)</span></div>
-      <div class="er-row"><span class="er-col">country</span><span class="er-type">CHAR(2)</span></div>
-      <div class="er-row"><span class="er-col">max_guests</span><span class="er-type">SMALLINT</span></div>
-      <div class="er-row"><span class="er-col">bedrooms</span><span class="er-type">SMALLINT</span></div>
-      <div class="er-row"><span class="er-col">base_price_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">cleaning_fee_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">currency</span><span class="er-type">CHAR(3)</span></div>
-      <div class="er-row"><span class="er-col">min_nights</span><span class="er-type">SMALLINT DEFAULT 1</span></div>
-      <div class="er-row"><span class="er-col">max_nights</span><span class="er-type">SMALLINT DEFAULT 365</span></div>
-      <div class="er-row"><span class="er-col">instant_book</span><span class="er-type">BOOLEAN</span></div>
-      <div class="er-row"><span class="er-col">cancellation_policy</span><span class="er-type">ENUM(flexible, moderate, strict, super_strict)</span></div>
-      <div class="er-row"><span class="er-col">amenities</span><span class="er-type">TEXT[]</span></div>
-      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(active, inactive, delisted)</span></div>
-      <div class="er-row"><span class="er-col">avg_rating</span><span class="er-type">DECIMAL(3,2)</span></div>
-      <div class="er-row"><span class="er-col">review_count</span><span class="er-type">INTEGER DEFAULT 0</span></div>
-      <div class="er-row"><span class="er-col">created_at</span><span class="er-type">TIMESTAMPTZ</span></div>
-    </div>
-
     <!-- Availability Table -->
     <div class="er-table">
       <div class="er-header" style="color:var(--blue);">&#128197; availability</div>
-      <div class="er-row"><span class="er-col er-pk">id</span><span class="er-type">BIGSERIAL PK</span></div>
       <div class="er-row"><span class="er-col er-fk">listing_id</span><span class="er-type">UUID FK &rarr; listings</span></div>
       <div class="er-row"><span class="er-col">date</span><span class="er-type">DATE</span></div>
-      <div class="er-row"><span class="er-col">is_available</span><span class="er-type">BOOLEAN DEFAULT true</span></div>
+      <div class="er-row"><span class="er-col">is_available</span><span class="er-type">BOOLEAN</span></div>
       <div class="er-row"><span class="er-col">price_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">min_nights</span><span class="er-type">SMALLINT</span></div>
-      <div class="er-row"><span class="er-col">booking_id</span><span class="er-type">UUID FK &rarr; bookings (nullable)</span></div>
-      <div class="er-row"><span class="er-col">version</span><span class="er-type">INTEGER DEFAULT 0</span></div>
+      <div class="er-row"><span class="er-col">booking_id</span><span class="er-type">UUID FK (nullable)</span></div>
+      <div class="er-row"><span class="er-col">version</span><span class="er-type">INTEGER (optimistic lock)</span></div>
     </div>
 
     <!-- Bookings Table -->
@@ -1547,24 +1351,11 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
       <div class="er-row"><span class="er-col er-pk">id</span><span class="er-type">UUID PK</span></div>
       <div class="er-row"><span class="er-col er-fk">guest_id</span><span class="er-type">UUID FK &rarr; users</span></div>
       <div class="er-row"><span class="er-col er-fk">listing_id</span><span class="er-type">UUID FK &rarr; listings</span></div>
-      <div class="er-row"><span class="er-col er-fk">host_id</span><span class="er-type">UUID FK &rarr; users</span></div>
-      <div class="er-row"><span class="er-col">check_in</span><span class="er-type">DATE</span></div>
-      <div class="er-row"><span class="er-col">check_out</span><span class="er-type">DATE</span></div>
-      <div class="er-row"><span class="er-col">guests</span><span class="er-type">SMALLINT</span></div>
-      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(pending, confirmed, active, completed, cancelled)</span></div>
-      <div class="er-row"><span class="er-col">subtotal_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">cleaning_fee_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">service_fee_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">tax_cents</span><span class="er-type">INTEGER</span></div>
+      <div class="er-row"><span class="er-col">check_in / check_out</span><span class="er-type">DATE</span></div>
+      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(pending, confirmed, cancelled, completed)</span></div>
       <div class="er-row"><span class="er-col">total_cents</span><span class="er-type">INTEGER</span></div>
       <div class="er-row"><span class="er-col">currency</span><span class="er-type">CHAR(3)</span></div>
-      <div class="er-row"><span class="er-col">special_requests</span><span class="er-type">TEXT</span></div>
       <div class="er-row"><span class="er-col">idempotency_key</span><span class="er-type">UUID UNIQUE</span></div>
-      <div class="er-row"><span class="er-col">cancellation_policy</span><span class="er-type">ENUM</span></div>
-      <div class="er-row"><span class="er-col">cancelled_at</span><span class="er-type">TIMESTAMPTZ</span></div>
-      <div class="er-row"><span class="er-col">cancelled_by</span><span class="er-type">ENUM(guest, host, system)</span></div>
-      <div class="er-row"><span class="er-col">created_at</span><span class="er-type">TIMESTAMPTZ</span></div>
-      <div class="er-row"><span class="er-col">updated_at</span><span class="er-type">TIMESTAMPTZ</span></div>
     </div>
 
     <!-- Payments Table -->
@@ -1572,49 +1363,25 @@ Total Cold Storage: ~5 TB   (S3/archival over 5 years)
       <div class="er-header" style="color:var(--purple);">&#128179; payments</div>
       <div class="er-row"><span class="er-col er-pk">id</span><span class="er-type">UUID PK</span></div>
       <div class="er-row"><span class="er-col er-fk">booking_id</span><span class="er-type">UUID FK &rarr; bookings</span></div>
-      <div class="er-row"><span class="er-col er-fk">payer_id</span><span class="er-type">UUID FK &rarr; users</span></div>
       <div class="er-row"><span class="er-col">type</span><span class="er-type">ENUM(charge, refund, payout)</span></div>
       <div class="er-row"><span class="er-col">amount_cents</span><span class="er-type">INTEGER</span></div>
-      <div class="er-row"><span class="er-col">currency</span><span class="er-type">CHAR(3)</span></div>
-      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(pending, authorized, captured, failed, refunded)</span></div>
-      <div class="er-row"><span class="er-col">provider</span><span class="er-type">VARCHAR(50)</span></div>
+      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(pending, authorized, captured, failed)</span></div>
       <div class="er-row"><span class="er-col">provider_txn_id</span><span class="er-type">VARCHAR(255)</span></div>
       <div class="er-row"><span class="er-col">idempotency_key</span><span class="er-type">UUID UNIQUE</span></div>
-      <div class="er-row"><span class="er-col">created_at</span><span class="er-type">TIMESTAMPTZ</span></div>
     </div>
   </div>
 
   <h3>Key Indexes</h3>
-<pre><code><span class="comment">-- Availability hot-path: check if dates are available for a listing</span>
-<span class="keyword">CREATE UNIQUE INDEX</span> idx_availability_listing_date
-  <span class="keyword">ON</span> availability (listing_id, date);
-
-<span class="comment">-- Booking history: guest's trips sorted by date</span>
-<span class="keyword">CREATE INDEX</span> idx_bookings_guest_checkin
-  <span class="keyword">ON</span> bookings (guest_id, check_in <span class="keyword">DESC</span>);
-
-<span class="comment">-- Booking history: host's reservations sorted by date</span>
-<span class="keyword">CREATE INDEX</span> idx_bookings_host_checkin
-  <span class="keyword">ON</span> bookings (host_id, check_in <span class="keyword">DESC</span>);
-
-<span class="comment">-- Idempotency: fast lookup by idempotency key</span>
-<span class="keyword">CREATE UNIQUE INDEX</span> idx_bookings_idempotency
-  <span class="keyword">ON</span> bookings (idempotency_key);
-
-<span class="comment">-- Listing search by location (PostGIS extension)</span>
-<span class="keyword">CREATE INDEX</span> idx_listings_geo
-  <span class="keyword">ON</span> listings <span class="keyword">USING</span> GIST (
-    ST_MakePoint(longitude, latitude)::geography
-  );
-
-<span class="comment">-- Payments by booking (for refund lookups)</span>
-<span class="keyword">CREATE INDEX</span> idx_payments_booking
-  <span class="keyword">ON</span> payments (booking_id, type);
-</code></pre>
+  <ul>
+    <li><strong>UNIQUE</strong> on <code>availability(listing_id, date)</code> &mdash; DB-level double-booking guard + availability check hot path</li>
+    <li><strong>Composite</strong> on <code>bookings(guest_id, check_in DESC)</code> &mdash; guest trip history</li>
+    <li><strong>UNIQUE</strong> on <code>bookings(idempotency_key)</code> &mdash; prevents duplicate bookings on retry</li>
+    <li><strong>GIST</strong> on <code>listings(ST_MakePoint(lng, lat))</code> &mdash; PostGIS geo-search</li>
+  </ul>
 
   <div class="tip-box purple">
-    <strong>&#128161; PE Insight: Availability Table Design</strong>
-    The <code>availability</code> table uses one row per listing per date (day-level granularity). This enables <code>SELECT FOR UPDATE WHERE listing_id = ? AND date BETWEEN ? AND ? AND is_available = true</code> as the atomic availability check. The <code>version</code> column supports optimistic locking as an alternative. The UNIQUE constraint on <code>(listing_id, date)</code> serves as a database-level guard against double-booking even if application logic has bugs.
+    <strong>&#128161; Availability Table Design</strong>
+    One row per listing per date. <code>SELECT FOR UPDATE WHERE listing_id = ? AND date BETWEEN ? AND ? AND is_available = true</code> is the atomic availability check. UNIQUE constraint on <code>(listing_id, date)</code> guards against double-booking even if app logic has bugs.
   </div>
 </details>
 </section>

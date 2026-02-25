@@ -1085,23 +1085,18 @@
       <div class="card card-accent-teal">
         <h4>&#9889; Functional Requirements</h4>
         <ul>
-          <li><strong>Zero downtime</strong> -- payment processing must never stop</li>
-          <li><strong>Zero data loss</strong> -- every payment record must be accounted for</li>
-          <li><strong>No duplicate payments</strong> -- idempotency must be preserved across migration</li>
-          <li><strong>Strong consistency</strong> -- reads after migration must reflect latest state</li>
-          <li><strong>Rollback support</strong> -- ability to revert if migration goes wrong</li>
-          <li><strong>Incremental migration</strong> -- move data in batches, not all-at-once</li>
+          <li><strong>Zero downtime</strong> -- payment processing must never stop during rebalancing</li>
+          <li><strong>Zero data loss</strong> -- every payment record accounted for, no duplicates</li>
+          <li><strong>Strong consistency</strong> -- reads after migration reflect latest state</li>
+          <li><strong>Rollback support</strong> -- revert any migration batch if verification fails</li>
         </ul>
       </div>
       <div class="card card-accent-blue">
         <h4>&#128202; Non-Functional Requirements</h4>
         <ul>
           <li><strong>Latency impact &lt; 5ms</strong> at p99 during migration</li>
-          <li><strong>Migration speed</strong> -- 1TB moved in &lt; 4 hours</li>
-          <li><strong>Automation</strong> -- minimal human intervention</li>
-          <li><strong>Observability</strong> -- real-time progress + health metrics</li>
-          <li><strong>PCI DSS compliance</strong> -- encrypted at rest and in transit</li>
-          <li><strong>Audit trail</strong> -- every row move logged immutably</li>
+          <li><strong>Observability</strong> -- real-time progress, health metrics, auto-halt on anomaly</li>
+          <li><strong>PCI compliance</strong> -- encrypted at rest and in transit, audit trail for every row move</li>
         </ul>
       </div>
     </div>
@@ -1135,45 +1130,7 @@
       <div class="callout-text"><strong>Key Insight:</strong> Unlike read-heavy systems, payment systems are <em>write-heavy with strict ordering</em>. You cannot simply replicate and eventually converge. Every write must land on exactly one authoritative shard at any point in time.</div>
     </div>
 
-    <div class="card">
-      <h4>Comparison: Payments vs Other Domains</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Dimension</th>
-            <th>Social Feed</th>
-            <th>Analytics</th>
-            <th>Payments</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Consistency</td>
-            <td><span class="badge badge-yellow">Eventual OK</span></td>
-            <td><span class="badge badge-yellow">Eventual OK</span></td>
-            <td><span class="badge badge-red">Strong Required</span></td>
-          </tr>
-          <tr>
-            <td>Duplicate Tolerance</td>
-            <td><span class="badge badge-green">Tolerable</span></td>
-            <td><span class="badge badge-yellow">Dedup Later</span></td>
-            <td><span class="badge badge-red">Zero Tolerance</span></td>
-          </tr>
-          <tr>
-            <td>Data Loss Impact</td>
-            <td><span class="badge badge-yellow">User Annoyance</span></td>
-            <td><span class="badge badge-yellow">Metric Gap</span></td>
-            <td><span class="badge badge-red">Financial Loss</span></td>
-          </tr>
-          <tr>
-            <td>Ordering</td>
-            <td><span class="badge badge-green">Relaxed</span></td>
-            <td><span class="badge badge-green">Relaxed</span></td>
-            <td><span class="badge badge-red">Strict Causal</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+
 </details>
   </div>
 
@@ -2034,7 +1991,7 @@
 </div>
 
 <script>
-document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"]').forEach(function(link) {
+document.querySelectorAll('.toc a[href^="#"], nav a[href^="#"], .nav-card[href^="#"]').forEach(function(link) {
   link.addEventListener('click', function() {
     var id = this.getAttribute('href').slice(1);
     var section = document.getElementById(id);

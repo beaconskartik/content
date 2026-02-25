@@ -915,37 +915,21 @@
     <div class="card" style="border-top: 3px solid var(--secondary);">
       <h4 style="color: #1e293b;">Functional Requirements</h4>
       <ul>
-        <li><strong>Add to waitlist:</strong> Guest registers interest in listing_id + date range (check-in/check-out)</li>
-        <li><strong>Remove from waitlist:</strong> Guest can cancel their waitlist entry at any time</li>
-        <li><strong>Notify on availability:</strong> When dates become available (cancellation, host unblock), notify all matching waitlist guests</li>
-        <li><strong>Priority queue:</strong> FIFO ordering with optional tier-based boosts (Superguest, repeat booker)</li>
-        <li><strong>Auto-expire entries:</strong> Waitlist entries expire if check-in date passes or after configurable TTL (e.g., 90 days)</li>
-        <li><strong>View my waitlist:</strong> Guest can see all their active waitlist entries</li>
-        <li><strong>Duplicate prevention:</strong> Same user cannot join waitlist for same listing + overlapping dates twice</li>
+        <li><strong>Add/Remove waitlist:</strong> Guest registers interest in listing + date range. Can cancel anytime.</li>
+        <li><strong>Notify on availability:</strong> When dates free up (cancellation, host unblock), notify matching waitlist guests.</li>
+        <li><strong>Priority + Dedup:</strong> FIFO with tier boosts. Same user can't join twice for overlapping dates.</li>
+        <li><strong>Auto-expire:</strong> Entries expire when check-in passes or after TTL (90 days).</li>
       </ul>
     </div>
     <div class="card" style="border-top: 3px solid var(--blue);">
       <h4 style="color: var(--blue);">Non-Functional Requirements</h4>
       <ul>
-        <li><strong>Notification latency:</strong> &lt;5 minutes from availability change to notification delivery</li>
-        <li><strong>Thundering herd handling:</strong> When a popular listing opens up, don't blast 10K users simultaneously &mdash; stagger + exclusive windows</li>
-        <li><strong>Scale:</strong> 50M active waitlist entries, 2M adds/day, 500K availability change events/day</li>
-        <li><strong>Availability:</strong> 99.95% uptime for the waitlist service; notifications are eventually consistent (at-least-once)</li>
-        <li><strong>Consistency:</strong> Waitlist add/remove are strongly consistent; notification dispatch is eventually consistent</li>
-        <li><strong>Data retention:</strong> Expired entries retained 30 days for analytics, then archived</li>
-        <li><strong>Idempotency:</strong> Duplicate notifications must be de-duped to avoid spamming users</li>
+        <li><strong>Notification &lt;5 min:</strong> From availability change to notification delivery.</li>
+        <li><strong>Thundering herd:</strong> Don't blast 10K users simultaneously &mdash; stagger + exclusive booking windows.</li>
+        <li><strong>Scale:</strong> 50M active entries, 2M adds/day, 500K availability events/day.</li>
+        <li><strong>Idempotency:</strong> Dedup notifications to avoid spamming users.</li>
       </ul>
     </div>
-  </div>
-
-  <div class="callout warning">
-    <strong>Scope Boundaries (Clarify in Interview)</strong>
-    <ul>
-      <li>We do NOT build the booking flow itself &mdash; we notify and hand off to existing booking service</li>
-      <li>We do NOT handle pricing changes &mdash; only date availability</li>
-      <li>Notification channels (push, email, SMS) are delegated to an existing Notification Service</li>
-      <li>Host-side opt-out of waitlist is a V2 feature</li>
-    </ul>
   </div>
 </details>
 </section>
@@ -1568,60 +1552,15 @@
     </table>
   </div>
 
-  <h3>POST /v1/waitlist &mdash; Request</h3>
-  <pre><code>{
-  <span class="str">"listing_id"</span>:        <span class="str">"lst_8f3a2b1c"</span>,
-  <span class="str">"desired_checkin"</span>:   <span class="str">"2025-08-15"</span>,
-  <span class="str">"desired_checkout"</span>:  <span class="str">"2025-08-20"</span>,
-  <span class="str">"flexibility_days"</span>:  <span class="num">2</span>,               <span class="cm">// +/- 2 days flexible on checkin/checkout</span>
-  <span class="str">"notification_prefs"</span>: {
-    <span class="str">"push"</span>:  <span class="kw">true</span>,
-    <span class="str">"email"</span>: <span class="kw">true</span>,
-    <span class="str">"sms"</span>:   <span class="kw">false</span>
-  }
-}</code></pre>
+  <h3>POST /v1/waitlist</h3>
+  <pre><code><span class="cm">// Headers: Idempotency-Key: &lt;uuid&gt;</span>
+<span class="kw">Request:</span>
+{ <span class="str">"listing_id"</span>: <span class="str">"lst_8f3a2b1c"</span>, <span class="str">"desired_checkin"</span>: <span class="str">"2025-08-15"</span>,
+  <span class="str">"desired_checkout"</span>: <span class="str">"2025-08-20"</span>, <span class="str">"flexibility_days"</span>: <span class="num">2</span> }
 
-  <h3>POST /v1/waitlist &mdash; Response (201 Created)</h3>
-  <pre><code>{
-  <span class="str">"entry_id"</span>:          <span class="str">"wl_9d4e5f6a"</span>,
-  <span class="str">"listing_id"</span>:        <span class="str">"lst_8f3a2b1c"</span>,
-  <span class="str">"user_id"</span>:           <span class="str">"usr_1a2b3c4d"</span>,
-  <span class="str">"desired_checkin"</span>:   <span class="str">"2025-08-15"</span>,
-  <span class="str">"desired_checkout"</span>:  <span class="str">"2025-08-20"</span>,
-  <span class="str">"effective_range"</span>: {
-    <span class="str">"earliest_checkin"</span>:  <span class="str">"2025-08-13"</span>,
-    <span class="str">"latest_checkout"</span>:   <span class="str">"2025-08-22"</span>
-  },
-  <span class="str">"position"</span>:          <span class="num">12</span>,
-  <span class="str">"priority_tier"</span>:     <span class="str">"standard"</span>,
-  <span class="str">"status"</span>:            <span class="str">"active"</span>,
-  <span class="str">"expires_at"</span>:        <span class="str">"2025-08-15T00:00:00Z"</span>,
-  <span class="str">"created_at"</span>:        <span class="str">"2025-05-20T14:32:00Z"</span>
-}</code></pre>
-
-  <h3>GET /v1/waitlist/me &mdash; Response</h3>
-  <pre><code>{
-  <span class="str">"entries"</span>: [
-    {
-      <span class="str">"entry_id"</span>:        <span class="str">"wl_9d4e5f6a"</span>,
-      <span class="str">"listing_id"</span>:      <span class="str">"lst_8f3a2b1c"</span>,
-      <span class="str">"listing_name"</span>:    <span class="str">"Cozy Treehouse in Bali"</span>,
-      <span class="str">"listing_photo"</span>:   <span class="str">"https://cdn.airbnb.com/..."</span>,
-      <span class="str">"desired_checkin"</span>: <span class="str">"2025-08-15"</span>,
-      <span class="str">"desired_checkout"</span>:<span class="str">"2025-08-20"</span>,
-      <span class="str">"position"</span>:        <span class="num">12</span>,
-      <span class="str">"status"</span>:          <span class="str">"active"</span>,
-      <span class="str">"created_at"</span>:      <span class="str">"2025-05-20T14:32:00Z"</span>
-    }
-  ],
-  <span class="str">"total"</span>:   <span class="num">3</span>,
-  <span class="str">"cursor"</span>:  <span class="str">"eyJjcmVhdGVkX2F0Ijo..."</span>
-}</code></pre>
-
-  <div class="callout info">
-    <strong>Idempotency Key</strong>
-    <p>The POST endpoint accepts an <code>Idempotency-Key</code> header. If the client retries with the same key, the server returns the existing entry instead of creating a duplicate. This is essential for mobile clients with flaky connections.</p>
-  </div>
+<span class="kw">Response:</span> <span class="num">201</span>
+{ <span class="str">"entry_id"</span>: <span class="str">"wl_9d4e5f6a"</span>, <span class="str">"position"</span>: <span class="num">12</span>, <span class="str">"status"</span>: <span class="str">"active"</span>,
+  <span class="str">"expires_at"</span>: <span class="str">"2025-08-15T00:00:00Z"</span> }</code></pre>
 </details>
 </section>
 
@@ -1639,175 +1578,43 @@
   <div class="er-grid">
     <div class="er-table" style="border-top: 3px solid var(--primary);">
       <div class="er-header" style="color: var(--primary);">waitlist_entries</div>
-      <div class="er-row">
-        <span class="er-col er-pk">entry_id</span>
-        <span class="er-type">UUID PK</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col er-fk">user_id</span>
-        <span class="er-type">UUID FK NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col er-fk">listing_id</span>
-        <span class="er-type">UUID FK NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">desired_checkin</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">desired_checkout</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">effective_checkin</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">effective_checkout</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">flexibility_days</span>
-        <span class="er-type">SMALLINT DEFAULT 0</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">priority_tier</span>
-        <span class="er-type">SMALLINT DEFAULT 0</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">status</span>
-        <span class="er-type">ENUM('active','notified','booked','expired','cancelled')</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">notification_prefs</span>
-        <span class="er-type">JSONB</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">idempotency_key</span>
-        <span class="er-type">VARCHAR(64) UNIQUE</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">expires_at</span>
-        <span class="er-type">TIMESTAMPTZ NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">created_at</span>
-        <span class="er-type">TIMESTAMPTZ NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">updated_at</span>
-        <span class="er-type">TIMESTAMPTZ NOT NULL</span>
-      </div>
-    </div>
-
-    <div class="er-table" style="border-top: 3px solid var(--blue);">
-      <div class="er-header" style="color: var(--blue);">waitlist_notifications</div>
-      <div class="er-row">
-        <span class="er-col er-pk">notification_id</span>
-        <span class="er-type">UUID PK</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col er-fk">entry_id</span>
-        <span class="er-type">UUID FK NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col er-fk">availability_event_id</span>
-        <span class="er-type">UUID NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">channel</span>
-        <span class="er-type">ENUM('push','email','sms')</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">status</span>
-        <span class="er-type">ENUM('pending','sent','delivered','failed')</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">exclusive_window_until</span>
-        <span class="er-type">TIMESTAMPTZ</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">sent_at</span>
-        <span class="er-type">TIMESTAMPTZ</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">created_at</span>
-        <span class="er-type">TIMESTAMPTZ NOT NULL</span>
-      </div>
+      <div class="er-row"><span class="er-col er-pk">entry_id</span><span class="er-type">UUID PK</span></div>
+      <div class="er-row"><span class="er-col er-fk">user_id</span><span class="er-type">UUID FK</span></div>
+      <div class="er-row"><span class="er-col er-fk">listing_id</span><span class="er-type">UUID FK</span></div>
+      <div class="er-row"><span class="er-col">desired_checkin / checkout</span><span class="er-type">DATE</span></div>
+      <div class="er-row"><span class="er-col">effective_checkin / checkout</span><span class="er-type">DATE (with flexibility)</span></div>
+      <div class="er-row"><span class="er-col">priority_tier</span><span class="er-type">SMALLINT (0=super, 2=std)</span></div>
+      <div class="er-row"><span class="er-col">status</span><span class="er-type">ENUM(active, notified, booked, expired, cancelled)</span></div>
+      <div class="er-row"><span class="er-col">idempotency_key</span><span class="er-type">VARCHAR(64) UNIQUE</span></div>
+      <div class="er-row"><span class="er-col">expires_at</span><span class="er-type">TIMESTAMPTZ</span></div>
     </div>
 
     <div class="er-table" style="border-top: 3px solid var(--purple);">
-      <div class="er-header" style="color: var(--purple);">availability_events (append-only log)</div>
-      <div class="er-row">
-        <span class="er-col er-pk">event_id</span>
-        <span class="er-type">UUID PK</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col er-fk">listing_id</span>
-        <span class="er-type">UUID NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">event_type</span>
-        <span class="er-type">ENUM('cancellation','host_unblock','modification')</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">freed_checkin</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">freed_checkout</span>
-        <span class="er-type">DATE NOT NULL</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">source_event_id</span>
-        <span class="er-type">VARCHAR(128)</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">processed</span>
-        <span class="er-type">BOOLEAN DEFAULT FALSE</span>
-      </div>
-      <div class="er-row">
-        <span class="er-col">created_at</span>
-        <span class="er-type">TIMESTAMPTZ NOT NULL</span>
-      </div>
+      <div class="er-header" style="color: var(--purple);">availability_events (append-only)</div>
+      <div class="er-row"><span class="er-col er-pk">event_id</span><span class="er-type">UUID PK</span></div>
+      <div class="er-row"><span class="er-col er-fk">listing_id</span><span class="er-type">UUID</span></div>
+      <div class="er-row"><span class="er-col">event_type</span><span class="er-type">ENUM(cancellation, host_unblock)</span></div>
+      <div class="er-row"><span class="er-col">freed_checkin / checkout</span><span class="er-type">DATE</span></div>
+      <div class="er-row"><span class="er-col">processed</span><span class="er-type">BOOLEAN</span></div>
     </div>
   </div>
 
-  <h3>Indexes</h3>
-  <pre><code><span class="cm">-- Primary lookup: find waitlist entries for a listing with date overlap</span>
-<span class="kw">CREATE INDEX</span> idx_waitlist_listing_dates
-  <span class="kw">ON</span> waitlist_entries (listing_id, effective_checkin, effective_checkout)
-  <span class="kw">WHERE</span> status = <span class="str">'active'</span>;
+  <h3>Key Indexes</h3>
+  <ul>
+    <li><strong>Partial composite</strong> on <code>waitlist_entries(listing_id, effective_checkin, effective_checkout)</code> WHERE active &mdash; date overlap matching hot path</li>
+    <li><strong>UNIQUE partial</strong> on <code>(user_id, listing_id, desired_checkin, desired_checkout)</code> WHERE active &mdash; duplicate prevention</li>
+    <li><strong>Partial</strong> on <code>(expires_at)</code> WHERE active &mdash; TTL garbage collection</li>
+  </ul>
 
-<span class="cm">-- User's active waitlist (for GET /v1/waitlist/me)</span>
-<span class="kw">CREATE INDEX</span> idx_waitlist_user_active
-  <span class="kw">ON</span> waitlist_entries (user_id, created_at <span class="kw">DESC</span>)
-  <span class="kw">WHERE</span> status = <span class="str">'active'</span>;
+  <h3>Date Overlap Matching (Pseudocode)</h3>
+<pre><code>FIND_MATCHING_WAITLIST(listing_id, freed_checkin, freed_checkout):
 
-<span class="cm">-- Duplicate prevention: same user, same listing, overlapping dates</span>
-<span class="kw">CREATE UNIQUE INDEX</span> idx_waitlist_dedup
-  <span class="kw">ON</span> waitlist_entries (user_id, listing_id, desired_checkin, desired_checkout)
-  <span class="kw">WHERE</span> status = <span class="str">'active'</span>;
-
-<span class="cm">-- TTL garbage collection: find expired entries efficiently</span>
-<span class="kw">CREATE INDEX</span> idx_waitlist_expiry
-  <span class="kw">ON</span> waitlist_entries (expires_at)
-  <span class="kw">WHERE</span> status = <span class="str">'active'</span>;
-
-<span class="cm">-- Notification dedup: prevent duplicate sends for same event+entry</span>
-<span class="kw">CREATE UNIQUE INDEX</span> idx_notification_dedup
-  <span class="kw">ON</span> waitlist_notifications (entry_id, availability_event_id);</code></pre>
-
-  <h3>Date Overlap Query</h3>
-  <pre><code><span class="cm">-- Find all active waitlist entries for a listing that overlap with freed dates</span>
-<span class="kw">SELECT</span> *
-<span class="kw">FROM</span> waitlist_entries
-<span class="kw">WHERE</span> listing_id = <span class="var">:listing_id</span>
-  <span class="kw">AND</span> status = <span class="str">'active'</span>
-  <span class="kw">AND</span> effective_checkin  &lt; <span class="var">:freed_checkout</span>   <span class="cm">-- overlap condition</span>
-  <span class="kw">AND</span> effective_checkout &gt; <span class="var">:freed_checkin</span>    <span class="cm">-- overlap condition</span>
-<span class="kw">ORDER BY</span> priority_tier <span class="kw">ASC</span>, created_at <span class="kw">ASC</span>;  <span class="cm">-- 0=superguest, 1=plus, 2=standard</span></code></pre>
+  SELECT FROM waitlist_entries
+  WHERE listing_id = :listing_id
+    AND status = 'active'
+    AND effective_checkin  &lt; :freed_checkout    &larr; overlap condition
+    AND effective_checkout &gt; :freed_checkin     &larr; overlap condition
+  ORDER BY priority_tier ASC, created_at ASC    &larr; superguest first, then FIFO</code></pre>
 
 </details>
 </section>

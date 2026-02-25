@@ -194,7 +194,7 @@
   }
   h4 {
     font-size: 1.05em;
-    color: #ffffff;
+    color: var(--text);
     margin: 18px 0 10px;
   }
   p { margin-bottom: 12px; }
@@ -957,12 +957,20 @@
       </g>
 
       <!-- Subscription Svc to PostgreSQL (dashed) -->
-      <line x1="560" y1="82" x2="638" y2="77" stroke="#428BF9" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
-      <text x="600" y="72" fill="#428BF9" font-size="8">state</text>
+      <line x1="560" y1="82" x2="638" y2="68" stroke="#428BF9" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="598" y="64" fill="#428BF9" font-size="7">sub state</text>
+
+      <!-- Billing Svc to PostgreSQL (dashed) -->
+      <line x1="560" y1="160" x2="638" y2="85" stroke="#428BF9" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="608" y="112" fill="#f59e0b" font-size="7">invoices</text>
+
+      <!-- Entitlement Svc to PostgreSQL (dashed) -->
+      <line x1="560" y1="238" x2="638" y2="100" stroke="#428BF9" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="612" y="162" fill="#428BF9" font-size="7">entitlements</text>
 
       <!-- Entitlement Svc to Redis (dashed) -->
-      <line x1="560" y1="247" x2="638" y2="240" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
-      <text x="600" y="235" fill="#ef4444" font-size="8">cache</text>
+      <line x1="560" y1="250" x2="638" y2="240" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arr)"/>
+      <text x="600" y="235" fill="#ef4444" font-size="7">cache</text>
 
       <!-- ===== KAFKA EVENT BUS ===== -->
       <g transform="translate(80, 420)">
@@ -1111,10 +1119,10 @@
         </tr>
         <tr>
           <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-weight:800;font-size:11px;">8</span></td>
-          <td>Entitlement Service &rarr; Redis</td>
+          <td>Entitlement Service &rarr; PostgreSQL + Redis</td>
           <td><code>TCP</code></td>
-          <td>Cache entitlement for fast lookups: SET with TTL matching billing cycle, used by all services for authz</td>
-          <td>~1-3 ms</td>
+          <td>Persist entitlements to PG (source of truth), then cache in Redis with TTL for fast &lt;3ms lookups</td>
+          <td>~5-10 ms</td>
         </tr>
         <tr>
           <td><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#00A699;color:#fff;font-weight:800;font-size:11px;">9</span></td>
@@ -1319,50 +1327,26 @@
   <span class="string">"plan_id"</span>: <span class="string">"plan_adventurer_monthly"</span>,
   <span class="string">"payment_method_id"</span>: <span class="string">"pm_1N2abc3def4ghi"</span>,
   <span class="string">"trial"</span>: <span class="keyword">true</span>,
-  <span class="string">"coupon_code"</span>: <span class="string">"WELCOME20"</span>,
-  <span class="string">"currency"</span>: <span class="string">"USD"</span>,
-  <span class="string">"billing_cycle"</span>: <span class="string">"monthly"</span>
+  <span class="string">"currency"</span>: <span class="string">"USD"</span>
 }</code></pre>
 
   <h3>Create Subscription -- Response</h3>
 <pre><code><span class="comment">// 201 Created</span>
 {
   <span class="string">"id"</span>: <span class="string">"sub_8f3a2b1c"</span>,
-  <span class="string">"user_id"</span>: <span class="string">"usr_7c9e4d2a"</span>,
-  <span class="string">"plan"</span>: {
-    <span class="string">"id"</span>: <span class="string">"plan_adventurer_monthly"</span>,
-    <span class="string">"name"</span>: <span class="string">"Adventurer"</span>,
-    <span class="string">"price_cents"</span>: <span class="number">4999</span>,
-    <span class="string">"currency"</span>: <span class="string">"USD"</span>,
-    <span class="string">"interval"</span>: <span class="string">"month"</span>
-  },
+  <span class="string">"plan_id"</span>: <span class="string">"plan_adventurer_monthly"</span>,
   <span class="string">"status"</span>: <span class="string">"trialing"</span>,
   <span class="string">"trial_end"</span>: <span class="string">"2025-02-14T00:00:00Z"</span>,
-  <span class="string">"current_period_start"</span>: <span class="string">"2025-01-31T00:00:00Z"</span>,
-  <span class="string">"current_period_end"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>,
-  <span class="string">"stripe_subscription_id"</span>: <span class="string">"sub_1N5xyz"</span>,
-  <span class="string">"entitlements"</span>: [
-    <span class="string">"premium_listings"</span>,
-    <span class="string">"discount_12_pct"</span>,
-    <span class="string">"free_cancellation_48h"</span>,
-    <span class="string">"concierge_chat"</span>,
-    <span class="string">"premium_insurance"</span>,
-    <span class="string">"family_plan_2"</span>
-  ],
-  <span class="string">"created_at"</span>: <span class="string">"2025-01-31T12:00:00Z"</span>
+  <span class="string">"current_period_end"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>
 }</code></pre>
 
   <h3>Entitlement Check Endpoint</h3>
 <pre><code><span class="comment">// GET /api/v1/entitlements/check?user_id=usr_7c9e4d2a&amp;entitlement=premium_listings</span>
 <span class="comment">// Response: 200 OK (cached in Redis, &lt;5ms p99)</span>
 {
-  <span class="string">"user_id"</span>: <span class="string">"usr_7c9e4d2a"</span>,
   <span class="string">"entitlement"</span>: <span class="string">"premium_listings"</span>,
   <span class="string">"granted"</span>: <span class="keyword">true</span>,
-  <span class="string">"source"</span>: <span class="string">"subscription:sub_8f3a2b1c"</span>,
-  <span class="string">"expires_at"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>,
-  <span class="string">"cached"</span>: <span class="keyword">true</span>,
-  <span class="string">"cache_ttl_seconds"</span>: <span class="number">300</span>
+  <span class="string">"expires_at"</span>: <span class="string">"2025-02-28T00:00:00Z"</span>
 }</code></pre>
 
   <div class="tip-box danger">
@@ -1390,17 +1374,13 @@
         <tr><td><code>id</code></td><td>VARCHAR(64)</td><td>PK</td><td>e.g., plan_adventurer_monthly</td></tr>
         <tr><td><code>name</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Display name</td></tr>
         <tr><td><code>tier</code></td><td>ENUM</td><td>NOT NULL</td><td>explorer, adventurer, nomad</td></tr>
-        <tr><td><code>price_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Always store in smallest currency unit</td></tr>
-        <tr><td><code>currency</code></td><td>CHAR(3)</td><td>NOT NULL, DEFAULT 'USD'</td><td>ISO 4217</td></tr>
+        <tr><td><code>price_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Smallest currency unit (cents)</td></tr>
+        <tr><td><code>currency</code></td><td>CHAR(3)</td><td>NOT NULL</td><td>ISO 4217</td></tr>
         <tr><td><code>interval</code></td><td>ENUM</td><td>NOT NULL</td><td>month, year</td></tr>
-        <tr><td><code>trial_days</code></td><td>INTEGER</td><td>DEFAULT 14</td><td>0 = no trial</td></tr>
-        <tr><td><code>family_member_limit</code></td><td>INTEGER</td><td>DEFAULT 0</td><td>Max additional members</td></tr>
-        <tr><td><code>stripe_price_id</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Stripe Price object reference</td></tr>
+        <tr><td><code>stripe_price_id</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Stripe Price object ref</td></tr>
         <tr><td><code>entitlements</code></td><td>JSONB</td><td>NOT NULL</td><td>Array of entitlement keys</td></tr>
         <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>DEFAULT true</td><td>Soft-deactivate old plans</td></tr>
-        <tr><td><code>version</code></td><td>INTEGER</td><td>NOT NULL</td><td>Plan versioning for grandfathering</td></tr>
-        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable</td></tr>
-        <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Auto-updated</td></tr>
+        <tr><td><code>version</code></td><td>INTEGER</td><td>NOT NULL</td><td>Grandfathering on price changes</td></tr>
       </tbody>
     </table>
   </div>
@@ -1415,20 +1395,11 @@
         <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Internal subscription ID</td></tr>
         <tr><td><code>user_id</code></td><td>UUID</td><td>NOT NULL, INDEX</td><td>FK to users table</td></tr>
         <tr><td><code>plan_id</code></td><td>VARCHAR(64)</td><td>NOT NULL, FK</td><td>References plans.id</td></tr>
-        <tr><td><code>plan_version</code></td><td>INTEGER</td><td>NOT NULL</td><td>Snapshot of plan version at subscribe time</td></tr>
-        <tr><td><code>status</code></td><td>ENUM</td><td>NOT NULL, INDEX</td><td>trialing, active, past_due, paused, cancelled, expired</td></tr>
-        <tr><td><code>stripe_subscription_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>Stripe reference</td></tr>
-        <tr><td><code>stripe_customer_id</code></td><td>VARCHAR(128)</td><td>NOT NULL, INDEX</td><td>Stripe Customer</td></tr>
-        <tr><td><code>current_period_start</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Billing period start</td></tr>
-        <tr><td><code>current_period_end</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Billing period end</td></tr>
+        <tr><td><code>status</code></td><td>ENUM</td><td>NOT NULL, INDEX</td><td>trialing, active, past_due, cancelled, expired</td></tr>
+        <tr><td><code>stripe_subscription_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>Stripe reference for reconciliation</td></tr>
+        <tr><td><code>current_period_end</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>When current billing period ends</td></tr>
         <tr><td><code>trial_end</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>NULL if no trial</td></tr>
-        <tr><td><code>cancelled_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When user initiated cancel</td></tr>
         <tr><td><code>cancel_at_period_end</code></td><td>BOOLEAN</td><td>DEFAULT false</td><td>If true, expires at period end</td></tr>
-        <tr><td><code>paused_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When subscription was paused</td></tr>
-        <tr><td><code>resume_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>Scheduled resume date</td></tr>
-        <tr><td><code>metadata</code></td><td>JSONB</td><td>DEFAULT '{}'</td><td>Coupon, referral source, etc.</td></tr>
-        <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable</td></tr>
-        <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Auto-updated</td></tr>
       </tbody>
     </table>
   </div>
@@ -1442,15 +1413,11 @@
       <tbody>
         <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Event ID</td></tr>
         <tr><td><code>subscription_id</code></td><td>UUID</td><td>NOT NULL, FK, INDEX</td><td>References subscriptions.id</td></tr>
-        <tr><td><code>stripe_event_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>For deduplication</td></tr>
-        <tr><td><code>event_type</code></td><td>VARCHAR(64)</td><td>NOT NULL, INDEX</td><td>invoice.paid, invoice.payment_failed, etc.</td></tr>
-        <tr><td><code>amount_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Amount in smallest currency unit</td></tr>
+        <tr><td><code>stripe_event_id</code></td><td>VARCHAR(128)</td><td>UNIQUE</td><td>Idempotency / deduplication key</td></tr>
+        <tr><td><code>event_type</code></td><td>VARCHAR(64)</td><td>NOT NULL, INDEX</td><td>invoice.paid, payment_failed, etc.</td></tr>
+        <tr><td><code>amount_cents</code></td><td>INTEGER</td><td>NOT NULL</td><td>Smallest currency unit</td></tr>
         <tr><td><code>currency</code></td><td>CHAR(3)</td><td>NOT NULL</td><td>ISO 4217</td></tr>
-        <tr><td><code>stripe_invoice_id</code></td><td>VARCHAR(128)</td><td>NULLABLE</td><td>Stripe Invoice reference</td></tr>
-        <tr><td><code>stripe_payment_intent_id</code></td><td>VARCHAR(128)</td><td>NULLABLE</td><td>Stripe PaymentIntent reference</td></tr>
-        <tr><td><code>failure_reason</code></td><td>TEXT</td><td>NULLABLE</td><td>Decline code, error message</td></tr>
-        <tr><td><code>retry_count</code></td><td>INTEGER</td><td>DEFAULT 0</td><td>Number of retry attempts</td></tr>
-        <tr><td><code>metadata</code></td><td>JSONB</td><td>DEFAULT '{}'</td><td>Raw Stripe event payload</td></tr>
+        <tr><td><code>failure_reason</code></td><td>TEXT</td><td>NULLABLE</td><td>Decline code on failure</td></tr>
         <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Immutable, append-only</td></tr>
       </tbody>
     </table>
@@ -1466,36 +1433,19 @@
         <tr><td><code>id</code></td><td>UUID</td><td>PK</td><td>Entitlement record ID</td></tr>
         <tr><td><code>user_id</code></td><td>UUID</td><td>NOT NULL, INDEX</td><td>User who holds the entitlement</td></tr>
         <tr><td><code>subscription_id</code></td><td>UUID</td><td>NOT NULL, FK</td><td>Source subscription</td></tr>
-        <tr><td><code>entitlement_key</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>e.g., premium_listings, discount_12_pct</td></tr>
-        <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>NOT NULL, INDEX</td><td>Active entitlement flag</td></tr>
-        <tr><td><code>granted_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>When entitlement was granted</td></tr>
-        <tr><td><code>expires_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Mirrors subscription period end + grace</td></tr>
-        <tr><td><code>revoked_at</code></td><td>TIMESTAMPTZ</td><td>NULLABLE</td><td>When entitlement was revoked</td></tr>
+        <tr><td><code>entitlement_key</code></td><td>VARCHAR(128)</td><td>NOT NULL</td><td>e.g., premium_listings</td></tr>
+        <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>NOT NULL, INDEX</td><td>Active flag</td></tr>
+        <tr><td><code>expires_at</code></td><td>TIMESTAMPTZ</td><td>NOT NULL</td><td>Mirrors period_end + grace</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h3>Indexes and Constraints</h3>
-<pre><code><span class="comment">-- Critical indexes for performance</span>
-<span class="keyword">CREATE UNIQUE INDEX</span> idx_subscriptions_user_active
-  <span class="keyword">ON</span> subscriptions(user_id) <span class="keyword">WHERE</span> status <span class="keyword">IN</span> (<span class="string">'trialing'</span>, <span class="string">'active'</span>, <span class="string">'past_due'</span>, <span class="string">'paused'</span>);
-  <span class="comment">-- Ensures one active subscription per user</span>
-
-<span class="keyword">CREATE INDEX</span> idx_subscriptions_status_period_end
-  <span class="keyword">ON</span> subscriptions(status, current_period_end);
-  <span class="comment">-- For batch jobs: find subscriptions expiring today</span>
-
-<span class="keyword">CREATE INDEX</span> idx_billing_events_sub_created
-  <span class="keyword">ON</span> billing_events(subscription_id, created_at <span class="keyword">DESC</span>);
-  <span class="comment">-- For billing history queries</span>
-
-<span class="keyword">CREATE UNIQUE INDEX</span> idx_entitlements_user_key_active
-  <span class="keyword">ON</span> entitlements(user_id, entitlement_key) <span class="keyword">WHERE</span> is_active = <span class="keyword">true</span>;
-  <span class="comment">-- Fast entitlement lookups, ensures no duplicate active entitlements</span>
-
-<span class="keyword">CREATE INDEX</span> idx_entitlements_expires
-  <span class="keyword">ON</span> entitlements(expires_at) <span class="keyword">WHERE</span> is_active = <span class="keyword">true</span>;
-  <span class="comment">-- For batch expiration jobs</span></code></pre>
+  <h3>Key Indexes</h3>
+  <ul>
+    <li><strong>UNIQUE partial index</strong> on <code>subscriptions(user_id)</code> WHERE status IN (trialing, active, past_due) &mdash; enforces one active sub per user</li>
+    <li><strong>Composite index</strong> on <code>subscriptions(status, current_period_end)</code> &mdash; batch jobs find expiring subs</li>
+    <li><strong>UNIQUE partial index</strong> on <code>entitlements(user_id, entitlement_key)</code> WHERE is_active = true &mdash; fast lookups, no duplicates</li>
+  </ul>
 
   <div class="tip-box purple">
     <strong>PE Signal: Why Plan Versioning?</strong>
@@ -1617,38 +1567,20 @@
     </table>
   </div>
 
-  <h3>Grace Period and Dunning Timeline</h3>
-  <div class="card">
-    <h4 style="color:var(--warning);">7-Day Dunning Sequence</h4>
-<pre><code><span class="comment">Day 0: Payment fails</span>
-  <span class="keyword">-></span> Status: PAST_DUE
-  <span class="keyword">-></span> Entitlements: STILL ACTIVE (grace period)
-  <span class="keyword">-></span> Email: "Your payment failed, please update your card"
-  <span class="keyword">-></span> Push notification sent
-
-<span class="comment">Day 1: First retry (Stripe automatic)</span>
-  <span class="keyword">-></span> If success: back to ACTIVE
-  <span class="keyword">-></span> If fail: continue dunning
-
-<span class="comment">Day 3: Second retry</span>
-  <span class="keyword">-></span> Email: "Second attempt failed -- update payment method"
-  <span class="keyword">-></span> In-app banner: "Action required: payment issue"
-
-<span class="comment">Day 5: Third retry</span>
-  <span class="keyword">-></span> Email: "Your subscription is at risk"
-  <span class="keyword">-></span> Push notification with deep link to billing page
-
-<span class="comment">Day 7: Final retry</span>
-  <span class="keyword">-></span> If fail: Status -> CANCELLED
-  <span class="keyword">-></span> Revoke all entitlements
-  <span class="keyword">-></span> Email: "Your subscription has been cancelled"
-  <span class="keyword">-></span> Offer: "Resubscribe within 30 days to keep your history"</span></code></pre>
+  <h3>7-Day Dunning Sequence</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Day</th><th>Action</th><th>Entitlements</th></tr></thead>
+      <tbody>
+        <tr><td><strong>0</strong></td><td>Payment fails &rarr; status = PAST_DUE. Email + push: "update your card"</td><td>Still active (grace)</td></tr>
+        <tr><td><strong>1</strong></td><td>Stripe Smart Retry #1. If success &rarr; ACTIVE</td><td>Still active</td></tr>
+        <tr><td><strong>3</strong></td><td>Retry #2. Email + in-app banner</td><td>Still active</td></tr>
+        <tr><td><strong>5</strong></td><td>Retry #3. Email: "subscription at risk"</td><td>Still active</td></tr>
+        <tr><td><strong>7</strong></td><td>Final retry. If fail &rarr; CANCELLED. Revoke entitlements.</td><td>Revoked</td></tr>
+      </tbody>
+    </table>
   </div>
-
-  <div class="tip-box tip">
-    <strong>PE Signal: Why Grace Periods Matter</strong>
-    Immediately revoking entitlements on first payment failure leads to terrible UX and increased churn. Most failed payments are recoverable (expired card, insufficient funds on payday). A 7-day grace period with progressive dunning recovers 60-80% of failed payments according to industry data. This is a business-critical design decision.
-  </div>
+  <p style="color:var(--text-muted); font-size:0.9rem; margin-top:8px;">Grace period recovers 60-80% of failed payments. Never revoke on first failure &mdash; most are recoverable (expired card, insufficient funds).</p>
   </details>
 </section>
 
@@ -1660,96 +1592,39 @@
     Billing Deep Dive
   </h2></summary>
 
-  <h3>Stripe Integration Architecture</h3>
-  <div class="card-grid">
-    <div class="card">
-      <h4 style="color:var(--accent);">Stripe Object Mapping</h4>
-      <ul>
-        <li><strong>Customer:</strong> Created 1:1 with Airbnb user. Stores default payment method.</li>
-        <li><strong>Subscription:</strong> Mirrors our subscription record. Stripe manages billing schedule.</li>
-        <li><strong>Price:</strong> Maps to our plans. One Price per plan+interval+currency.</li>
-        <li><strong>Invoice:</strong> Generated by Stripe on each billing cycle. We store a reference.</li>
-        <li><strong>PaymentIntent:</strong> Each invoice payment attempt. Contains decline codes on failure.</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4 style="color:var(--blue);">Our Role vs Stripe's Role</h4>
-      <ul>
-        <li><strong>Stripe handles:</strong> Charge scheduling, retry logic (Smart Retries), card network communication, PCI compliance, receipt emails (optional).</li>
-        <li><strong>We handle:</strong> Subscription lifecycle logic, entitlement management, dunning UX, custom retry scheduling, plan catalog, analytics, user-facing billing portal.</li>
-        <li><strong>Overlap:</strong> Both track subscription status. We reconcile hourly via Stripe API. Our DB is source of truth for entitlements; Stripe is source of truth for payment state.</li>
-      </ul>
-    </div>
-  </div>
-
-  <h3>Webhook Reliability Pattern</h3>
-<pre><code><span class="comment">// Stripe webhooks are at-least-once delivery. We must handle:</span>
-<span class="comment">// 1. Duplicate events (idempotency via stripe_event_id)</span>
-<span class="comment">// 2. Out-of-order events (check timestamps, use event sequence)</span>
-<span class="comment">// 3. Missed events (reconciliation job)</span>
-
-<span class="keyword">class</span> <span class="type">WebhookProcessor</span> {
-  <span class="keyword">async</span> <span class="func">process</span>(event: StripeEvent): Promise&lt;void&gt; {
-    <span class="comment">// Step 1: Verify signature</span>
-    <span class="keyword">const</span> verified = stripe.webhooks.constructEvent(
-      rawBody, signature, WEBHOOK_SECRET
-    );
-
-    <span class="comment">// Step 2: Idempotency check</span>
-    <span class="keyword">const</span> existing = <span class="keyword">await</span> db.query(
-      <span class="string">`SELECT id FROM billing_events WHERE stripe_event_id = $1`</span>,
-      [verified.id]
-    );
-    <span class="keyword">if</span> (existing.rows.length > <span class="number">0</span>) {
-      logger.info(<span class="string">`Duplicate event ${verified.id}, skipping`</span>);
-      <span class="keyword">return</span>; <span class="comment">// Return 200 to prevent Stripe retry</span>
-    }
-
-    <span class="comment">// Step 3: Process within a transaction</span>
-    <span class="keyword">await</span> db.transaction(<span class="keyword">async</span> (tx) => {
-      <span class="comment">// Insert billing event (idempotency guard)</span>
-      <span class="keyword">await</span> tx.insert(<span class="string">'billing_events'</span>, {
-        stripe_event_id: verified.id,
-        event_type: verified.type,
-        ...extractEventData(verified)
-      });
-
-      <span class="comment">// Update subscription state</span>
-      <span class="keyword">await</span> <span class="keyword">this</span>.handleEventType(tx, verified);
-    });
-
-    <span class="comment">// Step 4: Publish to Kafka (outside DB transaction)</span>
-    <span class="keyword">await</span> kafka.publish(<span class="string">'billing.events'</span>, {
-      type: verified.type,
-      subscription_id: extractSubId(verified),
-      timestamp: verified.created
-    });
-  }
-}</code></pre>
-
-  <h3>Multi-Currency and Tax Handling</h3>
+  <h3>Stripe Responsibility Split</h3>
   <div class="card">
-    <h4 style="color:var(--secondary);">Currency Strategy</h4>
     <ul>
-      <li><strong>Display Currency:</strong> Users see prices in their local currency. Rates updated daily from ECB/Open Exchange Rates API.</li>
-      <li><strong>Billing Currency:</strong> Stripe charges in the user's local currency. We create one Stripe Price object per plan per currency.</li>
-      <li><strong>Settlement Currency:</strong> Stripe settles in USD to our account. Exchange rate risk is on us for the delta between display and settlement.</li>
-      <li><strong>Price Localization:</strong> We round to psychologically friendly prices (e.g., EUR 27.99 instead of EUR 27.43). Prices are manually reviewed quarterly.</li>
+      <li><strong>Stripe owns:</strong> Charge scheduling, Smart Retries, card network comms, PCI compliance</li>
+      <li><strong>We own:</strong> Subscription lifecycle, entitlements, dunning UX, plan catalog, reconciliation</li>
+      <li><strong>Source of truth:</strong> Stripe for payment state, our DB for entitlements. Reconcile hourly.</li>
     </ul>
   </div>
-  <div class="card">
-    <h4 style="color:var(--warning);">Tax Handling</h4>
-    <ul>
-      <li><strong>Stripe Tax:</strong> We use Stripe Tax for automatic tax calculation. It handles VAT (EU), GST (AU/NZ), sales tax (US), and consumption tax (JP).</li>
-      <li><strong>Tax-Inclusive vs Exclusive:</strong> EU prices are tax-inclusive (VAT included). US prices are tax-exclusive (tax added at checkout).</li>
-      <li><strong>Tax Receipts:</strong> Stripe generates compliant tax invoices. We store the Stripe invoice ID and provide a download link.</li>
-      <li><strong>B2B Reverse Charge:</strong> If the subscriber provides a VAT ID, reverse charge applies (0% VAT on cross-border EU B2B).</li>
-    </ul>
-  </div>
+
+  <h3>Webhook Processing (Pseudocode)</h3>
+<pre><code>HANDLE_STRIPE_WEBHOOK(raw_body, signature):
+
+  1. VERIFY signature using webhook secret
+     &rarr; reject if invalid (return 400)
+
+  2. CHECK idempotency: lookup stripe_event_id in billing_events
+     &rarr; if already exists, return 200 (skip duplicate)
+
+  3. BEGIN DB TRANSACTION:
+     &rarr; INSERT billing_event (stripe_event_id = idempotency guard)
+     &rarr; UPDATE subscription state based on event type
+       - invoice.paid       &rarr; status = ACTIVE, extend period_end
+       - payment_failed     &rarr; status = PAST_DUE, start dunning
+       - subscription.deleted &rarr; status = CANCELLED
+  4. COMMIT transaction
+
+  5. PUBLISH to Kafka (outside transaction):
+     &rarr; topic: billing.events { type, subscription_id, timestamp }
+     &rarr; Downstream: Entitlement Svc, Notification Svc consume</code></pre>
 
   <div class="tip-box warning">
-    <strong>PE Signal: Reconciliation is Non-Negotiable</strong>
-    Webhooks can be lost, delayed, or arrive out of order. A reconciliation job must run hourly, pulling subscription state from Stripe's List Subscriptions API and comparing with our DB. Any discrepancy triggers an alert and auto-correction. For financial systems, "trust but verify" is the operating principle.
+    <strong>Reconciliation is Non-Negotiable</strong>
+    Webhooks can be lost or arrive out of order. A cron job runs hourly, pulls subscription state from Stripe API, compares with our DB. Any discrepancy triggers alert + auto-correction.
   </div>
   </details>
 </section>
@@ -1785,99 +1660,37 @@
     </div>
   </div>
 
-  <h3>Redis Cache Design</h3>
-<pre><code><span class="comment">// Redis key structure for entitlements</span>
-<span class="comment">// Key: entitlement:{user_id}</span>
-<span class="comment">// Value: Hash of entitlement_key -> expiry timestamp</span>
-<span class="comment">// TTL: 5 minutes (balance freshness vs load)</span>
+  <h3>Entitlement Check (Pseudocode)</h3>
+<pre><code>CHECK_ENTITLEMENT(user_id, entitlement_key):
 
-<span class="comment">// Example Redis state for user usr_7c9e4d2a:</span>
-HSET entitlement:usr_7c9e4d2a
-  premium_listings     <span class="string">"2025-02-28T00:00:00Z"</span>
-  discount_12_pct      <span class="string">"2025-02-28T00:00:00Z"</span>
-  free_cancellation    <span class="string">"2025-02-28T00:00:00Z"</span>
-  concierge_chat       <span class="string">"2025-02-28T00:00:00Z"</span>
-  premium_insurance    <span class="string">"2025-02-28T00:00:00Z"</span>
-  family_plan_2        <span class="string">"2025-02-28T00:00:00Z"</span>
+  1. Redis lookup: HGET entitlement:{user_id} {entitlement_key}
+     &rarr; HIT: return { granted: expires_at > NOW }     &lt;2ms
 
-EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="comment">// 5 min TTL</span>
+  2. Cache MISS: query PostgreSQL
+     &rarr; SELECT FROM entitlements WHERE user_id, key, is_active=true
 
-<span class="comment">// Entitlement check pseudocode:</span>
-<span class="keyword">async function</span> <span class="func">checkEntitlement</span>(userId, entitlementKey) {
-  <span class="comment">// 1. Check Redis first</span>
-  <span class="keyword">const</span> expiry = <span class="keyword">await</span> redis.hget(<span class="string">`entitlement:${userId}`</span>, entitlementKey);
-  <span class="keyword">if</span> (expiry) {
-    <span class="keyword">return</span> {
-      granted: <span class="keyword">new</span> Date(expiry) > Date.now(),
-      cached: <span class="keyword">true</span>,
-      expires_at: expiry
-    };
-  }
+  3. If found: batch-load ALL user entitlements into Redis hash
+     &rarr; HMSET entitlement:{user_id} { key1: expiry, key2: expiry, ... }
+     &rarr; EXPIRE 300s (5 min TTL)
 
-  <span class="comment">// 2. Cache miss: query PostgreSQL</span>
-  <span class="keyword">const</span> ent = <span class="keyword">await</span> db.query(
-    <span class="string">`SELECT * FROM entitlements
-     WHERE user_id = $1 AND entitlement_key = $2 AND is_active = true`</span>,
-    [userId, entitlementKey]
-  );
+  4. Return { granted, expires_at }
 
-  <span class="keyword">if</span> (ent.rows.length > <span class="number">0</span>) {
-    <span class="comment">// 3. Populate cache for all user entitlements (batch)</span>
-    <span class="keyword">const</span> allEnts = <span class="keyword">await</span> db.query(
-      <span class="string">`SELECT entitlement_key, expires_at FROM entitlements
-       WHERE user_id = $1 AND is_active = true`</span>,
-      [userId]
-    );
-    <span class="keyword">const</span> hashData = {};
-    allEnts.rows.forEach(e => hashData[e.entitlement_key] = e.expires_at);
-    <span class="keyword">await</span> redis.hmset(<span class="string">`entitlement:${userId}`</span>, hashData);
-    <span class="keyword">await</span> redis.expire(<span class="string">`entitlement:${userId}`</span>, <span class="number">300</span>);
-  }
+Redis key: entitlement:{user_id}  (Hash: entitlement_key &rarr; expiry)
+TTL: 5 min  |  Invalidation: Kafka event + TTL fallback</code></pre>
 
-  <span class="keyword">return</span> {
-    granted: ent.rows.length > <span class="number">0</span>,
-    cached: <span class="keyword">false</span>,
-    expires_at: ent.rows[<span class="number">0</span>]?.expires_at
-  };
-}</code></pre>
-
-  <h3>Eventual Consistency on Plan Changes</h3>
+  <h3>Consistency on State Changes</h3>
   <div class="card">
-    <h4 style="color:var(--purple);">Propagation Timeline</h4>
-    <p>When a subscription state changes (e.g., upgrade from Explorer to Adventurer), entitlements must be updated. Here is the timeline:</p>
-    <ol>
-      <li><strong>T+0ms:</strong> User upgrades via API. Subscription Service updates PostgreSQL, publishes <code>subscription.upgraded</code> to Kafka.</li>
-      <li><strong>T+50ms:</strong> Entitlement Service consumes event, updates entitlements table in PostgreSQL (add new, revoke old).</li>
-      <li><strong>T+60ms:</strong> Entitlement Service invalidates Redis cache for this user (<code>DEL entitlement:{user_id}</code>).</li>
-      <li><strong>T+100ms:</strong> Next entitlement check triggers cache miss, repopulates with new entitlements.</li>
-      <li><strong>Worst case:</strong> If cache invalidation fails, old entitlements persist for up to 5 minutes (TTL). This is acceptable because upgrades grant more access (user is never denied something they paid for).</li>
-    </ol>
+    <ul>
+      <li><strong>T+0ms:</strong> Subscription Svc updates PG, publishes event to Kafka</li>
+      <li><strong>T+50ms:</strong> Entitlement Svc consumes event, updates PG, invalidates Redis cache</li>
+      <li><strong>T+100ms:</strong> Next check triggers cache miss &rarr; repopulates with new entitlements</li>
+      <li><strong>Worst case:</strong> Cache invalidation fails &rarr; stale for up to 5 min (TTL self-heals)</li>
+    </ul>
   </div>
 
   <div class="tip-box danger">
-    <strong>Critical Design Rule: Fail Open for Upgrades, Fail Closed for Downgrades</strong>
-    On upgrade, if there is any propagation delay, the user temporarily has their old (lesser) entitlements -- this is safe. On downgrade or cancellation, we must proactively invalidate the cache immediately. If Redis is down, the entitlement check falls back to the database. Never fail open on revocation -- that would give free access.
-  </div>
-
-  <div class="card-grid">
-    <div class="card">
-      <h4 style="color:var(--success);">Cache Invalidation Strategy</h4>
-      <ul>
-        <li><strong>Event-driven:</strong> Kafka consumer in Entitlement Service issues <code>DEL</code> on subscription state changes.</li>
-        <li><strong>TTL-based:</strong> 5-minute TTL ensures stale data self-heals even if event is lost.</li>
-        <li><strong>Eager refresh:</strong> On user login, proactively refresh entitlement cache.</li>
-        <li><strong>Pub/Sub backup:</strong> Redis Pub/Sub channel broadcasts invalidation to all Entitlement Service instances.</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4 style="color:var(--blue);">Handling Redis Failures</h4>
-      <ul>
-        <li><strong>Circuit breaker:</strong> If Redis is unreachable, trip circuit breaker after 3 consecutive failures.</li>
-        <li><strong>Fallback to DB:</strong> Entitlement checks go directly to PostgreSQL read replica.</li>
-        <li><strong>Local cache:</strong> 30-second in-memory LRU cache as a final fallback (accepts higher staleness during outage).</li>
-        <li><strong>Monitoring:</strong> Alert on cache hit rate drop below 95%. Indicates potential Redis issues.</li>
-      </ul>
-    </div>
+    <strong>Fail Open for Upgrades, Fail Closed for Downgrades</strong>
+    On upgrade, propagation delay is safe (user keeps old lesser access). On cancellation/downgrade, proactively invalidate cache immediately. If Redis is down, fall back to PostgreSQL. Never fail open on revocation.
   </div>
   </details>
 </section>
@@ -1948,38 +1761,9 @@ EXPIRE entitlement:usr_7c9e4d2a <span class="number">300</span>  <span class="co
     </table>
   </div>
 
-  <h3>Deep Dive: Build vs Buy</h3>
-  <div class="card-grid">
-    <div class="card">
-      <h4 style="color:var(--danger);">Build Custom Billing</h4>
-      <ul>
-        <li>Full control over billing logic and UX</li>
-        <li>No per-transaction fees to third party</li>
-        <li>Custom retry and dunning strategies</li>
-        <li style="color:var(--danger);"><strong>Con:</strong> PCI DSS Level 1 compliance ($500K+/yr)</li>
-        <li style="color:var(--danger);"><strong>Con:</strong> Card network integrations (Visa, MC, Amex)</li>
-        <li style="color:var(--danger);"><strong>Con:</strong> 12-18 month build time for a dedicated team</li>
-        <li style="color:var(--danger);"><strong>Con:</strong> Tax calculation across 190+ jurisdictions</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4 style="color:var(--success);">Use Stripe Billing</h4>
-      <ul>
-        <li>PCI compliance handled by Stripe</li>
-        <li>Smart Retries (ML-optimized retry timing)</li>
-        <li>Automatic card updater (new card details from networks)</li>
-        <li>Stripe Tax for global tax compliance</li>
-        <li>2.9% + 30c per transaction (cost)</li>
-        <li>Faster time to market (weeks, not months)</li>
-        <li style="color:var(--warning);"><strong>Con:</strong> Vendor lock-in risk</li>
-        <li style="color:var(--warning);"><strong>Con:</strong> Limited customization of billing flows</li>
-      </ul>
-    </div>
-  </div>
-
   <div class="tip-box info">
-    <strong>PE Signal: Vendor Lock-in Mitigation</strong>
-    To mitigate Stripe lock-in, design a Payment Provider Adapter interface. The Subscription Service calls <code>PaymentProvider.createSubscription()</code>, not <code>Stripe.createSubscription()</code>. This allows swapping to Adyen, Braintree, or a custom solution without changing business logic. In practice, migrations are rare, but the abstraction costs almost nothing upfront and buys insurance.
+    <strong>Vendor Lock-in Mitigation</strong>
+    Design a <code>PaymentProvider</code> adapter interface. Subscription Service calls the adapter, not Stripe directly. Swap to Adyen/Braintree without changing business logic.
   </div>
   </details>
 </section>

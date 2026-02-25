@@ -124,7 +124,7 @@
   }
   .hero .stat-label {
     font-size: 0.78em;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.8);
     text-transform: uppercase;
     letter-spacing: 1.5px;
   }
@@ -346,7 +346,7 @@
 
   /* ===== ARCHITECTURE DIAGRAM ===== */
   .arch-diagram {
-    background: linear-gradient(135deg, #0d1117, #161b22);
+    background: #f6f8fa;
     border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     border-radius: 14px;
     padding: 32px;
@@ -506,13 +506,13 @@
     padding-top: 12px;
     border-top: 1px solid #e5e7eb;
     font-size: 0.88em;
-    color: #ffffff;
+    color: var(--text);
     font-weight: 600;
   }
 
   /* ===== LIFECYCLE DIAGRAM ===== */
   .lifecycle-diagram {
-    background: linear-gradient(135deg, #0d1117, #161b22);
+    background: #f6f8fa;
     border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     border-radius: 14px;
     padding: 28px 32px;
@@ -892,9 +892,9 @@
     <rect width="1100" height="600" rx="12" fill="#f1f5f9"/>
 
     <!-- Section labels -->
-    <text x="80" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">INGESTION LAYER</text>
-    <text x="410" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">CORE SERVICES</text>
-    <text x="830" y="30" fill="#79c0ff" font-size="11" font-weight="700" letter-spacing="1.5">DATA / SEARCH</text>
+    <text x="80" y="30" fill="#428BF9" font-size="11" font-weight="700" letter-spacing="1.5">INGESTION LAYER</text>
+    <text x="410" y="30" fill="#428BF9" font-size="11" font-weight="700" letter-spacing="1.5">CORE SERVICES</text>
+    <text x="830" y="30" fill="#428BF9" font-size="11" font-weight="700" letter-spacing="1.5">DATA / SEARCH</text>
 
     <!-- ===== EMAIL CHANNEL ===== -->
     <g filter="url(#shadow1)">
@@ -966,7 +966,7 @@
 
     <!-- ===== KAFKA ===== -->
     <g filter="url(#shadow1)" transform="translate(320,290)">
-      <rect x="0" y="0" width="160" height="55" rx="10" fill="#1e1e2e" stroke="#ef4444" stroke-width="1.5"/>
+      <rect x="0" y="0" width="160" height="55" rx="10" fill="#fff5f5" stroke="#ef4444" stroke-width="1.5"/>
       <!-- Kafka icon (3 circles + lines) -->
       <circle cx="22" cy="18" r="5" fill="none" stroke="#ef4444" stroke-width="1.5"/>
       <circle cx="15" cy="36" r="4" fill="none" stroke="#ef4444" stroke-width="1.3"/>
@@ -974,7 +974,7 @@
       <line x1="19" y1="22" x2="17" y2="32" stroke="#ef4444" stroke-width="1.2"/>
       <line x1="25" y1="22" x2="28" y2="32" stroke="#ef4444" stroke-width="1.2"/>
       <text x="44" y="22" fill="#ef4444" font-size="12" font-weight="700">Kafka</text>
-      <text x="44" y="38" fill="#8b949e" font-size="9">Event Bus (Async)</text>
+      <text x="44" y="38" fill="#64748b" font-size="9">Event Bus (Async)</text>
     </g>
 
     <!-- ===== ARROWS from Kafka to downstream services ===== -->
@@ -1034,14 +1034,14 @@
     <!-- ===== POSTGRESQL ===== -->
     <g filter="url(#shadow1)" transform="translate(780,130)">
       <!-- DB cylinder -->
-      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#2a4a8a" stroke="#428BF9" stroke-width="1.5"/>
-      <rect x="10" y="12" width="80" height="55" fill="#2a4a8a" stroke="none"/>
+      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#dbeafe" stroke="#428BF9" stroke-width="1.5"/>
+      <rect x="10" y="12" width="80" height="55" fill="#dbeafe" stroke="none"/>
       <line x1="10" y1="12" x2="10" y2="67" stroke="#428BF9" stroke-width="1.5"/>
       <line x1="90" y1="12" x2="90" y2="67" stroke="#428BF9" stroke-width="1.5"/>
-      <ellipse cx="50" cy="67" rx="40" ry="12" fill="#2a4a8a" stroke="#428BF9" stroke-width="1.5"/>
-      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#3565b5" stroke="#428BF9" stroke-width="1.5"/>
-      <text x="50" y="42" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">PostgreSQL</text>
-      <text x="50" y="57" fill="rgba(255,255,255,0.7)" font-size="9" text-anchor="middle">Tickets DB</text>
+      <ellipse cx="50" cy="67" rx="40" ry="12" fill="#dbeafe" stroke="#428BF9" stroke-width="1.5"/>
+      <ellipse cx="50" cy="12" rx="40" ry="12" fill="#bfdbfe" stroke="#428BF9" stroke-width="1.5"/>
+      <text x="50" y="42" fill="#1e40af" font-size="11" font-weight="700" text-anchor="middle">PostgreSQL</text>
+      <text x="50" y="57" fill="#3b82f6" font-size="9" text-anchor="middle">Tickets DB</text>
     </g>
 
     <!-- ===== CDC Arrow: PG to Kafka to ES ===== -->
@@ -1057,36 +1057,36 @@
 
     <!-- ===== ELASTICSEARCH ===== -->
     <g filter="url(#shadow1)" transform="translate(780,395)">
-      <rect x="0" y="0" width="140" height="65" rx="10" fill="#0d2e2b" stroke="#00A699" stroke-width="1.5"/>
+      <rect x="0" y="0" width="140" height="65" rx="10" fill="#ecfdf5" stroke="#00A699" stroke-width="1.5"/>
       <!-- Elasticsearch concentric circles + bars -->
       <circle cx="25" cy="32" r="12" fill="none" stroke="#00A699" stroke-width="1"/>
       <circle cx="25" cy="32" r="7" fill="none" stroke="#00A699" stroke-width="1.2"/>
       <circle cx="25" cy="32" r="2.5" fill="#00A699"/>
       <rect x="34" y="24" width="3" height="16" rx="1" fill="#00A699" opacity="0.6"/>
       <rect x="39" y="28" width="3" height="8" rx="1" fill="#00A699" opacity="0.8"/>
-      <text x="48" y="30" fill="#00A699" font-size="11" font-weight="700">Elasticsearch</text>
-      <text x="48" y="46" fill="#8b949e" font-size="9">Search Index</text>
+      <text x="48" y="30" fill="#047857" font-size="11" font-weight="700">Elasticsearch</text>
+      <text x="48" y="46" fill="#64748b" font-size="9">Search Index</text>
     </g>
 
     <!-- ===== REDIS ===== -->
     <g filter="url(#shadow1)" transform="translate(780,480)">
-      <rect x="0" y="0" width="140" height="55" rx="10" fill="#1e1e2e" stroke="#ef4444" stroke-width="1.5"/>
+      <rect x="0" y="0" width="140" height="55" rx="10" fill="#fff5f5" stroke="#ef4444" stroke-width="1.5"/>
       <!-- Redis diamond -->
       <polygon points="25,8 38,25 25,42 12,25" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-      <text x="46" y="24" fill="#ef4444" font-size="11" font-weight="700">Redis</text>
-      <text x="46" y="40" fill="#8b949e" font-size="9">Dashboard Cache</text>
+      <text x="46" y="24" fill="#dc2626" font-size="11" font-weight="700">Redis</text>
+      <text x="46" y="40" fill="#64748b" font-size="9">Dashboard Cache</text>
     </g>
 
     <!-- ===== S3 ===== -->
     <g filter="url(#shadow1)" transform="translate(780,555)">
-      <rect x="0" y="0" width="140" height="42" rx="10" fill="#1a2e1a" stroke="#4caf50" stroke-width="1.5"/>
+      <rect x="0" y="0" width="140" height="42" rx="10" fill="#f0fdf4" stroke="#4caf50" stroke-width="1.5"/>
       <!-- S3 bucket icon -->
       <ellipse cx="25" cy="10" rx="10" ry="4" fill="none" stroke="#4caf50" stroke-width="1.3"/>
       <line x1="15" y1="10" x2="15" y2="30" stroke="#4caf50" stroke-width="1.3"/>
       <line x1="35" y1="10" x2="35" y2="30" stroke="#4caf50" stroke-width="1.3"/>
       <ellipse cx="25" cy="30" rx="10" ry="4" fill="none" stroke="#4caf50" stroke-width="1.3"/>
-      <text x="46" y="20" fill="#4caf50" font-size="11" font-weight="700">S3</text>
-      <text x="46" y="34" fill="#8b949e" font-size="9">Attachments</text>
+      <text x="46" y="20" fill="#16a34a" font-size="11" font-weight="700">S3</text>
+      <text x="46" y="34" fill="#64748b" font-size="9">Attachments</text>
     </g>
 
     <!-- ===== AGENT DASHBOARD ===== -->
@@ -1307,31 +1307,24 @@
         <tr><th>Column</th><th>Type</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Auto-increment ticket ID (displayed as TICKET-{id})</td></tr>
-        <tr><td><strong>external_id</strong></td><td>UUID UNIQUE</td><td>Public-facing UUID for API exposure</td></tr>
-        <tr><td><strong>subject</strong></td><td>VARCHAR(500)</td><td>Ticket subject line</td></tr>
-        <tr><td><strong>description</strong></td><td>TEXT</td><td>Initial description / first message body</td></tr>
-        <tr><td><strong>status</strong></td><td>ENUM</td><td>OPEN, IN_PROGRESS, WAITING_ON_CUSTOMER, WAITING_ON_INTERNAL, RESOLVED, CLOSED, REOPENED</td></tr>
-        <tr><td><strong>priority</strong></td><td>SMALLINT</td><td>0 (P0-Critical) through 4 (P4-Informational)</td></tr>
-        <tr><td><strong>channel</strong></td><td>ENUM</td><td>EMAIL, WEB_FORM, IN_APP, PHONE, MANUAL</td></tr>
-        <tr><td><strong>requester_id</strong></td><td>BIGINT FK</td><td>References users table (the customer)</td></tr>
-        <tr><td><strong>assignee_id</strong></td><td>BIGINT FK NULL</td><td>References agents table (current assignee)</td></tr>
-        <tr><td><strong>team_id</strong></td><td>BIGINT FK NULL</td><td>References teams table for group assignment</td></tr>
-        <tr><td><strong>merged_into_id</strong></td><td>BIGINT FK NULL</td><td>If merged, points to the surviving ticket</td></tr>
-        <tr><td><strong>reopen_count</strong></td><td>SMALLINT DEFAULT 0</td><td>Number of times ticket has been reopened</td></tr>
-        <tr><td><strong>sla_first_response_at</strong></td><td>TIMESTAMP NULL</td><td>Deadline for first agent response</td></tr>
-        <tr><td><strong>sla_resolution_at</strong></td><td>TIMESTAMP NULL</td><td>Deadline for resolution</td></tr>
-        <tr><td><strong>first_responded_at</strong></td><td>TIMESTAMP NULL</td><td>Actual first response time</td></tr>
-        <tr><td><strong>resolved_at</strong></td><td>TIMESTAMP NULL</td><td>Actual resolution time</td></tr>
-        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Ticket creation time</td></tr>
-        <tr><td><strong>updated_at</strong></td><td>TIMESTAMP</td><td>Last modification time</td></tr>
-        <tr><td><strong>version</strong></td><td>INT DEFAULT 1</td><td>Optimistic locking version counter</td></tr>
+        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Internal ticket ID</td></tr>
+        <tr><td><strong>external_id</strong></td><td>UUID UNIQUE</td><td>Public-facing UUID for API</td></tr>
+        <tr><td><strong>subject</strong></td><td>VARCHAR</td><td>Ticket subject line</td></tr>
+        <tr><td><strong>status</strong></td><td>ENUM</td><td>OPEN | IN_PROGRESS | WAITING | RESOLVED | CLOSED | REOPENED</td></tr>
+        <tr><td><strong>priority</strong></td><td>SMALLINT</td><td>P0 (Critical) through P4 (Informational)</td></tr>
+        <tr><td><strong>channel</strong></td><td>ENUM</td><td>EMAIL | WEB_FORM | IN_APP | PHONE</td></tr>
+        <tr><td><strong>requester_id</strong></td><td>BIGINT FK</td><td>Customer who opened the ticket</td></tr>
+        <tr><td><strong>assignee_id</strong></td><td>BIGINT FK NULL</td><td>Currently assigned agent</td></tr>
+        <tr><td><strong>merged_into_id</strong></td><td>BIGINT FK NULL</td><td>Points to surviving ticket if merged</td></tr>
+        <tr><td><strong>sla_resolution_at</strong></td><td>TIMESTAMP</td><td>SLA deadline for resolution</td></tr>
+        <tr><td><strong>version</strong></td><td>INT</td><td>Optimistic locking counter</td></tr>
+        <tr><td><strong>created_at / updated_at</strong></td><td>TIMESTAMP</td><td>Audit timestamps</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="callout info">
-    <p><strong>Indexes:</strong> <code class="inline">idx_tickets_status_priority</code> (status, priority), <code class="inline">idx_tickets_assignee</code> (assignee_id, status), <code class="inline">idx_tickets_requester</code> (requester_id, created_at DESC), <code class="inline">idx_tickets_sla_breach</code> (status, sla_resolution_at) WHERE status NOT IN ('CLOSED','RESOLVED')</p>
+    <p><strong>Key Indexes:</strong> (status, priority), (assignee_id, status), (requester_id, created_at DESC), partial index on (status, sla_resolution_at) WHERE status NOT IN ('CLOSED','RESOLVED')</p>
   </div>
 
   <h3>ticket_messages</h3>
@@ -1342,32 +1335,19 @@
       </thead>
       <tbody>
         <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Message ID</td></tr>
-        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Parent ticket reference</td></tr>
-        <tr><td><strong>author_id</strong></td><td>BIGINT FK</td><td>User or agent who sent the message</td></tr>
-        <tr><td><strong>author_type</strong></td><td>ENUM</td><td>CUSTOMER, AGENT, SYSTEM</td></tr>
-        <tr><td><strong>message_type</strong></td><td>ENUM</td><td>REPLY (customer-visible), INTERNAL_NOTE, SYSTEM_EVENT</td></tr>
-        <tr><td><strong>body</strong></td><td>TEXT</td><td>Message content (HTML sanitized)</td></tr>
-        <tr><td><strong>attachments</strong></td><td>JSONB</td><td>Array of {filename, s3_key, content_type, size_bytes}</td></tr>
-        <tr><td><strong>email_message_id</strong></td><td>VARCHAR(255) NULL</td><td>Original email Message-ID header for threading</td></tr>
+        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Parent ticket</td></tr>
+        <tr><td><strong>author_id / author_type</strong></td><td>BIGINT FK / ENUM</td><td>Who sent it (CUSTOMER | AGENT | SYSTEM)</td></tr>
+        <tr><td><strong>message_type</strong></td><td>ENUM</td><td>REPLY | INTERNAL_NOTE | SYSTEM_EVENT</td></tr>
+        <tr><td><strong>body</strong></td><td>TEXT</td><td>Message content</td></tr>
+        <tr><td><strong>attachments</strong></td><td>JSONB</td><td>S3 references for attached files</td></tr>
+        <tr><td><strong>email_message_id</strong></td><td>VARCHAR NULL</td><td>Email Message-ID header (for thread detection)</td></tr>
         <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Message timestamp</td></tr>
       </tbody>
     </table>
   </div>
 
   <h3>ticket_tags</h3>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Ticket reference (composite PK with tag)</td></tr>
-        <tr><td><strong>tag</strong></td><td>VARCHAR(100)</td><td>Normalized lowercase tag name</td></tr>
-        <tr><td><strong>added_by</strong></td><td>BIGINT FK</td><td>Agent who added the tag</td></tr>
-        <tr><td><strong>added_at</strong></td><td>TIMESTAMP</td><td>When the tag was added</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <p style="color: var(--text-muted); font-size: 0.92em;">Junction table: <strong>ticket_id</strong> (FK) + <strong>tag</strong> (VARCHAR) as composite PK. Used for categorization and skill-based routing.</p>
 
   <h3>ticket_history (Audit Log)</h3>
   <div class="table-wrap">
@@ -1378,14 +1358,10 @@
       <tbody>
         <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>History entry ID</td></tr>
         <tr><td><strong>ticket_id</strong></td><td>BIGINT FK</td><td>Ticket reference</td></tr>
-        <tr><td><strong>actor_id</strong></td><td>BIGINT FK</td><td>Who made the change</td></tr>
-        <tr><td><strong>actor_type</strong></td><td>ENUM</td><td>AGENT, SYSTEM, CUSTOMER</td></tr>
-        <tr><td><strong>action</strong></td><td>VARCHAR(50)</td><td>STATUS_CHANGE, ASSIGNMENT, PRIORITY_CHANGE, TAG_ADD, TAG_REMOVE, MERGE, FIELD_UPDATE</td></tr>
-        <tr><td><strong>field_name</strong></td><td>VARCHAR(100) NULL</td><td>Which field changed</td></tr>
-        <tr><td><strong>old_value</strong></td><td>TEXT NULL</td><td>Previous value (serialized)</td></tr>
-        <tr><td><strong>new_value</strong></td><td>TEXT NULL</td><td>New value (serialized)</td></tr>
-        <tr><td><strong>metadata</strong></td><td>JSONB NULL</td><td>Additional context (e.g., merge source ticket ID)</td></tr>
-        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Immutable timestamp of the change</td></tr>
+        <tr><td><strong>actor_id / actor_type</strong></td><td>BIGINT / ENUM</td><td>Who made the change (AGENT | SYSTEM | CUSTOMER)</td></tr>
+        <tr><td><strong>action</strong></td><td>VARCHAR</td><td>STATUS_CHANGE | ASSIGNMENT | PRIORITY_CHANGE | MERGE</td></tr>
+        <tr><td><strong>old_value / new_value</strong></td><td>TEXT NULL</td><td>Before and after values</td></tr>
+        <tr><td><strong>created_at</strong></td><td>TIMESTAMP</td><td>Immutable timestamp</td></tr>
       </tbody>
     </table>
   </div>
@@ -1401,17 +1377,12 @@
         <tr><th>Column</th><th>Type</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>id</strong></td><td>BIGINT PK</td><td>Assignment record ID</td></tr>
         <tr><td><strong>agent_id</strong></td><td>BIGINT FK</td><td>Agent reference</td></tr>
         <tr><td><strong>team_id</strong></td><td>BIGINT FK</td><td>Agent's team</td></tr>
-        <tr><td><strong>skills</strong></td><td>TEXT[]</td><td>Array of skill tags (billing, technical, refund, etc.)</td></tr>
-        <tr><td><strong>current_load</strong></td><td>INT DEFAULT 0</td><td>Number of currently assigned open tickets</td></tr>
-        <tr><td><strong>max_capacity</strong></td><td>INT DEFAULT 20</td><td>Max concurrent tickets this agent handles</td></tr>
-        <tr><td><strong>is_online</strong></td><td>BOOLEAN</td><td>Whether agent is currently available</td></tr>
-        <tr><td><strong>last_assigned_at</strong></td><td>TIMESTAMP NULL</td><td>Used for round-robin fairness</td></tr>
-        <tr><td><strong>shift_start</strong></td><td>TIME</td><td>Agent shift start (for timezone-aware routing)</td></tr>
-        <tr><td><strong>shift_end</strong></td><td>TIME</td><td>Agent shift end</td></tr>
-        <tr><td><strong>timezone</strong></td><td>VARCHAR(50)</td><td>Agent timezone (e.g., America/Los_Angeles)</td></tr>
+        <tr><td><strong>skills</strong></td><td>TEXT[]</td><td>Skill tags (billing, technical, refund...)</td></tr>
+        <tr><td><strong>current_load / max_capacity</strong></td><td>INT</td><td>Active tickets vs max concurrent limit</td></tr>
+        <tr><td><strong>is_online</strong></td><td>BOOLEAN</td><td>Agent availability status</td></tr>
+        <tr><td><strong>last_assigned_at</strong></td><td>TIMESTAMP</td><td>For round-robin fairness</td></tr>
       </tbody>
     </table>
   </div>
@@ -1427,107 +1398,37 @@
   <p>Email is the highest-volume ingestion channel. The pipeline uses SendGrid Inbound Parse to receive emails as structured webhook payloads, then applies threading logic, spam filtering, and normalization before ticket creation.</p>
 
   <div class="arch-diagram">
-<span style="color:#79c0ff;">INBOUND EMAIL FLOW</span>
+<span style="color:var(--blue);">INBOUND EMAIL FLOW</span>
 
   Customer Email
        |
        v
 +------------------+     +-------------------+     +-------------------+
-| <span style="color:#ff7b72;">SendGrid</span>          |---->| <span style="color:#d2a8ff;">Email Parser Svc</span>   |---->| <span style="color:#ffa657;">Thread Detector</span>   |
+| <span style="color:var(--primary);">SendGrid</span>          |---->| <span style="color:var(--purple);">Email Parser Svc</span>   |---->| <span style="color:var(--accent);">Thread Detector</span>   |
 | Inbound Parse    |     | (Webhook Handler) |     | (Reply Matching)  |
 | (MX Record)      |     +-------------------+     +--------+----------+
 +------------------+              |                          |
                                   v                          v
                          +-------------------+     +-------------------+
-                         | <span style="color:#d2a8ff;">Spam Filter</span>       |     | <span style="color:#a5d6ff;">Existing Ticket?</span>  |
+                         | <span style="color:var(--purple);">Spam Filter</span>       |     | <span style="color:var(--blue);">Existing Ticket?</span>  |
                          | (SpamAssassin/ML) |     |   YES --> Append   |
                          +-------------------+     |   NO  --> Create   |
                                                    +-------------------+
   </div>
 
-  <h3>Webhook Payload Processing</h3>
-  <div class="flow-steps">
-    <div class="flow-step">
-      <div class="flow-step-num">1</div>
-      <div class="flow-step-content">
-        <p><strong>Receive Webhook</strong> -- SendGrid POSTs multipart form data containing <code class="inline">from</code>, <code class="inline">to</code>, <code class="inline">subject</code>, <code class="inline">text</code>, <code class="inline">html</code>, <code class="inline">attachments</code>, and full email headers.</p>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-step-num">2</div>
-      <div class="flow-step-content">
-        <p><strong>Extract Sender Identity</strong> -- Parse the <code class="inline">From</code> header to identify the customer. Look up in users table; if unknown, create a placeholder contact record.</p>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-step-num">3</div>
-      <div class="flow-step-content">
-        <p><strong>Thread Detection</strong> -- Check for existing ticket context using two methods:</p>
-        <ul>
-          <li><strong>In-Reply-To Header:</strong> Match the <code class="inline">In-Reply-To</code> or <code class="inline">References</code> header against stored <code class="inline">email_message_id</code> values in <code class="inline">ticket_messages</code></li>
-          <li><strong>Subject Pattern:</strong> Regex match for <code class="inline">[TICKET-12345]</code> pattern in subject line (injected by outbound reply emails)</li>
-        </ul>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-step-num">4</div>
-      <div class="flow-step-content">
-        <p><strong>Spam Filtering</strong> -- Run through SpamAssassin scoring and ML-based classifier. Emails scoring above threshold are quarantined for manual review rather than auto-creating tickets.</p>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-step-num">5</div>
-      <div class="flow-step-content">
-        <p><strong>Attachment Handling</strong> -- Upload attachments to S3 with content-type validation (block executables), virus scan via ClamAV, and store references in the message <code class="inline">attachments</code> JSONB field.</p>
-      </div>
-    </div>
-    <div class="flow-step">
-      <div class="flow-step-num">6</div>
-      <div class="flow-step-content">
-        <p><strong>Ticket Creation or Append</strong> -- If thread detected: append message to existing ticket and trigger state re-evaluation. If new: create ticket with <code class="inline">channel=EMAIL</code>, default priority P3, and route through Assignment Engine.</p>
-      </div>
-    </div>
-  </div>
+  <h3>Webhook Processing Flow</h3>
+  <pre><code><span class="cm">// Email Ingestion Pseudo Code</span>
 
-  <pre><code><span class="cm">// Email parser webhook handler (simplified)</span>
-<span class="kw">async function</span> <span class="fn">handleInboundEmail</span>(webhookPayload) {
-  <span class="kw">const</span> { from, subject, text, html, headers, attachments } = <span class="fn">parsePayload</span>(webhookPayload);
-
-  <span class="cm">// Step 1: Identify sender</span>
-  <span class="kw">const</span> requester = <span class="kw">await</span> <span class="fn">findOrCreateUser</span>(from);
-
-  <span class="cm">// Step 2: Detect thread via In-Reply-To or subject pattern</span>
-  <span class="kw">const</span> inReplyTo = headers[<span class="str">'In-Reply-To'</span>];
-  <span class="kw">const</span> subjectMatch = subject.<span class="fn">match</span>(<span class="str">/\[TICKET-(\d+)\]/</span>);
-
-  <span class="kw">let</span> existingTicket = <span class="kw">null</span>;
-  <span class="kw">if</span> (inReplyTo) {
-    existingTicket = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
-      SELECT t.* FROM tickets t
-      JOIN ticket_messages tm ON tm.ticket_id = t.id
-      WHERE tm.email_message_id = $1`</span>, [inReplyTo]);
-  } <span class="kw">else if</span> (subjectMatch) {
-    existingTicket = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">'SELECT * FROM tickets WHERE id = $1'</span>, [subjectMatch[<span class="num">1</span>]]);
-  }
-
-  <span class="cm">// Step 3: Spam check</span>
-  <span class="kw">const</span> spamScore = <span class="kw">await</span> <span class="fn">checkSpam</span>({ from, subject, text });
-  <span class="kw">if</span> (spamScore > <span class="num">5.0</span>) <span class="kw">return</span> <span class="fn">quarantineEmail</span>(webhookPayload);
-
-  <span class="cm">// Step 4: Upload attachments to S3</span>
-  <span class="kw">const</span> storedAttachments = <span class="kw">await</span> Promise.<span class="fn">all</span>(
-    attachments.<span class="fn">map</span>(a => <span class="fn">uploadToS3</span>(a, { virusScan: <span class="kw">true</span> }))
-  );
-
-  <span class="cm">// Step 5: Create or append</span>
-  <span class="kw">if</span> (existingTicket) {
-    <span class="kw">await</span> <span class="fn">appendMessage</span>(existingTicket.id, { requester, text, storedAttachments });
-    <span class="kw">await</span> <span class="fn">evaluateReopen</span>(existingTicket); <span class="cm">// may reopen if resolved/closed</span>
-  } <span class="kw">else</span> {
-    <span class="kw">await</span> <span class="fn">createTicket</span>({ requester, subject, description: text,
-      channel: <span class="str">'EMAIL'</span>, priority: <span class="num">3</span>, attachments: storedAttachments });
-  }
-}</code></pre>
+<span class="fn">handleInboundEmail</span>(webhook):
+  <span class="cm">1.</span> Parse payload → extract from, subject, body, attachments
+  <span class="cm">2.</span> Lookup sender in users table (create if unknown)
+  <span class="cm">3.</span> <span class="kw">Thread Detection:</span>
+     - Check <span class="str">In-Reply-To</span> header → match against stored email_message_id
+     - Fallback: regex match <span class="str">[TICKET-{id}]</span> in subject line
+  <span class="cm">4.</span> Spam filter (SpamAssassin score > 5.0 → quarantine)
+  <span class="cm">5.</span> Upload attachments → S3 (with virus scan)
+  <span class="cm">6.</span> <span class="kw">IF</span> existing ticket found → append message + evaluate reopen
+     <span class="kw">ELSE</span> → create new ticket (channel=EMAIL, default P3)</code></pre>
 </details>
 </div>
 
@@ -1543,54 +1444,32 @@
     <div class="card">
       <h4 style="color: var(--blue);">Round-Robin Assignment</h4>
       <p>Distributes tickets evenly across available agents in a team. Uses <code class="inline">last_assigned_at</code> timestamp to maintain fairness. Simplest strategy; works well for homogeneous teams.</p>
-      <pre><code><span class="cm">-- Round-robin: next agent in rotation</span>
-<span class="kw">SELECT</span> agent_id <span class="kw">FROM</span> agent_assignments
-<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
-  <span class="kw">AND</span> is_online = <span class="kw">true</span>
-  <span class="kw">AND</span> current_load < max_capacity
-<span class="kw">ORDER BY</span> last_assigned_at <span class="kw">ASC NULLS FIRST</span>
-<span class="kw">LIMIT</span> <span class="num">1</span>
-<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+      <pre><code><span class="cm">Pick agent WHERE online AND has capacity
+ORDER BY last_assigned_at ASC (least recently assigned first)
+Use FOR UPDATE SKIP LOCKED to prevent race conditions</span></code></pre>
     </div>
     <div class="card">
       <h4 style="color: #1e293b;">Load-Based Assignment</h4>
       <p>Routes to the agent with the lowest current load relative to their capacity. Accounts for part-time agents and those handling complex tickets that occupy more capacity.</p>
-      <pre><code><span class="cm">-- Load-based: lowest utilization ratio</span>
-<span class="kw">SELECT</span> agent_id,
-  (current_load::float / max_capacity) <span class="kw">AS</span> util
-<span class="kw">FROM</span> agent_assignments
-<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
-  <span class="kw">AND</span> is_online = <span class="kw">true</span>
-  <span class="kw">AND</span> current_load < max_capacity
-<span class="kw">ORDER BY</span> util <span class="kw">ASC</span>
-<span class="kw">LIMIT</span> <span class="num">1</span>
-<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+      <pre><code><span class="cm">Pick agent WHERE online AND has capacity
+ORDER BY (current_load / max_capacity) ASC (lowest utilization first)
+Use FOR UPDATE SKIP LOCKED to prevent race conditions</span></code></pre>
     </div>
     <div class="card">
       <h4 style="color: var(--purple);">Skill-Based Assignment</h4>
       <p>Matches ticket tags (e.g., "billing", "technical", "refund") against agent skill arrays. Returns the best-matching agent with available capacity. Critical for specialized support teams.</p>
-      <pre><code><span class="cm">-- Skill-based: match ticket tags to agent skills</span>
-<span class="kw">SELECT</span> agent_id,
-  <span class="fn">array_length</span>(skills & <span class="var">:ticket_tags</span>, <span class="num">1</span>) <span class="kw">AS</span> match_score
-<span class="kw">FROM</span> agent_assignments
-<span class="kw">WHERE</span> team_id = <span class="var">:team_id</span>
-  <span class="kw">AND</span> is_online = <span class="kw">true</span>
-  <span class="kw">AND</span> current_load < max_capacity
-  <span class="kw">AND</span> skills && <span class="var">:ticket_tags</span>  <span class="cm">-- overlap operator</span>
-<span class="kw">ORDER BY</span> match_score <span class="kw">DESC</span>, current_load <span class="kw">ASC</span>
-<span class="kw">LIMIT</span> <span class="num">1</span>
-<span class="kw">FOR UPDATE SKIP LOCKED</span>;</code></pre>
+      <pre><code><span class="cm">Pick agent WHERE online AND has capacity AND skills overlap ticket_tags
+ORDER BY skill_match_count DESC, current_load ASC
+Use FOR UPDATE SKIP LOCKED to prevent race conditions</span></code></pre>
     </div>
     <div class="card">
       <h4 style="color: var(--accent);">Priority-Based + Auto-Escalation</h4>
       <p>P0/P1 tickets bypass normal routing and go to senior agents or on-call engineers. If no agent is assigned within the SLA warning threshold, the system auto-escalates to the team lead, then to the department manager.</p>
-      <pre><code><span class="cm">// Auto-escalation chain on SLA breach</span>
-<span class="kw">const</span> escalationChain = [
-  { level: <span class="num">1</span>, target: <span class="str">'team_lead'</span>,    delay: <span class="str">'50% of SLA'</span> },
-  { level: <span class="num">2</span>, target: <span class="str">'dept_manager'</span>,  delay: <span class="str">'80% of SLA'</span> },
-  { level: <span class="num">3</span>, target: <span class="str">'vp_support'</span>,    delay: <span class="str">'100% of SLA'</span> },
-  { level: <span class="num">4</span>, target: <span class="str">'pagerduty_oncall'</span>, delay: <span class="str">'SLA breached'</span> },
-];</code></pre>
+      <pre><code><span class="cm">Escalation Chain:</span>
+  <span class="str">50% of SLA</span>  → notify team_lead
+  <span class="str">80% of SLA</span>  → notify dept_manager
+  <span class="str">100% of SLA</span> → notify vp_support
+  <span class="str">SLA breached</span> → page on-call via PagerDuty</code></pre>
     </div>
   </div>
 
@@ -1655,66 +1534,30 @@
   <h3>SLA Monitor Cron Job</h3>
   <p>A cron job runs every 60 seconds to check all non-closed tickets against their SLA deadlines. It identifies three categories: approaching breach (warning), breached (escalation), and healthy.</p>
 
-  <pre><code><span class="cm">// SLA Monitor - runs every 60 seconds</span>
-<span class="kw">async function</span> <span class="fn">checkSLACompliance</span>() {
-  <span class="kw">const</span> now = <span class="kw">new</span> Date();
+  <pre><code><span class="cm">// SLA Monitor — runs every 60 seconds</span>
 
-  <span class="cm">// Find tickets approaching first-response SLA breach</span>
-  <span class="kw">const</span> warningTickets = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
-    SELECT id, priority, assignee_id, sla_first_response_at
-    FROM tickets
-    WHERE status IN ('OPEN', 'REOPENED')
-      AND first_responded_at IS NULL
-      AND sla_first_response_at IS NOT NULL
-      AND sla_first_response_at - INTERVAL '25%' *
-          (sla_first_response_at - created_at) < $1
-      AND sla_first_response_at > $1`</span>, [now]);
+<span class="fn">checkSLACompliance</span>():
+  <span class="cm">1.</span> Query all OPEN/REOPENED tickets approaching SLA deadline
+     (no first response yet AND within 75% of SLA window)
+     → Send <span class="str">SLA_WARNING</span> notification to assigned agent
 
-  <span class="cm">// Find tickets that have BREACHED SLA</span>
-  <span class="kw">const</span> breachedTickets = <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
-    SELECT id, priority, assignee_id, sla_first_response_at, sla_resolution_at
-    FROM tickets
-    WHERE status NOT IN ('CLOSED', 'RESOLVED')
-      AND (
-        (first_responded_at IS NULL AND sla_first_response_at < $1)
-        OR
-        (resolved_at IS NULL AND sla_resolution_at < $1)
-      )`</span>, [now]);
-
-  <span class="cm">// Trigger notifications and escalations</span>
-  <span class="kw">for</span> (<span class="kw">const</span> ticket <span class="kw">of</span> warningTickets) {
-    <span class="kw">await</span> <span class="fn">notifyAgent</span>(ticket, <span class="str">'SLA_WARNING'</span>);
-  }
-  <span class="kw">for</span> (<span class="kw">const</span> ticket <span class="kw">of</span> breachedTickets) {
-    <span class="kw">await</span> <span class="fn">escalateTicket</span>(ticket);
-    <span class="kw">await</span> <span class="fn">recordSLABreach</span>(ticket);
-  }
-}</code></pre>
+  <span class="cm">2.</span> Query all non-closed tickets that have BREACHED SLA
+     (first_response deadline passed OR resolution deadline passed)
+     → Trigger escalation chain + record SLA breach event</code></pre>
 
   <h3>SLA Clock Pause on WAITING_ON_CUSTOMER</h3>
   <div class="card">
     <h4 style="color: var(--warning);">Clock Pause Logic</h4>
     <p>When a ticket transitions to <code class="inline">WAITING_ON_CUSTOMER</code>, the SLA clock pauses. The remaining SLA time is stored, and when the customer responds (ticket returns to <code class="inline">IN_PROGRESS</code>), the SLA deadline is recalculated by adding the remaining time to the current timestamp.</p>
-    <pre><code><span class="cm">// Pause SLA clock when entering WAITING_ON_CUSTOMER</span>
-<span class="kw">function</span> <span class="fn">pauseSLAClock</span>(ticket) {
-  <span class="kw">const</span> now = <span class="kw">new</span> Date();
-  <span class="kw">const</span> remainingMs = ticket.sla_resolution_at - now;
-  <span class="kw">return</span> db.<span class="fn">query</span>(<span class="str">`
-    UPDATE tickets SET
-      sla_remaining_ms = $1,
-      sla_paused_at = NOW()
-    WHERE id = $2`</span>, [Math.<span class="fn">max</span>(<span class="num">0</span>, remainingMs), ticket.id]);
-}
+    <pre><code><span class="cm">// Pause/Resume SLA Clock</span>
 
-<span class="cm">// Resume SLA clock when customer responds</span>
-<span class="kw">function</span> <span class="fn">resumeSLAClock</span>(ticket) {
-  <span class="kw">return</span> db.<span class="fn">query</span>(<span class="str">`
-    UPDATE tickets SET
-      sla_resolution_at = NOW() + (sla_remaining_ms || ' ms')::INTERVAL,
-      sla_remaining_ms = NULL,
-      sla_paused_at = NULL
-    WHERE id = $1`</span>, [ticket.id]);
-}</code></pre>
+<span class="fn">pauseSLAClock</span>(ticket):
+  remaining = sla_resolution_at − now
+  Store remaining time + paused_at timestamp on ticket
+
+<span class="fn">resumeSLAClock</span>(ticket):
+  new_deadline = now + stored remaining time
+  Clear paused_at and remaining fields</code></pre>
   </div>
 </details>
 </div>
@@ -1728,7 +1571,7 @@
   <p>Search is powered by Elasticsearch, kept in sync with PostgreSQL via Change Data Capture (CDC) using Debezium. This ensures the search index is eventually consistent (typically within 1-2 seconds) without coupling the write path to ES.</p>
 
   <div class="arch-diagram">
-<span style="color:#79c0ff;">SEARCH PIPELINE</span>
+<span style="color:var(--blue);">SEARCH PIPELINE</span>
 
   PostgreSQL                  Debezium CDC               Elasticsearch
 +----------------+       +------------------+       +------------------+
@@ -1741,66 +1584,19 @@
                                                     |             |
                                                Full-Text    Faceted
                                                Search       Filters
-                                               (subject,    (status,
-                                               body,        priority,
-                                               messages)    assignee,
-                                                            tags, date)
   </div>
 
-  <h3>Elasticsearch Index Mapping</h3>
-  <pre><code>{
-  <span class="str">"mappings"</span>: {
-    <span class="str">"properties"</span>: {
-      <span class="str">"ticket_id"</span>:    { <span class="str">"type"</span>: <span class="str">"long"</span> },
-      <span class="str">"external_id"</span>:  { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
-      <span class="str">"subject"</span>:      { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span>,
-                         <span class="str">"fields"</span>: { <span class="str">"keyword"</span>: { <span class="str">"type"</span>: <span class="str">"keyword"</span> } } },
-      <span class="str">"description"</span>:  { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span> },
-      <span class="str">"messages"</span>:     { <span class="str">"type"</span>: <span class="str">"text"</span>, <span class="str">"analyzer"</span>: <span class="str">"standard"</span> },
-      <span class="str">"status"</span>:       { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
-      <span class="str">"priority"</span>:     { <span class="str">"type"</span>: <span class="str">"integer"</span> },
-      <span class="str">"channel"</span>:      { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
-      <span class="str">"assignee_id"</span>:  { <span class="str">"type"</span>: <span class="str">"long"</span> },
-      <span class="str">"requester_id"</span>: { <span class="str">"type"</span>: <span class="str">"long"</span> },
-      <span class="str">"tags"</span>:         { <span class="str">"type"</span>: <span class="str">"keyword"</span> },
-      <span class="str">"created_at"</span>:   { <span class="str">"type"</span>: <span class="str">"date"</span> },
-      <span class="str">"updated_at"</span>:   { <span class="str">"type"</span>: <span class="str">"date"</span> },
-      <span class="str">"resolved_at"</span>:  { <span class="str">"type"</span>: <span class="str">"date"</span> }
-    }
-  }
-}</code></pre>
+  <h3>Search Strategy</h3>
+  <pre><code><span class="cm">// Denormalized ES Index</span>
+<span class="cm">Full-text fields:</span> subject (boosted 3x), description (boosted 2x), messages
+<span class="cm">Keyword filters:</span>  status, priority, channel, assignee_id, tags
+<span class="cm">Date fields:</span>      created_at, updated_at, resolved_at
 
-  <h3>Full-Text Search Query</h3>
-  <pre><code><span class="cm">// Search with full-text + faceted filtering</span>
-<span class="kw">const</span> searchQuery = {
-  query: {
-    bool: {
-      must: [
-        { multi_match: {
-          query: <span class="var">userQuery</span>,
-          fields: [<span class="str">'subject^3'</span>, <span class="str">'description^2'</span>, <span class="str">'messages'</span>],
-          type: <span class="str">'best_fields'</span>,
-          fuzziness: <span class="str">'AUTO'</span>
-        }}
-      ],
-      filter: [
-        ...(status  ? [{ term: { status: <span class="var">status</span> } }]  : []),
-        ...(priority !== <span class="kw">undefined</span> ? [{ term: { priority: <span class="var">priority</span> } }] : []),
-        ...(assignee ? [{ term: { assignee_id: <span class="var">assignee</span> } }] : []),
-        ...(tags     ? [{ terms: { tags: <span class="var">tags</span> } }]       : []),
-        ...(dateFrom ? [{ range: { created_at: { gte: <span class="var">dateFrom</span>, lte: <span class="var">dateTo</span> } } }] : []),
-      ]
-    }
-  },
-  aggs: {  <span class="cm">// Real-time dashboard counts</span>
-    by_status:   { terms: { field: <span class="str">'status'</span> } },
-    by_priority: { terms: { field: <span class="str">'priority'</span> } },
-    by_channel:  { terms: { field: <span class="str">'channel'</span> } }
-  },
-  sort: [{ _score: <span class="str">'desc'</span> }, { created_at: <span class="str">'desc'</span> }],
-  size: <span class="num">20</span>,
-  from: <span class="var">offset</span>
-};</code></pre>
+<span class="cm">// Search Approach</span>
+Multi-match query across text fields with fuzziness
++ Bool filters for status, priority, assignee, tags, date range
++ Aggregations for dashboard counts (by_status, by_priority, by_channel)
+Sort by relevance score DESC, then created_at DESC</code></pre>
 
   <h3>Real-Time Dashboard</h3>
   <div class="grid-3">
@@ -1854,35 +1650,17 @@
     </div>
   </div>
 
-  <pre><code><span class="cm">// Evaluate whether to reopen or create new linked ticket</span>
-<span class="kw">async function</span> <span class="fn">evaluateReopen</span>(existingTicket) {
-  <span class="kw">const</span> REOPEN_WINDOW_DAYS = <span class="num">7</span>;
-  <span class="kw">const</span> resolvedAt = existingTicket.resolved_at || existingTicket.updated_at;
-  <span class="kw">const</span> daysSinceResolved = <span class="fn">diffInDays</span>(<span class="kw">new</span> Date(), resolvedAt);
+  <pre><code><span class="cm">// Reopen Policy</span>
 
-  <span class="kw">if</span> ([<span class="str">'RESOLVED'</span>, <span class="str">'CLOSED'</span>].<span class="fn">includes</span>(existingTicket.status)) {
-    <span class="kw">if</span> (daysSinceResolved <= REOPEN_WINDOW_DAYS) {
-      <span class="cm">// Reopen the existing ticket</span>
-      <span class="kw">await</span> <span class="fn">transitionState</span>(existingTicket.id, <span class="str">'REOPENED'</span>);
-      <span class="kw">await</span> db.<span class="fn">query</span>(<span class="str">`
-        UPDATE tickets SET
-          reopen_count = reopen_count + 1,
-          sla_resolution_at = NOW() + $1::INTERVAL
-        WHERE id = $2`</span>,
-        [<span class="fn">getSLADuration</span>(existingTicket.priority), existingTicket.id]
-      );
-      <span class="kw">await</span> <span class="fn">reassignOriginalAgent</span>(existingTicket);
-    } <span class="kw">else</span> {
-      <span class="cm">// Create new linked ticket</span>
-      <span class="kw">await</span> <span class="fn">createTicket</span>({
-        ...existingTicket,
-        status: <span class="str">'OPEN'</span>,
-        related_ticket_id: existingTicket.id,
-        reopen_count: <span class="num">0</span>
-      });
-    }
-  }
-}</code></pre>
+<span class="fn">evaluateReopen</span>(ticket):
+  <span class="kw">IF</span> ticket is RESOLVED/CLOSED:
+    <span class="kw">IF</span> reply within 7 days →
+      Set status = REOPENED, increment reopen_count
+      Reset SLA deadline based on priority
+      Re-assign original agent (if available)
+    <span class="kw">ELSE</span> →
+      Create NEW ticket with related_ticket_id link
+      Original ticket stays in its final state</code></pre>
 
   <h3>Reopen Count as Quality Metric</h3>
   <div class="callout">
@@ -1992,49 +1770,6 @@
     </table>
   </div>
 
-  <h3>Example: Create Ticket Request</h3>
-  <pre><code><span class="cm">// POST /api/v1/tickets</span>
-{
-  <span class="str">"subject"</span>: <span class="str">"Cannot complete booking - payment error"</span>,
-  <span class="str">"description"</span>: <span class="str">"I keep getting a 'Payment Failed' error when trying to book..."</span>,
-  <span class="str">"priority"</span>: <span class="num">1</span>,
-  <span class="str">"channel"</span>: <span class="str">"IN_APP"</span>,
-  <span class="str">"requester_id"</span>: <span class="str">"usr_a1b2c3d4"</span>,
-  <span class="str">"tags"</span>: [<span class="str">"payment"</span>, <span class="str">"booking"</span>, <span class="str">"error"</span>],
-  <span class="str">"attachments"</span>: [
-    { <span class="str">"filename"</span>: <span class="str">"screenshot.png"</span>, <span class="str">"content_type"</span>: <span class="str">"image/png"</span>, <span class="str">"data"</span>: <span class="str">"base64..."</span> }
-  ]
-}
-
-<span class="cm">// Response: 201 Created</span>
-{
-  <span class="str">"id"</span>: <span class="str">"TICKET-48291"</span>,
-  <span class="str">"external_id"</span>: <span class="str">"f47ac10b-58cc-4372-a567-0e02b2c3d479"</span>,
-  <span class="str">"status"</span>: <span class="str">"OPEN"</span>,
-  <span class="str">"priority"</span>: <span class="num">1</span>,
-  <span class="str">"assignee"</span>: { <span class="str">"id"</span>: <span class="str">"agt_x7y8z9"</span>, <span class="str">"name"</span>: <span class="str">"Sarah Chen"</span> },
-  <span class="str">"sla"</span>: {
-    <span class="str">"first_response_due"</span>: <span class="str">"2026-02-09T15:30:00Z"</span>,
-    <span class="str">"resolution_due"</span>: <span class="str">"2026-02-09T18:30:00Z"</span>
-  },
-  <span class="str">"created_at"</span>: <span class="str">"2026-02-09T14:30:00Z"</span>
-}</code></pre>
-
-  <h3>Example: Merge Tickets Request</h3>
-  <pre><code><span class="cm">// POST /api/v1/tickets/48291/merge</span>
-{
-  <span class="str">"target_ticket_id"</span>: <span class="num">48285</span>,
-  <span class="str">"reason"</span>: <span class="str">"Duplicate report of the same payment issue from same customer"</span>
-}
-
-<span class="cm">// Response: 200 OK</span>
-{
-  <span class="str">"merged_ticket_id"</span>: <span class="num">48291</span>,
-  <span class="str">"target_ticket_id"</span>: <span class="num">48285</span>,
-  <span class="str">"messages_transferred"</span>: <span class="num">3</span>,
-  <span class="str">"source_status"</span>: <span class="str">"CLOSED"</span>,
-  <span class="str">"source_merged_into_id"</span>: <span class="num">48285</span>
-}</code></pre>
 </details>
 </div>
 
@@ -2215,7 +1950,7 @@
 <div style="background: #f8fafc; border-top: 1px solid #e5e7eb; padding: 40px; text-align: center; margin-top: 60px;">
   <p style="color: var(--text-muted); font-size: 0.9em;">Support Ticketing System -- PE-Level System Design</p>
   <p style="color: var(--text-muted); font-size: 0.8em; margin-top: 8px;">Multi-channel ticket lifecycle management with SLA enforcement, intelligent assignment, and audit trail</p>
-  <a href="index.html" style="display: inline-block; margin-top: 16px; color: #ffffff; text-decoration: none; font-weight: 600; padding: 8px 20px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background: rgba(255,255,255,0.15);">&#8592; Back to All Topics</a>
+  <a href="index.html" style="display: inline-block; margin-top: 16px; color: var(--primary); text-decoration: none; font-weight: 600; padding: 8px 20px; border: 1px solid var(--primary); border-radius: 8px; background: rgba(255,90,95,0.08);">&#8592; Back to All Topics</a>
 </div>
 
 <script>
